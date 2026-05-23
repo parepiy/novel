@@ -233,7 +233,7 @@ function renderGrid() {
 
 function buildCard(b, idx) {
   const coverHtml = b.cover
-    ? `<img src="${esc(b.cover)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
   const ncStyle = b.cover ? 'display:none' : '';
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
@@ -245,6 +245,14 @@ function buildCard(b, idx) {
       <div class="tags">${tagHtml}</div>
     </div>
   </div>`;
+}
+
+function fixCoverUrl(url) {
+  if (!url) return "";
+  // Convert any Google Drive URL to direct image URL (avoids CORS/hotlink block)
+  const m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return "https://lh3.googleusercontent.com/d/" + m[1];
+  return url;
 }
 
 function esc(s) {
@@ -288,7 +296,7 @@ function openModal(idx) {
   link.style.display = b.url ? 'inline-block' : 'none';
   const cover = document.getElementById('m-cover');
   if (b.cover) {
-    cover.innerHTML = `<img src="${esc(b.cover)}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'m-nc\\'>📖</div>'">`;
+    cover.innerHTML = `<img src="${esc(fixCoverUrl(b.cover))}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'m-nc\\'>📖</div>'">`;
   } else {
     cover.innerHTML = '<div class="m-nc">📖</div>';
   }
