@@ -115,7 +115,7 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
   </div>
 
   <div id="filter-bar" class="filters"></div>
-  <div class="search-bar"><input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่องหรือเรื่องย่อ..." oninput="filterBooks()"></div>
+  <div class="search-bar"><input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่อง..." oninput="filterBooks()"></div>
   <div class="count" id="count-bar"></div>
 </div>
 
@@ -240,7 +240,7 @@ function renderGrid() {
   const filtered = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
     const q = searchQ.toLowerCase().trim();
-    const searchOk = !q || b.title.toLowerCase().includes(q) || b.summary.toLowerCase().includes(q);
+    const searchOk = !q || b.title.toLowerCase().includes(q);
     return tagOk && searchOk;
   });
 
@@ -313,6 +313,8 @@ function setTag(tag) {
 
 function clearTags() {
   activeTags = new Set();
+  searchQ = '';
+  document.getElementById('search-input').value = '';
   buildFilterBar();
   renderGrid();
 }
