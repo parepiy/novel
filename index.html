@@ -234,7 +234,7 @@ function buildFilterBar() {
 }
 
 function renderGrid() {
-  const crossTab = searchQ.trim().length > 0;
+  const crossTab = searchQ.trim().length > 0 && activeTags.size === 0;
   const pool = crossTab ? allBooks : allBooks.filter(b => b.source === currentTab);
 
   const filtered = pool.filter(b => {
