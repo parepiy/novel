@@ -218,7 +218,7 @@ function buildFilterBar() {
   const books = allBooks.filter(b => b.source === currentTab);
   const tags = [...new Set(books.flatMap(b => b.tags))].sort((a,b) => a.localeCompare(b, 'th'));
   const isRaw = currentTab === 'raw';
-  const noneSelected = activeTags.size === 0;
+  const noneSelected = activeTags.size === 0 && searchQ.trim().length === 0;
 
   const firstBtn = noneSelected
     ? `<button class="fb${isRaw ? ' raw-fb' : ''} active" onclick="clearTags()">ทั้งหมด</button>`
