@@ -16,6 +16,9 @@
 html,body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-weight:300;min-height:100%;padding-bottom:60px;}
 a{color:inherit;text-decoration:none;}
 
+/* STICKY HEADER */
+.sticky-header{position:sticky;top:0;z-index:100;}
+
 /* HEADER */
 header{padding:24px 20px 14px;border-bottom:1px solid var(--bd);background:var(--s1);}
 header h1{font-family:'Noto Serif Thai',serif;font-size:1.7rem;color:var(--mint2);font-weight:700;}
@@ -33,6 +36,8 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
 .fb{background:transparent;border:1px solid var(--bd2);color:var(--dim);padding:4px 12px;border-radius:20px;font-family:'Noto Sans Thai',sans-serif;font-size:.74rem;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint);}
 .fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw);}
+.clear-btn{background:transparent;border:1px solid #e0a0a0;color:#b85c5c;padding:4px 10px;border-radius:20px;font-family:'Noto Sans Thai',sans-serif;font-size:.74rem;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.clear-btn:hover{background:rgba(184,92,92,.08);}
 
 /* SEARCH */
 .search-bar{padding:10px 16px;border-bottom:1px solid var(--bd);background:var(--s1);}
@@ -87,25 +92,32 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
 
 /* EMPTY */
 .empty{padding:50px 20px;text-align:center;color:var(--mute);font-size:.85rem;}
+
+/* GO-TO-TOP BUTTON */
+.go-top{position:fixed;bottom:24px;right:20px;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:150;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:opacity .2s,transform .2s;}
+.go-top.visible{display:flex;}
+.go-top:hover{transform:translateY(-2px);}
 </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>ห้องสมุดนิยาย 📚</h1>
-    <p id="header-count">กำลังโหลด...</p>
+<div class="sticky-header">
+  <header>
+    <div>
+      <h1>ห้องสมุดนิยาย 📚</h1>
+      <p id="header-count">กำลังโหลด...</p>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
+    <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
   </div>
-</header>
 
-<div class="nav-tabs">
-  <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
-  <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
+  <div id="filter-bar" class="filters"></div>
+  <div class="search-bar"><input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่องหรือเรื่องย่อ..." oninput="filterBooks()"></div>
+  <div class="count" id="count-bar"></div>
 </div>
-
-<div id="filter-bar" class="filters"></div>
-<div class="search-bar"><input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่องหรือเรื่องย่อ..." oninput="filterBooks()"></div>
-<div class="count" id="count-bar"></div>
 
 <div id="main-content">
   <div class="loading"><div class="spinner"></div><span>กำลังโหลดข้อมูล...</span></div>
@@ -128,12 +140,15 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
   </div>
 </div>
 
+<!-- GO-TO-TOP -->
+<button class="go-top" id="go-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
 
 let allBooks = [];
 let currentTab = 'meb';
-let activeTag = 'all';
+let activeTags = new Set();
 let searchQ = '';
 
 /* ===== CSV PARSER ===== */
@@ -203,31 +218,47 @@ function buildFilterBar() {
   const books = allBooks.filter(b => b.source === currentTab);
   const tags = [...new Set(books.flatMap(b => b.tags))].sort((a,b) => a.localeCompare(b, 'th'));
   const isRaw = currentTab === 'raw';
-  const bar = document.getElementById('filter-bar');
-  bar.innerHTML = ['all', ...tags].map(t =>
-    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTag === t ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">
-      ${t === 'all' ? 'ทั้งหมด' : t}
+  const noneSelected = activeTags.size === 0;
+
+  const firstBtn = noneSelected
+    ? `<button class="fb${isRaw ? ' raw-fb' : ''} active" onclick="clearTags()">ทั้งหมด</button>`
+    : `<button class="clear-btn" onclick="clearTags()">✕ ล้าง</button>`;
+
+  const tagBtns = tags.map(t =>
+    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">
+      ${esc(t)}
     </button>`
   ).join('');
+
+  document.getElementById('filter-bar').innerHTML = firstBtn + tagBtns;
 }
 
 function renderGrid() {
-  const books = allBooks.filter(b => b.source === currentTab);
-  const filtered = books.filter(b => {
-    const tagOk = activeTag === 'all' || b.tags.includes(activeTag);
-    const q = searchQ.toLowerCase();
+  const crossTab = searchQ.trim().length > 0;
+  const pool = crossTab ? allBooks : allBooks.filter(b => b.source === currentTab);
+
+  const filtered = pool.filter(b => {
+    const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
+    const q = searchQ.toLowerCase().trim();
     const searchOk = !q || b.title.toLowerCase().includes(q) || b.summary.toLowerCase().includes(q);
     return tagOk && searchOk;
   });
 
-  document.getElementById('count-bar').textContent = `แสดง ${filtered.length} จาก ${books.length} เรื่อง`;
+  if (crossTab) {
+    const mebCount = filtered.filter(b => b.source === 'meb').length;
+    const rawCount = filtered.filter(b => b.source === 'raw').length;
+    document.getElementById('count-bar').textContent = `ค้นหาพบ ${filtered.length} เรื่อง · MEB ${mebCount} · RAW ${rawCount}`;
+  } else {
+    const total = allBooks.filter(b => b.source === currentTab).length;
+    document.getElementById('count-bar').textContent = `แสดง ${filtered.length} จาก ${total} เรื่อง`;
+  }
 
   if (!filtered.length) {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน</div>';
     return;
   }
 
-  const html = `<div class="grid">${filtered.map((b,i) => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
+  const html = `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
   document.getElementById('main-content').innerHTML = html;
 }
 
@@ -262,7 +293,7 @@ function esc(s) {
 /* ===== TABS / FILTER / SEARCH ===== */
 function switchTab(tab) {
   currentTab = tab;
-  activeTag = 'all';
+  activeTags = new Set();
   searchQ = '';
   document.getElementById('search-input').value = '';
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -271,7 +302,17 @@ function switchTab(tab) {
 }
 
 function setTag(tag) {
-  activeTag = tag;
+  if (activeTags.has(tag)) {
+    activeTags.delete(tag);
+  } else {
+    activeTags.add(tag);
+  }
+  buildFilterBar();
+  renderGrid();
+}
+
+function clearTags() {
+  activeTags = new Set();
   buildFilterBar();
   renderGrid();
 }
@@ -310,6 +351,11 @@ function closeModalBtn() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+
+/* ===== SCROLL / GO-TOP ===== */
+window.addEventListener('scroll', () => {
+  document.getElementById('go-top').classList.toggle('visible', window.scrollY > 300);
+}, {passive: true});
 
 /* ===== INIT ===== */
 loadData();
