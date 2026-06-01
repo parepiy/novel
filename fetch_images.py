@@ -25,6 +25,13 @@ def is_image(path):
 def raw_url(path):
     return f"https://raw.githubusercontent.com/{OWNER}/{REPO}/{BRANCH}/{urllib.parse.quote(path)}"
 
+def load_existing_paths(output):
+    try:
+        with open(output, newline="", encoding="utf-8") as f:
+            return {row["path"] for row in csv.DictReader(f)}
+    except FileNotFoundError:
+        return set()
+
 def main():
     print("Fetching repository tree...")
     tree = fetch_tree()
@@ -32,18 +39,26 @@ def main():
     blobs = [item for item in tree.get("tree", []) if item["type"] == "blob"]
     images = [item for item in blobs if is_image(item["path"])]
 
-    print(f"Found {len(images)} image file(s).")
-
     output = "images.csv"
-    with open(output, "w", newline="", encoding="utf-8") as f:
+    existing = load_existing_paths(output)
+    new_images = [item for item in images if item["path"] not in existing]
+
+    print(f"Found {len(images)} total image(s), {len(existing)} already in CSV, {len(new_images)} new.")
+
+    if not new_images:
+        print("No new images to add.")
+        return
+
+    with open(output, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["filename", "path", "raw_url"])
-        for item in images:
+        if not existing:
+            writer.writerow(["filename", "path", "raw_url"])
+        for item in new_images:
             path = item["path"]
             filename = path.split("/")[-1]
             writer.writerow([filename, path, raw_url(path)])
 
-    print(f"Exported to {output}")
+    print(f"Appended {len(new_images)} new image(s) to {output}")
 
 if __name__ == "__main__":
     main()
