@@ -206,7 +206,7 @@ stories.forEach((s, i) => {
   let imgHTML;
   const hasCustomCover = s.thumbnail_edition > 0 && !s.article_thumbnail_path.includes('/category/');
   if (hasCustomCover) {
-    const imgUrl = s.article_thumbnail_path + s.thumbnail_edition + '.jpg';
+    const imgUrl = s.article_thumbnail_path + 'tiny.gif?' + s.thumbnail_edition;
     imgHTML = `<img src="${imgUrl}" alt="${s.article_name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                <div class="no-cover" style="display:none">📖</div>`;
   } else {
