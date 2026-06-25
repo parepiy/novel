@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>นิยาย Boy Love Lovely Room — ใหม่มาแรง</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #0f0f1a;
+      color: #e8e8f0;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 28px 24px 20px;
+      border-bottom: 2px solid #e91e8c;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      color: #f8b4d9;
+      text-shadow: 0 0 20px #e91e8c80;
+      letter-spacing: 1px;
+    }
+    header p {
+      color: #a78bca;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+    .badge {
+      display: inline-block;
+      background: #e91e8c;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-top: 8px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 28px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #2a2a4a;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #e91e8c;
+      box-shadow: 0 8px 30px #e91e8c30;
+    }
+    .cover-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 140%;
+      overflow: hidden;
+      background: #111128;
+    }
+    .cover-wrap img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .card:hover .cover-wrap img {
+      transform: scale(1.04);
+    }
+    .no-cover {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a0a2e, #16213e);
+      font-size: 2.5rem;
+    }
+    .status-badge {
+      position: absolute;
+      top: 8px; right: 8px;
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .status-end { background: #2ecc71; color: #001a09; }
+    .status-ongoing { background: #f39c12; color: #1a0d00; }
+    .info {
+      padding: 12px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f0d0e8;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .author {
+      font-size: 0.75rem;
+      color: #a78bca;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .author::before { content: '✍ '; }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.72rem;
+      color: #8888aa;
+      background: #11112a;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+    .stat.views { color: #60b4f8; }
+    .stat.chapters { color: #b4f860; }
+    .stat.favs { color: #f860b4; }
+    .rank {
+      position: absolute;
+      top: 8px; left: 8px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.7);
+      border: 1.5px solid #e91e8c;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #f8b4d9;
+      backdrop-filter: blur(4px);
+    }
+    .rank.top3 { background: #e91e8c; color: #fff; border-color: #fff; }
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: #555;
+      font-size: 0.78rem;
+      border-top: 1px solid #1a1a2e;
+    }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📚 นิยาย Boy Love Lovely Room</h1>
+  <p>หมวดหมู่ · Category ID 32 · readawrite.com</p>
+  <span class="badge">✨ ใหม่มาแรง · Popular New</span>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  ข้อมูลจาก readawrite.com · Boy Love Lovely Room · ใหม่มาแรง · 800 เรื่อง / 10 หน้า
+</footer>
+
+<script>
+const stories = [{"article_name":"ลูกจากบ่าวอัปลักษณ์ข้าไม่ต้องการ!","article_guid":"58cb4cf7219a48473cfc6acb5a186748","author_name":"Pheromone_","chapter_count":12,"view_count":153792,"favourite_count":15247,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27491/27490704/thumbnail/","is_end":0},{"article_name":"โอเมก้าอ่อนแอผู้นี้คือลาสต์บอสตัวร้าย?","article_guid":"aa660299818da6a42dd547337bc0c6cb","author_name":"Queencard","chapter_count":11,"view_count":53092,"favourite_count":6535,"thumbnail_edition":9,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26640/26639505/thumbnail/","is_end":0},{"article_name":"เฮียอย่าทิ้งตี๋","article_guid":"3d18a98e1356623ba9df5db7a0402668","author_name":"ไรท์ยอ.","chapter_count":12,"view_count":39323,"favourite_count":5013,"thumbnail_edition":4,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27322/27321132/thumbnail/","is_end":0},{"article_name":"[มีE-BOOK] เกิดใหม่เป็นลูกตัวร้ายที่พ่อไม่เคยจะรัก (Omegaverse,ไฮบริด)","article_guid":"6a887d739db6e7e30de18a2e15514569","author_name":"ศูนย์สี804","chapter_count":11,"view_count":26394,"favourite_count":2577,"thumbnail_edition":13,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27235/27234992/thumbnail/","is_end":0},{"article_name":"เรื่องเล่าจากคนเฝ้าสุสาน","article_guid":"63e11bff6f7c144ec7cbf9034512cc19","author_name":"WinterJasmine","chapter_count":15,"view_count":38648,"favourite_count":5048,"thumbnail_edition":11,"article_thumbnail_path":"https://cdn.readawrite.com/articles/19682/19681244/thumbnail/","is_end":0},{"article_name":"สูตรลับสะใภ้จ้าว","article_guid":"ae610461567a2a6f7be5314fa67976d7","author_name":"不睡觉译者 ☕️","chapter_count":38,"view_count":42004,"favourite_count":1112,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27477/27476175/thumbnail/","is_end":1},{"article_name":"(มีอีบุ๊ค)(3P)ไฉนเกอตัวร้ายจึงกลายเป็นที่รักของพวกท่าน","article_guid":"a0ad210d04e25e530357fc0fd77339fb","author_name":"แซลมอนซอรัส","chapter_count":26,"view_count":50771,"favourite_count":3430,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26367/26366483/thumbnail/","is_end":0},{"article_name":"หลังสะบัดบ๊อบใส่ผัวจอมพล ผมก็สตรีม (ใช้เงินเขา) เลี้ยงลูกนี่แหละ!","article_guid":"e58cc39163e63d5e664e045e8e758ace","author_name":"เบญจมาศศศ","chapter_count":12,"view_count":22387,"favourite_count":1395,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27512/27511869/thumbnail/","is_end":0},{"article_name":"#วัน ๆ ของฮีลเลอร์แรงก์เอฟก็แบบนี้แหละครับ","article_guid":"ab642e8b3f42902015cb14b068740e0f","author_name":"ciggilie","chapter_count":9,"view_count":13127,"favourite_count":2764,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27590/27589712/thumbnail/","is_end":0},{"article_name":"หอบลูกหนีสามีมาเฟียพร้อมมิติห้างสรรพสินค้าในยุค80","article_guid":"5b7e3310f84c70d2959010206f268a09","author_name":"Banoffypie","chapter_count":4,"view_count":9799,"favourite_count":3267,"thumbnail_edition":6,"article_thumbnail_path":"https://cdn.readawrite.com/articles/24349/24348234/thumbnail/","is_end":0},{"article_name":"เมื่อผมเป็นที่รักของเหล่าฮันเตอร์สุดเพี้ยน","article_guid":"159c9d4938cdb1b1b5498e6d465a30a0","author_name":"corpsebride","chapter_count":6,"view_count":7358,"favourite_count":2219,"thumbnail_edition":5,"article_thumbnail_path":"https://cdn.readawrite.com/articles/24847/24846735/thumbnail/","is_end":0},{"article_name":"Sillage #ค้างควัน [Omegaverse]","article_guid":"284beb378a511c9c9239e3bc64325f47","author_name":"skyanemones","chapter_count":2,"view_count":3809,"favourite_count":2151,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27030/27029836/thumbnail/","is_end":0},{"article_name":"ลุงไกรทองช่วยพวกหนูตามหาแม่วันหน่อย","article_guid":"8f532ae0de51dbea9ebfc0a972ffa8cb","author_name":"Blair Willow","chapter_count":11,"view_count":13137,"favourite_count":1584,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27160/27159439/thumbnail/","is_end":0},{"article_name":"ย้อนเวลากลับมาทะนุถนอมภรรยาที่รัก | OMEGAVERSE","article_guid":"1ce55fc1d4fffcff6ec3dde5ad5fac25","author_name":"Mamigoshiba","chapter_count":16,"view_count":14215,"favourite_count":1167,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26534/26533350/thumbnail/","is_end":0},{"article_name":"ระบบคุณชายกระต่ายขาว","article_guid":"cd968afcd1054151dcffccd3e7a530d7","author_name":"มารินญา ˚ ᡣ𐭩 ♡","chapter_count":13,"view_count":11714,"favourite_count":1286,"thumbnail_edition":5,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27512/27511526/thumbnail/","is_end":0},{"article_name":"เมื่อผมถูกรักโดยเทพเจ้าแห่งโชคลาภ","article_guid":"6be0108f94963d6aba1427fb78d4cc0b","author_name":"สติค่ะแม่ สติ๊ !! 🅱","chapter_count":8,"view_count":3697,"favourite_count":983,"thumbnail_edition":4,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27552/27551193/thumbnail/","is_end":0},{"article_name":"คุณพระรองครับ อย่าหอบลูกหนีตัวร้ายอย่างผมเลย","article_guid":"8812b5c7b4ac51615b39e47d9d0c10a4","author_name":"Queenxoxoz","chapter_count":9,"view_count":6440,"favourite_count":1314,"thumbnail_edition":5,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27553/27552101/thumbnail/","is_end":0},{"article_name":"ปฏิบัติการพี่เลี้ยงคนโปรด","article_guid":"79ea24b01139bf2989a89f6866078c0d","author_name":"mungeaw","chapter_count":1,"view_count":1975,"favourite_count":1599,"thumbnail_edition":8,"article_thumbnail_path":"https://cdn.readawrite.com/articles/18597/18596762/thumbnail/","is_end":0},{"article_name":"พลังเวทข้าแข็งแกร่งจนสไลม์ยังต้องหวาดกลัว","article_guid":"0087ff808c814aa055eb23c1dc2ac112","author_name":"ดักแด้สีรุ้ง","chapter_count":6,"view_count":4458,"favourite_count":1436,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/20787/20786022/thumbnail/","is_end":0},{"article_name":"ที่ว่าดุจะสักแค่ไหนเชียว #Khunshane","article_guid":"55fb2cb42f2a758cd1be3fcbe27739fc","author_name":"MYDEAR_MYYOU","chapter_count":9,"view_count":7700,"favourite_count":1056,"thumbnail_edition":9,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27541/27540716/thumbnail/","is_end":0},{"article_name":"มีอีบุ๊ก แสนร้ายสุดท้ายก็รัก Mpreg ","article_guid":"77b03bec3d01d2ce4f3dbd36d5fd69aa","author_name":"ปังหยา.","chapter_count":7,"view_count":6365,"favourite_count":1328,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27567/27566882/thumbnail/","is_end":0},{"article_name":"100 วิธีขอคืนดีภรรยาคนสวย (Mpreg)","article_guid":"6b0c740412660fa66d74d3173fae6769","author_name":"โฉมงามรัตนา","chapter_count":5,"view_count":4925,"favourite_count":935,"thumbnail_edition":12,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26979/26978556/thumbnail/","is_end":0},{"article_name":"[มี E-Book] เกิดใหม่เป็นตัวร้ายทั้งที ขอข้างๆได้หรือไม่","article_guid":"4000e9661401a7c4a7c853bebc91bb4d","author_name":"White Cab6age","chapter_count":21,"view_count":15529,"favourite_count":1072,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27537/27536794/thumbnail/","is_end":0},{"article_name":"Holiday Love Rewind วันหยุดนี้มีรักหวนคืน","article_guid":"73c0d8aba879ddd7c3144c349e5e5476","author_name":"IamRain Thanida","chapter_count":13,"view_count":6142,"favourite_count":1055,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/24550/24549100/thumbnail/","is_end":0},{"article_name":"อนุท่านอ๋องผู้นี้เคยเป็นนักฆ่า","article_guid":"2d64a902f5a27b15c2e68155a6bc6aeb","author_name":"บอมบอมจิ","chapter_count":33,"view_count":31512,"favourite_count":897,"thumbnail_edition":7,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27499/27498013/thumbnail/","is_end":0},{"article_name":"ตกเป็นคนโปรดของท่านประธานเซียวโดยไม่รู้ตัว","article_guid":"721889c5fff88d7ab3ff6f9685416e3f","author_name":"NOPMAL_LEE","chapter_count":11,"view_count":4154,"favourite_count":552,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/25958/25957235/thumbnail/","is_end":0},{"article_name":"มนต์รักหนองน้ำใส","article_guid":"506d587cd318645f73a8b425b0bcf5aa","author_name":"เจ้าเต่าน้อย","chapter_count":10,"view_count":4014,"favourite_count":715,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/23533/23532537/thumbnail/","is_end":0},{"article_name":"(มีอีบุ๊ค) มารดาอัปลักษณ์ผู้นั้นสิ้นใจแล้ว","article_guid":"5868741d297558edc3b665e67948743c","author_name":"เอี้ยนหงษ์","chapter_count":8,"view_count":6142,"favourite_count":780,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27051/27050277/thumbnail/","is_end":0},{"article_name":"[มี E-book]แล้วเป็นอะไรสามีถึงไม่ยอมหย่า!","article_guid":"05a0d9e2f8d86ee0d318c496cba6367f","author_name":"อีมุยสีรุ้ง","chapter_count":13,"view_count":8956,"favourite_count":645,"thumbnail_edition":9,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27461/27460874/thumbnail/","is_end":0},{"article_name":"When the work is finished #งานเสร็จเจตน์จะหย่า","article_guid":"ae27e8cb503756b967703ed7861da02d","author_name":"zuik","chapter_count":2,"view_count":2200,"favourite_count":842,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26500/26499250/thumbnail/","is_end":0},{"article_name":"Summer heat in December #ซัมเมอร์หลงฤดู","article_guid":"529ded85e1aec69f544d5730e8f0a2c5","author_name":"blueisgood","chapter_count":6,"view_count":3103,"favourite_count":801,"thumbnail_edition":9,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26673/26672333/thumbnail/","is_end":0},{"article_name":"เกิดใหม่ชาตินี้ข้าขอปกป้องจวนแม่ทัพ","article_guid":"70385da2cb3fc7739b17bcfa24233f64","author_name":"SHUHAI","chapter_count":32,"view_count":14847,"favourite_count":533,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27533/27532937/thumbnail/","is_end":0},{"article_name":"เย่วสื่อเกอตาบอดในยุคยากไร้","article_guid":"1e2e8d0f8c8a4126cadd6cd354f7241c","author_name":"มายมาย2544","chapter_count":18,"view_count":3940,"favourite_count":483,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27493/27492496/thumbnail/","is_end":0},{"article_name":"บุตรชายขี้หลงและท่านพ่อขี้อวด","article_guid":"5c387b39bbb14ca985dfc1dc05cfdb9d","author_name":"จันทราส่องรัก","chapter_count":51,"view_count":7614,"favourite_count":230,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27251/27250515/thumbnail/","is_end":1},{"article_name":"[Omegaverse] ทำนายไม่แม่นไม่คิดเงิน","article_guid":"8a95b82c857d0b1fe94970c6230be5d9","author_name":"Henner","chapter_count":3,"view_count":1894,"favourite_count":697,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27560/27559672/thumbnail/","is_end":0},{"article_name":"อัลฟ่ากลิ่นโคลน โอเมก้าสาบควาย #นานีไม่มีโอเมก้า","article_guid":"41a7ac8920ce41fd7f36d21d6a52fac1","author_name":"PrinceLeia","chapter_count":13,"view_count":2092,"favourite_count":605,"thumbnail_edition":10,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26112/26111529/thumbnail/","is_end":0},{"article_name":"หนูอินทร์จะเป็นคุณปู่","article_guid":"270df478e5df6998a77c1a2e009cc4cd","author_name":"243Six","chapter_count":13,"view_count":6695,"favourite_count":567,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27406/27405832/thumbnail/","is_end":0},{"article_name":"(นิยายแปล)ตัวละครประกอบในละครย้อนยุคที่เข้าไปพัวพันกับเรื่องซุบซิบ กลับเปลี่ยนแปลงชะตากรรมของครอบครัวทั้งหมดอย่างสิ้นเชิง","article_guid":"2f981a732806321054c6b81c3bc3b4f9","author_name":"คาไมทาจิ","chapter_count":22,"view_count":6919,"favourite_count":645,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27578/27577118/thumbnail/","is_end":0},{"article_name":"บ้านนี้ปะป๊าดุ | Omegaverse | มี E-Book |อ่านฟรีจนจบ","article_guid":"0e4776e077e90c82745274ac50d59075","author_name":"Nyx Lynx","chapter_count":18,"view_count":10771,"favourite_count":310,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27500/27499410/thumbnail/","is_end":1},{"article_name":"เกิดใหม่ยุค 80 เป็นหมอหน้าเลือดของราชาตลาดมืด","article_guid":"d49a4a4f47439ca6e0e528b005b5d1a4","author_name":"คุณชายไปๆอวี้","chapter_count":12,"view_count":3607,"favourite_count":415,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27514/27513282/thumbnail/","is_end":0},{"article_name":"No Return #รักใหม่ไม่ซ้ำเก่า","article_guid":"55f71f16e05de21b78eeaed8df829ef3","author_name":"ZK","chapter_count":8,"view_count":2557,"favourite_count":488,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27506/27505922/thumbnail/","is_end":0},{"article_name":"เซียนโอสถเกิดใหม่เป็นเกอลูกอนุทั้ายจวน","article_guid":"02360827a40ac35d370c38ded105329d","author_name":"小力","chapter_count":10,"view_count":2522,"favourite_count":171,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27571/27570023/thumbnail/","is_end":0},{"article_name":"เกิดใหม่ชาตินี้พี่ขอเสียซิง (พล็อต)","article_guid":"ca83ef6b1303b239e968346c9424e35b","author_name":"Paopei","chapter_count":1,"view_count":3367,"favourite_count":224,"thumbnail_edition":0,"article_thumbnail_path":"https://cdn.readawrite.com/category/32/","is_end":0},{"article_name":"(มี e-book!) เธอกล้าตบฉันเหรอขิมรัตน์","article_guid":"07ce3d86e819ddaa7c0429aabd338a26","author_name":"blue fyre","chapter_count":14,"view_count":2633,"favourite_count":266,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27496/27495412/thumbnail/","is_end":1},{"article_name":"กะเพราหมูกรอบของคุณหลวง","article_guid":"87d846d0a28afdc7c603611be3ac8007","author_name":"RuNPas","chapter_count":8,"view_count":2397,"favourite_count":403,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27275/27274796/thumbnail/","is_end":0},{"article_name":"สตรีมเมอร์ในโลกนี้ไม่มีหูแมวกันเหรอ?","article_guid":"5f483fe31046558f2e1c4eabeeee6fcf","author_name":"black rose in the forest","chapter_count":8,"view_count":1827,"favourite_count":434,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/22537/22536628/thumbnail/","is_end":0},{"article_name":"รักษ์ศรัณย์ When The Wind Whispers Our Love","article_guid":"844697c26f6141fddfb1bf99d99cd810","author_name":"นางฟ้าปีแสง","chapter_count":9,"view_count":2427,"favourite_count":425,"thumbnail_edition":4,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27339/27338147/thumbnail/","is_end":0},{"article_name":"เมื่อผมช่วยพระเอกจีบนางเอกแต่นางเอกเป็นเกย์ (พล็อต)","article_guid":"391e7ccff6ce2a751e2be164e2731122","author_name":"Paopei","chapter_count":1,"view_count":3115,"favourite_count":207,"thumbnail_edition":0,"article_thumbnail_path":"https://cdn.readawrite.com/category/32/","is_end":0},{"article_name":"[นิยายแปล]พระรองอดทนต่อความความอัปยศอดสู แปลต่อ","article_guid":"9ba5bdf094796394033e669e6ab4041b","author_name":"ตู้ดซี่ขยี้ใบกระท่อม","chapter_count":161,"view_count":16239,"favourite_count":457,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27612/27611327/thumbnail/","is_end":0},{"article_name":"#ไอ้แจ๋นตายแน่","article_guid":"020b42b435782568ef75cebe0271ac3d","author_name":"sowoneul","chapter_count":4,"view_count":1253,"favourite_count":398,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/25767/25766231/thumbnail/","is_end":0},{"article_name":"คุณช้างซ่อนใบบัว [Mpreg] [มี E-Book]","article_guid":"51af0c29a38548e1d69b363d9531e164","author_name":"LUNLABY","chapter_count":18,"view_count":5093,"favourite_count":323,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27564/27563740/thumbnail/","is_end":0},{"article_name":"เกิดใหม่เป็นอ๋องถูกปลด แต่สุดท้ายกลายเป็นเซียน","article_guid":"504d792d347468c0e0f1373933dc1013","author_name":"william ka","chapter_count":20,"view_count":4665,"favourite_count":340,"thumbnail_edition":5,"article_thumbnail_path":"https://cdn.readawrite.com/articles/19281/19280923/thumbnail/","is_end":0},{"article_name":"ไปๆอย่าทำเป็นเล่น","article_guid":"698eed0558153319e795d1861e84a716","author_name":"สมหมิว","chapter_count":4,"view_count":1233,"favourite_count":336,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27573/27572528/thumbnail/","is_end":0},{"article_name":"ชีวิตของจิ้งจอกหลังต้องท้องลูกของเพื่อน พล็อต","article_guid":"4cdd3215af05df1fe6c7d30052749e1e","author_name":"Paopei","chapter_count":1,"view_count":2337,"favourite_count":206,"thumbnail_edition":0,"article_thumbnail_path":"https://cdn.readawrite.com/category/32/","is_end":1},{"article_name":"(มีอีบุ๊ค)เพื่อนก็เพื่อน (Mpreg)","article_guid":"9b841d8ab6782fc08c2b707fb2b8484b","author_name":"nutty","chapter_count":5,"view_count":948,"favourite_count":319,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27635/27634402/thumbnail/","is_end":0},{"article_name":"#มังกรภักดี - Bound by Loyalty (Omegaverse)","article_guid":"cd0029d4434dcb4a4c49daeb6e587118","author_name":"Somethingsblue","chapter_count":2,"view_count":502,"favourite_count":362,"thumbnail_edition":5,"article_thumbnail_path":"https://cdn.readawrite.com/articles/14054/14053696/thumbnail/","is_end":0},{"article_name":"จากวินมอเตอร์ไซค์สู่เลขาคนโปรดของท่านประธาน","article_guid":"63f24a55de731a2423d272baab08d56a","author_name":"tasaraei","chapter_count":9,"view_count":1743,"favourite_count":283,"thumbnail_edition":7,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27515/27514918/thumbnail/","is_end":0},{"article_name":"เมื่อเทพบรรพกาล..เกิดใหม่ในวันสิ้นโลก!","article_guid":"a6c55e5c40a5d32ddc5e4925d250011e","author_name":"แแม่มดน้อยเทย์ร่า","chapter_count":20,"view_count":4038,"favourite_count":266,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27572/27571093/thumbnail/","is_end":0},{"article_name":"การเกิดใหม่ครั้งที่สามของไอดอลตกอับ [นิยายแปล]","article_guid":"25ebc375b40d8f50abe9a5884b14495c","author_name":"Lilac Novel","chapter_count":93,"view_count":2619,"favourite_count":352,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27512/27511010/thumbnail/","is_end":0},{"article_name":"สตรีมเมอร์คนนี้คือท่านบรรพบุรุษ","article_guid":"871c349e5fab86cb92fbc097ad84f6af","author_name":"bluemono.","chapter_count":14,"view_count":3300,"favourite_count":245,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/25592/25591708/thumbnail/","is_end":0},{"article_name":"#บอดี้การ์ดลวงรัก","article_guid":"3a8070c2f3f7cf646b9a0bb88b1854ee","author_name":"Catleen","chapter_count":7,"view_count":784,"favourite_count":296,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27478/27477041/thumbnail/","is_end":0},{"article_name":"เอสเปอร์แห่งชาตินั้น ตามงั้วผมไม่ยอมหยุดเลยครับ!","article_guid":"680ad0f413b71be3a84eb9d5fb26db8f","author_name":"2805","chapter_count":12,"view_count":2354,"favourite_count":264,"thumbnail_edition":7,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27470/27469492/thumbnail/","is_end":0},{"article_name":"เกิดใหม่เป็นนายบำเรอของอ๋องวิปลาส","article_guid":"b9d4264fece4567b393af91569e6cc1d","author_name":"ไรท์สายมึน/ซื่อเซียน","chapter_count":6,"view_count":1339,"favourite_count":222,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27504/27503782/thumbnail/","is_end":0},{"article_name":"ดวงใจกฤตณ","article_guid":"f897145c20d2e33f2ad5f3dba870ad93","author_name":"RRainpink","chapter_count":4,"view_count":514,"favourite_count":263,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27487/27486531/thumbnail/","is_end":0},{"article_name":"ออกแบบรักฉบับตัวร้าย","article_guid":"56b628d8a03e9c1f4ba83ec64f500ce2","author_name":"ทองจุก","chapter_count":15,"view_count":2238,"favourite_count":196,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27529/27528035/thumbnail/","is_end":0},{"article_name":"(นิยายแปล)เวลาฉันทำอาหารอร่อยๆ สื่ออังกฤษก็จะบอกว่าเป็นการรุกรานทางวัฒนธรรม","article_guid":"743f007f8482b7fb68380d3234b059f8","author_name":"คาไมทาจิ","chapter_count":18,"view_count":2154,"favourite_count":238,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27591/27590837/thumbnail/","is_end":0},{"article_name":"(มี E-BOOK)กับดักรักกลลวงแค้น (อ่านฟรี)","article_guid":"352582488e9f6d1dd7c7708548798b24","author_name":"เดลิซ","chapter_count":14,"view_count":1020,"favourite_count":204,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/25922/25921632/thumbnail/","is_end":0},{"article_name":"1950 ຮອຍຮັກ","article_guid":"a6c00f9416ee88fb4335863edd5d03c9","author_name":"Phitkie","chapter_count":10,"view_count":1960,"favourite_count":165,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27488/27487337/thumbnail/","is_end":0},{"article_name":"บ่วงรัก วิวาห์คล้องใจ","article_guid":"ed96c804ed542555a3b2fb3eb35cfacd","author_name":"ธัญญ์ธิชา","chapter_count":15,"view_count":2247,"favourite_count":39,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27186/27185286/thumbnail/","is_end":1},{"article_name":"ลำบากเสี่ยวหลิงแล้ว l 沈凌 ","article_guid":"3719e9804d63b0919943bff4338143e5","author_name":"เป้ยเอ๋อร์ - 贝尺","chapter_count":2,"view_count":481,"favourite_count":211,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27593/27592780/thumbnail/","is_end":0},{"article_name":"เกิดใหม่ทั้งที ขอโทษที...ฉันรวยกว่าเธอ 3 เท่า","article_guid":"4d5058f0e91566552802de51dd5ebaf5","author_name":"Ffoxking","chapter_count":18,"view_count":4138,"favourite_count":118,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27555/27554114/thumbnail/","is_end":1},{"article_name":"สตรีมเมอร์ : ครัวฝึกหัดของไอดอลตกอับ","article_guid":"2c78e029293f55e01bbbd5943b8a5ff6","author_name":"sunsunsu","chapter_count":12,"view_count":1843,"favourite_count":156,"thumbnail_edition":4,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27529/27528608/thumbnail/","is_end":0},{"article_name":"เพื่อนสมัยเด็กคนนั้นเล่นละครเก่งเป็นบ้า (แปลจีน)","article_guid":"9e6561cf1bdc9ab0f2d752deb4ecdec8","author_name":"อ้ายลี่ฮวา (爱梨花)","chapter_count":17,"view_count":1763,"favourite_count":202,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27570/27569589/thumbnail/","is_end":0},{"article_name":"[มีE-Book] crazy over me #จากร้ายกลายเป็นรัก","article_guid":"e52b483a89e475e241b8ae710afc2e72","author_name":"Sunfly","chapter_count":5,"view_count":379,"favourite_count":174,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/24194/24193134/thumbnail/","is_end":0},{"article_name":"เฉินซีผู้ที่เป็นหมอเทวดาและหมอผี","article_guid":"4f401c0cb175bb379aceef035a8a49bb","author_name":"มายมาย2544","chapter_count":3,"view_count":321,"favourite_count":188,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27605/27604626/thumbnail/","is_end":0},{"article_name":"ตัวร้ายคนนี้ขอไม่ยุ่งแต่จะมุ่งมีชีวิตชิลๆอย่างคนปลดเกษียณ","article_guid":"b536f3cd240aa420745e9ce33c4382db","author_name":"P.wrt","chapter_count":5,"view_count":629,"favourite_count":131,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/2713/2712096/thumbnail/","is_end":0},{"article_name":"ผมหลงรักแฟนเก่าที่เขาเป็นมาเฟีย [YAOI] ","article_guid":"ecd3856a5234addf10e9d30850ec7d11","author_name":"พราวแสงเดือน","chapter_count":2,"view_count":407,"favourite_count":165,"thumbnail_edition":2,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27342/27341871/thumbnail/","is_end":0},{"article_name":"เกิดใหม่ทั้งทีขอไม่เป็นหมอแล้วได้ไหม!","article_guid":"460234f3e131df403e337e15d4d795ac","author_name":"อยากเป็นเซียน","chapter_count":9,"view_count":1325,"favourite_count":101,"thumbnail_edition":1,"article_thumbnail_path":"https://cdn.readawrite.com/articles/27553/27552637/thumbnail/","is_end":0},{"article_name":"Phanit Core #พะนอนิต","article_guid":"745b664cd134664c43c77f0a1962dfca","author_name":"กันตะ","chapter_count":4,"view_count":781,"favourite_count":139,"thumbnail_edition":4,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26001/26000787/thumbnail/","is_end":0},{"article_name":"เฮ้ยอินฟลูคนนั้นมีผีตามด้วยว่ะ!","article_guid":"28bf1173fd94e22c24a4ced9471a2f09","author_name":"womidnightwriter","chapter_count":5,"view_count":360,"favourite_count":141,"thumbnail_edition":3,"article_thumbnail_path":"https://cdn.readawrite.com/articles/26553/26552844/thumbnail/","is_end":0}];
+
+function formatNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+const grid = document.getElementById('grid');
+
+stories.forEach((s, i) => {
+  const rank = i + 1;
+  const url = `https://www.readawrite.com/a/${s.article_guid}`;
+
+  // Build thumbnail URL
+  let imgHTML;
+  const hasCustomCover = s.thumbnail_edition > 0 && !s.article_thumbnail_path.includes('/category/');
+  if (hasCustomCover) {
+    const imgUrl = s.article_thumbnail_path + s.thumbnail_edition + '.jpg';
+    imgHTML = `<img src="${imgUrl}" alt="${s.article_name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+               <div class="no-cover" style="display:none">📖</div>`;
+  } else {
+    imgHTML = `<div class="no-cover">📖</div>`;
+  }
+
+  const statusClass = s.is_end ? 'status-end' : 'status-ongoing';
+  const statusText = s.is_end ? 'จบแล้ว' : 'กำลังเขียน';
+  const rankClass = rank <= 3 ? 'rank top3' : 'rank';
+
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.href = url;
+  card.target = '_blank';
+  card.rel = 'noopener noreferrer';
+  card.innerHTML = `
+    <div class="cover-wrap">
+      ${imgHTML}
+      <div class="${rankClass}">${rank}</div>
+      <div class="status-badge ${statusClass}">${statusText}</div>
+    </div>
+    <div class="info">
+      <div class="title">${s.article_name}</div>
+      <div class="author">${s.author_name}</div>
+      <div class="stats">
+        <div class="stat views">👁 ${formatNum(s.view_count)}</div>
+        <div class="stat chapters">📄 ${s.chapter_count} ตอน</div>
+        <div class="stat favs">❤ ${formatNum(s.favourite_count)}</div>
+      </div>
+    </div>
+  `;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>
