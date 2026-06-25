@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <title>นิยาย Boy Love Lovely Room — ใหม่มาแรง</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -206,7 +207,7 @@ stories.forEach((s, i) => {
   const hasCustomCover = s.thumbnail_edition > 0 && !s.article_thumbnail_path.includes('/category/');
   if (hasCustomCover) {
     const imgUrl = s.article_thumbnail_path + s.thumbnail_edition + '.jpg';
-    imgHTML = `<img src="${imgUrl}" alt="${s.article_name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    imgHTML = `<img src="${imgUrl}" alt="${s.article_name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
                <div class="no-cover" style="display:none">📖</div>`;
   } else {
     imgHTML = `<div class="no-cover">📖</div>`;
