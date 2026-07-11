@@ -64,7 +64,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 @media(min-width:700px){.grid{grid-template-columns:repeat(5,1fr);}}
 @media(min-width:960px){.grid{grid-template-columns:repeat(6,1fr);}}
 .card{background:var(--s1);cursor:pointer;position:relative;transition:background .15s;}
-.cover{width:100%;aspect-ratio:2/3;background:var(--s3);overflow:hidden;}
+.cover{width:100%;aspect-ratio:2/3;background:var(--s3);overflow:hidden;position:relative;}
 .cover img{width:100%;height:100%;object-fit:cover;display:block;}
 .nc{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:2rem;}
 .card-body{padding:7px 9px 11px;display:flex;flex-direction:column;gap:4px;}
@@ -75,6 +75,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .src-badge.meb{background:rgba(45,158,122,.85);color:#fff;}
 .src-badge.raw{background:rgba(122,94,160,.85);color:#fff;}
 .star-badge{position:absolute;top:5px;right:5px;font-size:.62rem;padding:2px 6px;border-radius:3px;font-weight:700;background:rgba(240,180,0,.94);color:#4a3800;letter-spacing:.3px;}
+.edit-btn{position:absolute;bottom:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:var(--mint2);font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.22);z-index:3;transition:background .15s,transform .15s;}
+.edit-btn:hover{background:#fff;transform:scale(1.1);}
 
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
@@ -95,6 +97,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .m-summary{font-size:.9rem;line-height:1.9;color:#2d4a40;}
 .m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
+.m-edit{display:inline-block;margin-top:10px;margin-left:8px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
+.m-edit:hover{color:var(--mint2);border-color:var(--mint);}
 .m-close{position:absolute;top:13px;right:14px;background:transparent;border:none;font-size:1.25rem;color:var(--mute);cursor:pointer;padding:4px;}
 
 /* EMPTY */
@@ -148,6 +152,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
     </div>
     <div class="m-summary" id="m-summary"></div>
     <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
+    <a class="m-edit" id="m-edit" href="#" target="_blank" rel="noopener">✎ แก้ไข</a>
   </div>
 </div>
 
@@ -156,6 +161,12 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
+const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit#gid=1147646991&range=A';
+
+function editBook(e, row) {
+  e.stopPropagation();
+  window.open(SHEET_EDIT + row, '_blank', 'noopener');
+}
 
 let allBooks = [];
 let currentTab = 'meb';
@@ -180,6 +191,7 @@ function parseCSV(text) {
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
+      row:     i + 1,
     });
   }
   return rows;
@@ -283,7 +295,7 @@ function buildCard(b, idx) {
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
   const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
   return `<div class="card" onclick="openModal(${idx})">
-    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div></div>
+    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="editBook(event, ${b.row})" title="แก้ไขใน Google Sheet">✎</button></div>
     <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
@@ -360,6 +372,7 @@ function openModal(idx) {
   link.href = b.url || '#';
   link.className = 'm-link' + (b.source === 'raw' ? ' raw-link' : '');
   link.style.display = b.url ? 'inline-block' : 'none';
+  document.getElementById('m-edit').href = SHEET_EDIT + b.row;
   const cover = document.getElementById('m-cover');
   if (b.cover) {
     cover.innerHTML = `<img src="${esc(fixCoverUrl(b.cover))}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'m-nc\\'>📖</div>'">`;
