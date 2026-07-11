@@ -47,6 +47,10 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
 .fb.raw-fb:hover{border-color:var(--raw);color:var(--raw);}
 .fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw2);}
+.sfb{background:none;border:1px solid #e2cf8a;color:#9c7d1f;padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.sfb:hover{border-color:#d9a400;color:#7d6300;}
+.sfb.active{background:rgba(240,180,0,.16);border-color:#d9a400;color:#7d6300;font-weight:600;}
+.strip-div{flex-shrink:0;width:1px;align-self:stretch;background:var(--bd);margin:2px 3px;}
 
 /* LOADING */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px;color:var(--mute);}
@@ -70,6 +74,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .src-badge{position:absolute;top:5px;left:5px;font-size:.6rem;padding:2px 5px;border-radius:3px;font-weight:600;letter-spacing:.3px;}
 .src-badge.meb{background:rgba(45,158,122,.85);color:#fff;}
 .src-badge.raw{background:rgba(122,94,160,.85);color:#fff;}
+.star-badge{position:absolute;top:5px;right:5px;font-size:.62rem;padding:2px 6px;border-radius:3px;font-weight:700;background:rgba(240,180,0,.94);color:#4a3800;letter-spacing:.3px;}
 
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
@@ -84,6 +89,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .m-src{display:inline-block;font-size:.72rem;padding:2px 7px;border-radius:4px;font-weight:500;}
 .m-src.meb{background:rgba(45,158,122,.12);color:var(--mint2);border:1px solid rgba(45,158,122,.25);}
 .m-src.raw{background:rgba(122,94,160,.12);color:var(--raw2);border:1px solid rgba(122,94,160,.25);}
+.m-stars{font-size:.95rem;color:#e0a800;letter-spacing:2px;line-height:1;}
 .m-tags{display:flex;flex-wrap:wrap;gap:4px;}
 .m-tag{font-size:.74rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
 .m-summary{font-size:.9rem;line-height:1.9;color:#2d4a40;}
@@ -118,7 +124,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
     <input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่อง..." oninput="filterBooks()">
   </div>
 
-  <div class="tag-strip" id="tag-strip"></div>
+  <div class="tag-strip" id="filter-strip"></div>
 </div>
 
 <div id="main-content">
@@ -133,7 +139,10 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
       <div class="m-cover" id="m-cover"><div class="m-nc">📖</div></div>
       <div class="m-info">
         <div class="m-title" id="m-title"></div>
-        <span class="m-src" id="m-src"></span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="m-src" id="m-src"></span>
+          <span class="m-stars" id="m-stars"></span>
+        </div>
         <div class="m-tags" id="m-tags"></div>
       </div>
     </div>
@@ -151,6 +160,7 @@ const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0s
 let allBooks = [];
 let currentTab = 'meb';
 let activeTags = new Set();
+let activeStar = null;
 let searchQ = '';
 
 /* ===== CSV PARSER ===== */
@@ -169,6 +179,7 @@ function parseCSV(text) {
       tags:    (cols[3] || '').split('|').map(t => t.trim()).filter(Boolean),
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
+      star:    parseInt((cols[6] || '').trim(), 10) || 0,
     });
   }
   return rows;
@@ -205,38 +216,45 @@ async function loadData() {
 
 /* ===== RENDER ===== */
 function renderAll() {
-  renderTagStrip();
+  renderFilterStrip();
   renderGrid();
 }
 
-function renderTagStrip() {
+function renderFilterStrip() {
   const books = allBooks.filter(b => b.source === currentTab);
-  const tags = [...new Set(books.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
   const isRaw = currentTab === 'raw';
 
-  document.getElementById('tag-strip').innerHTML = tags.map(t =>
-    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">
-      ${esc(t)}
-    </button>`
+  const starVals = [...new Set(books.map(b => b.star).filter(s => s > 0))].sort((a, b) => b - a);
+  const starBtns = starVals.map(s =>
+    `<button class="sfb${activeStar === s ? ' active' : ''}" onclick="setStar(${s})">${s}★</button>`
   ).join('');
+
+  const tags = [...new Set(books.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
+  const tagBtns = tags.map(t =>
+    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
+  ).join('');
+
+  const divider = (starBtns && tagBtns) ? '<span class="strip-div"></span>' : '';
+  document.getElementById('filter-strip').innerHTML = starBtns + divider + tagBtns;
 
   updateClearBtn();
 }
 
 function updateClearBtn() {
-  const active = activeTags.size > 0 || searchQ.trim().length > 0;
+  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0;
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
 function renderGrid() {
-  const crossTab = searchQ.trim().length > 0 && activeTags.size === 0;
+  const crossTab = searchQ.trim().length > 0 && activeTags.size === 0 && activeStar === null;
   const pool = crossTab ? allBooks : allBooks.filter(b => b.source === currentTab);
 
   const filtered = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
+    const starOk = activeStar === null || b.star === activeStar;
     const q = searchQ.toLowerCase().trim();
     const searchOk = !q || b.title.toLowerCase().includes(q);
-    return tagOk && searchOk;
+    return tagOk && starOk && searchOk;
   });
 
   if (crossTab) {
@@ -263,9 +281,10 @@ function buildCard(b, idx) {
     : '';
   const ncStyle = b.cover ? 'display:none' : '';
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+  const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
   return `<div class="card" onclick="openModal(${idx})">
     <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div></div>
-    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>
+    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
       <div class="tags">${tagHtml}</div>
@@ -288,10 +307,11 @@ function esc(s) {
 function switchTab(tab) {
   currentTab = tab;
   activeTags = new Set();
+  activeStar = null;
   searchQ = '';
   document.getElementById('search-input').value = '';
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  renderTagStrip();
+  renderFilterStrip();
   renderGrid();
 }
 
@@ -301,15 +321,22 @@ function setTag(tag) {
   } else {
     activeTags.add(tag);
   }
-  renderTagStrip();
+  renderFilterStrip();
+  renderGrid();
+}
+
+function setStar(n) {
+  activeStar = (activeStar === n) ? null : n;
+  renderFilterStrip();
   renderGrid();
 }
 
 function clearAll() {
   activeTags = new Set();
+  activeStar = null;
   searchQ = '';
   document.getElementById('search-input').value = '';
-  renderTagStrip();
+  renderFilterStrip();
   renderGrid();
 }
 
@@ -326,6 +353,7 @@ function openModal(idx) {
   const srcEl = document.getElementById('m-src');
   srcEl.textContent = b.source === 'meb' ? 'MEB Market' : 'RAW';
   srcEl.className = 'm-src ' + b.source;
+  document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
   document.getElementById('m-tags').innerHTML = b.tags.map(t => `<span class="m-tag">${esc(t)}</span>`).join('');
   document.getElementById('m-summary').textContent = b.summary;
   const link = document.getElementById('m-link');
