@@ -104,9 +104,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 /* EMPTY */
 .empty{padding:50px 20px;text-align:center;color:var(--mute);font-size:.9rem;}
 
-/* SCROLL BUTTONS */
-.scroll-btns{position:fixed;bottom:24px;right:20px;z-index:150;display:flex;flex-direction:column;gap:10px;}
-.scroll-btn{width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
+/* SCROLL BUTTON */
+.scroll-btn{position:fixed;bottom:24px;right:20px;z-index:150;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
 .scroll-btn.visible{display:flex;}
 .scroll-btn:hover{transform:translateY(-2px);}
 </style>
@@ -157,11 +156,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
   </div>
 </div>
 
-<!-- SCROLL BUTTONS -->
-<div class="scroll-btns">
-  <button class="scroll-btn" id="go-bottom" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="ไปล่างสุด">↓</button>
-  <button class="scroll-btn" id="go-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="ไปบนสุด">↑</button>
-</div>
+<!-- SCROLL BUTTON -->
+<button class="scroll-btn" id="scroll-btn" onclick="scrollJump()" title="เลื่อนหน้า">↓</button>
 
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
@@ -396,15 +392,35 @@ function closeModalBtn() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
 
-/* ===== SCROLL BUTTONS ===== */
+/* ===== SCROLL BUTTON ===== */
+let scrollDir = 'down';
+let scrollLock = false;
+
+function scrollJump() {
+  scrollLock = true;
+  const target = scrollDir === 'down' ? document.body.scrollHeight : 0;
+  window.scrollTo({top: target, behavior: 'smooth'});
+  clearTimeout(window._scrollRelease);
+  window._scrollRelease = setTimeout(releaseScroll, 1000);
+}
+
+function releaseScroll() {
+  scrollLock = false;
+  updateScrollBtns();
+}
+
 function updateScrollBtns() {
-  const y = window.scrollY;
-  const atBottom = (window.innerHeight + y) >= document.body.scrollHeight - 300;
-  document.getElementById('go-top').classList.toggle('visible', y > 300);
-  document.getElementById('go-bottom').classList.toggle('visible', !atBottom);
+  const btn = document.getElementById('scroll-btn');
+  const scrollable = document.body.scrollHeight > window.innerHeight + 60;
+  btn.classList.toggle('visible', scrollable);
+  if (!scrollable || scrollLock) return;
+  const mid = (document.body.scrollHeight - window.innerHeight) / 2;
+  scrollDir = window.scrollY < mid ? 'down' : 'up';
+  btn.textContent = scrollDir === 'down' ? '↓' : '↑';
 }
 window.addEventListener('scroll', updateScrollBtns, {passive: true});
 window.addEventListener('resize', updateScrollBtns, {passive: true});
+window.addEventListener('scrollend', releaseScroll);
 
 /* ===== INIT ===== */
 loadData();
