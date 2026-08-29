@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>ห้องสมุดนิยาย</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@600;700&family=Noto+Sans+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
@@ -13,44 +13,50 @@
   --text:#1a2e28;--dim:#5a7a70;--mute:#93b5aa;
   --raw:#7a5ea0;--raw2:#5e4480;--rdim:rgba(122,94,160,0.12);--rbd:#c4b3d9;
 }
-html,body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-weight:300;min-height:100%;padding-bottom:60px;}
+html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-weight:400;min-height:100%;padding-bottom:60px;}
 a{color:inherit;text-decoration:none;}
 
 /* STICKY HEADER */
-.sticky-header{position:sticky;top:0;z-index:100;}
+.sticky-header{position:sticky;top:0;z-index:100;background:var(--s1);}
 
-/* HEADER */
-header{padding:24px 20px 14px;border-bottom:1px solid var(--bd);background:var(--s1);}
-header h1{font-family:'Noto Serif Thai',serif;font-size:1.7rem;color:var(--mint2);font-weight:700;}
-header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
+/* HEADER — title + count */
+header{padding:10px 16px 8px;border-bottom:none;}
+header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:var(--mint2);font-weight:700;line-height:1.2;}
+.header-count{font-size:.75rem;color:var(--mute);margin-top:2px;}
 
-/* TABS */
-.nav-tabs{display:flex;border-bottom:1px solid var(--bd);background:var(--s1);}
-.nav-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:10px 18px;font-family:'Noto Sans Thai',sans-serif;font-size:.8rem;cursor:pointer;white-space:nowrap;transition:all .15s;}
-.nav-tab.active{color:var(--mint2);border-bottom-color:var(--mint);font-weight:500;}
+/* TABS — own row, left-aligned */
+.nav-tabs{display:flex;gap:2px;padding:0 12px 0;border-bottom:1px solid var(--bd);}
+.nav-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:7px 14px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
+.nav-tab.active{color:var(--mint2);border-bottom-color:var(--mint);}
 .nav-tab[data-tab="raw"].active{color:var(--raw2);border-bottom-color:var(--raw);}
 
-/* FILTERS */
-.filters{padding:10px 16px;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;border-bottom:1px solid var(--bd);scrollbar-width:none;background:var(--s1);}
-.filters::-webkit-scrollbar{display:none;}
-.fb{background:transparent;border:1px solid var(--bd2);color:var(--dim);padding:4px 12px;border-radius:20px;font-family:'Noto Sans Thai',sans-serif;font-size:.74rem;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
-.fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint);}
-.fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw);}
-.clear-btn{background:transparent;border:1px solid #e0a0a0;color:#b85c5c;padding:4px 10px;border-radius:20px;font-family:'Noto Sans Thai',sans-serif;font-size:.74rem;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
-.clear-btn:hover{background:rgba(184,92,92,.08);}
+/* SEARCH ROW */
+.search-row{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;}
+.clear-btn{background:none;border:none;color:var(--mute);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0;transition:color .15s;line-height:1;}
+.clear-btn:hover{color:#b85c5c;}
+.clear-btn.dim{opacity:.25;pointer-events:none;}
+.search-row input{flex:1;background:var(--bg);border:1px solid var(--bd2);color:var(--text);padding:6px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;outline:none;}
+.search-row input:focus{border-color:var(--mint);}
+.search-row input::placeholder{color:var(--mute);}
 
-/* SEARCH */
-.search-bar{padding:10px 16px;border-bottom:1px solid var(--bd);background:var(--s1);}
-.search-bar input{background:var(--bg);border:1px solid var(--bd2);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Noto Sans Thai',sans-serif;font-size:.84rem;width:100%;outline:none;}
-.search-bar input:focus{border-color:var(--mint);}
-.search-bar input::placeholder{color:var(--mute);}
-.count{padding:8px 16px;font-size:.74rem;color:var(--mute);border-bottom:1px solid var(--bd);background:var(--s1);}
+/* TAG STRIP — single horizontal scroll row */
+.tag-strip{display:flex;gap:6px;padding:0 12px 9px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--bd);}
+.tag-strip::-webkit-scrollbar{display:none;}
+.fb{background:none;border:1px solid var(--bd2);color:var(--dim);padding:3px 12px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.fb:hover{border-color:var(--mint);color:var(--mint);}
+.fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
+.fb.raw-fb:hover{border-color:var(--raw);color:var(--raw);}
+.fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw2);}
+.sfb{background:none;border:1px solid #e2cf8a;color:#9c7d1f;padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.sfb:hover{border-color:#d9a400;color:#7d6300;}
+.sfb.active{background:rgba(240,180,0,.16);border-color:#d9a400;color:#7d6300;font-weight:600;}
+.strip-div{flex-shrink:0;width:1px;align-self:stretch;background:var(--bd);margin:2px 3px;}
 
 /* LOADING */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px;color:var(--mute);}
 .spinner{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--mint);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-msg{padding:40px 20px;text-align:center;color:#b85c5c;font-size:.85rem;}
+.error-msg{padding:40px 20px;text-align:center;color:#b85c5c;font-size:.9rem;}
 
 /* GRID */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bd);}
@@ -58,17 +64,19 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
 @media(min-width:700px){.grid{grid-template-columns:repeat(5,1fr);}}
 @media(min-width:960px){.grid{grid-template-columns:repeat(6,1fr);}}
 .card{background:var(--s1);cursor:pointer;position:relative;transition:background .15s;}
-.card.hidden{display:none;}
-.cover{width:100%;aspect-ratio:2/3;background:var(--s3);overflow:hidden;}
+.cover{width:100%;aspect-ratio:2/3;background:var(--s3);overflow:hidden;position:relative;}
 .cover img{width:100%;height:100%;object-fit:cover;display:block;}
 .nc{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:2rem;}
 .card-body{padding:7px 9px 11px;display:flex;flex-direction:column;gap:4px;}
-.title{font-family:'Noto Serif Thai',serif;font-weight:600;font-size:.85rem;line-height:1.5;color:var(--text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.title{font-family:'Sarabun','Cordia New',sans-serif;font-weight:600;font-size:.88rem;line-height:1.5;color:var(--text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .tags{display:flex;flex-wrap:wrap;gap:3px;}
-.tag{font-size:.68rem;padding:2px 6px;border-radius:3px;border:1px solid var(--bd2);color:var(--dim);}
-.src-badge{position:absolute;top:5px;left:5px;font-size:.6rem;padding:2px 5px;border-radius:3px;font-weight:500;letter-spacing:.3px;}
+.tag{font-size:.7rem;padding:2px 6px;border-radius:3px;border:1px solid var(--bd2);color:var(--dim);}
+.src-badge{position:absolute;top:5px;left:5px;font-size:.6rem;padding:2px 5px;border-radius:3px;font-weight:600;letter-spacing:.3px;}
 .src-badge.meb{background:rgba(45,158,122,.85);color:#fff;}
 .src-badge.raw{background:rgba(122,94,160,.85);color:#fff;}
+.star-badge{position:absolute;top:5px;right:5px;font-size:.62rem;padding:2px 6px;border-radius:3px;font-weight:700;background:rgba(240,180,0,.94);color:#4a3800;letter-spacing:.3px;}
+.edit-btn{position:absolute;bottom:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:var(--mint2);font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.22);z-index:3;transition:background .15s,transform .15s;}
+.edit-btn:hover{background:#fff;transform:scale(1.1);}
 
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
@@ -79,34 +87,35 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
 .m-cover img{width:100%;height:100%;object-fit:cover;}
 .m-nc{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:1.8rem;}
 .m-info{flex:1;display:flex;flex-direction:column;gap:7px;}
-.m-title{font-family:'Noto Serif Thai',serif;font-weight:700;font-size:1rem;line-height:1.5;color:var(--text);}
-.m-src{display:inline-block;font-size:.68rem;padding:2px 7px;border-radius:4px;font-weight:500;}
-.m-src.meb{background:rgba(45,158,122,.15);color:var(--mint2);border:1px solid rgba(45,158,122,.3);}
-.m-src.raw{background:rgba(122,94,160,.15);color:var(--raw2);border:1px solid rgba(122,94,160,.3);}
+.m-title{font-family:'Sarabun','Cordia New',sans-serif;font-weight:700;font-size:1.05rem;line-height:1.5;color:var(--text);}
+.m-src{display:inline-block;font-size:.72rem;padding:2px 7px;border-radius:4px;font-weight:500;}
+.m-src.meb{background:rgba(45,158,122,.12);color:var(--mint2);border:1px solid rgba(45,158,122,.25);}
+.m-src.raw{background:rgba(122,94,160,.12);color:var(--raw2);border:1px solid rgba(122,94,160,.25);}
+.m-stars{font-size:.95rem;color:#e0a800;letter-spacing:2px;line-height:1;}
 .m-tags{display:flex;flex-wrap:wrap;gap:4px;}
-.m-tag{font-size:.72rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
-.m-summary{font-size:.81rem;line-height:1.8;color:var(--dim);}
-.m-link{display:inline-block;margin-top:10px;font-size:.79rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
+.m-tag{font-size:.74rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
+.m-summary{font-size:.9rem;line-height:1.9;color:#2d4a40;}
+.m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
+.m-edit{display:inline-block;margin-top:10px;margin-left:8px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
+.m-edit:hover{color:var(--mint2);border-color:var(--mint);}
 .m-close{position:absolute;top:13px;right:14px;background:transparent;border:none;font-size:1.25rem;color:var(--mute);cursor:pointer;padding:4px;}
 
 /* EMPTY */
-.empty{padding:50px 20px;text-align:center;color:var(--mute);font-size:.85rem;}
+.empty{padding:50px 20px;text-align:center;color:var(--mute);font-size:.9rem;}
 
-/* GO-TO-TOP BUTTON */
-.go-top{position:fixed;bottom:24px;right:20px;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:150;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:opacity .2s,transform .2s;}
-.go-top.visible{display:flex;}
-.go-top:hover{transform:translateY(-2px);}
+/* SCROLL BUTTON */
+.scroll-btn{position:fixed;bottom:24px;right:20px;z-index:150;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
+.scroll-btn.visible{display:flex;}
+.scroll-btn:hover{transform:translateY(-2px);}
 </style>
 </head>
 <body>
 
 <div class="sticky-header">
   <header>
-    <div>
-      <h1>ห้องสมุดนิยาย 📚</h1>
-      <p id="header-count">กำลังโหลด...</p>
-    </div>
+    <h1>ห้องสมุดนิยาย 📚</h1>
+    <p class="header-count" id="header-count">กำลังโหลด...</p>
   </header>
 
   <div class="nav-tabs">
@@ -114,9 +123,12 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
     <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
   </div>
 
-  <div id="filter-bar" class="filters"></div>
-  <div class="search-bar"><input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่องหรือเรื่องย่อ..." oninput="filterBooks()"></div>
-  <div class="count" id="count-bar"></div>
+  <div class="search-row">
+    <button class="clear-btn dim" id="clear-btn" onclick="clearAll()" title="ล้างตัวกรอง">✕</button>
+    <input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่อง..." oninput="filterBooks()">
+  </div>
+
+  <div class="tag-strip" id="filter-strip"></div>
 </div>
 
 <div id="main-content">
@@ -131,24 +143,35 @@ header p{margin-top:4px;font-size:.75rem;color:var(--dim);}
       <div class="m-cover" id="m-cover"><div class="m-nc">📖</div></div>
       <div class="m-info">
         <div class="m-title" id="m-title"></div>
-        <span class="m-src" id="m-src"></span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="m-src" id="m-src"></span>
+          <span class="m-stars" id="m-stars"></span>
+        </div>
         <div class="m-tags" id="m-tags"></div>
       </div>
     </div>
     <div class="m-summary" id="m-summary"></div>
     <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
+    <a class="m-edit" id="m-edit" href="#" target="_blank" rel="noopener">✎ แก้ไข</a>
   </div>
 </div>
 
-<!-- GO-TO-TOP -->
-<button class="go-top" id="go-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<!-- SCROLL BUTTON -->
+<button class="scroll-btn" id="scroll-btn" onclick="scrollJump()" title="เลื่อนหน้า">↓</button>
 
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
+const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit#gid=1147646991&range=A';
+
+function editBook(e, row) {
+  e.stopPropagation();
+  window.open(SHEET_EDIT + row, '_blank', 'noopener');
+}
 
 let allBooks = [];
 let currentTab = 'meb';
 let activeTags = new Set();
+let activeStar = null;
 let searchQ = '';
 
 /* ===== CSV PARSER ===== */
@@ -167,6 +190,8 @@ function parseCSV(text) {
       tags:    (cols[3] || '').split('|').map(t => t.trim()).filter(Boolean),
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
+      star:    parseInt((cols[6] || '').trim(), 10) || 0,
+      row:     i + 1,
     });
   }
   return rows;
@@ -203,54 +228,54 @@ async function loadData() {
 
 /* ===== RENDER ===== */
 function renderAll() {
-  updateHeaderCount();
-  buildFilterBar();
+  renderFilterStrip();
   renderGrid();
 }
 
-function updateHeaderCount() {
-  const meb = allBooks.filter(b => b.source === 'meb').length;
-  const raw = allBooks.filter(b => b.source === 'raw').length;
-  document.getElementById('header-count').textContent = `${meb + raw} เรื่อง · MEB ${meb} · RAW ${raw}`;
-}
-
-function buildFilterBar() {
+function renderFilterStrip() {
   const books = allBooks.filter(b => b.source === currentTab);
-  const tags = [...new Set(books.flatMap(b => b.tags))].sort((a,b) => a.localeCompare(b, 'th'));
   const isRaw = currentTab === 'raw';
-  const noneSelected = activeTags.size === 0;
 
-  const firstBtn = noneSelected
-    ? `<button class="fb${isRaw ? ' raw-fb' : ''} active" onclick="clearTags()">ทั้งหมด</button>`
-    : `<button class="clear-btn" onclick="clearTags()">✕ ล้าง</button>`;
-
-  const tagBtns = tags.map(t =>
-    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">
-      ${esc(t)}
-    </button>`
+  const starVals = [...new Set(books.map(b => b.star).filter(s => s > 0))].sort((a, b) => b - a);
+  const starBtns = starVals.map(s =>
+    `<button class="sfb${activeStar === s ? ' active' : ''}" onclick="setStar(${s})">${s}★</button>`
   ).join('');
 
-  document.getElementById('filter-bar').innerHTML = firstBtn + tagBtns;
+  const tags = [...new Set(books.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
+  const tagBtns = tags.map(t =>
+    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
+  ).join('');
+
+  const divider = (starBtns && tagBtns) ? '<span class="strip-div"></span>' : '';
+  document.getElementById('filter-strip').innerHTML = starBtns + divider + tagBtns;
+
+  updateClearBtn();
+}
+
+function updateClearBtn() {
+  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0;
+  document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
 function renderGrid() {
-  const crossTab = searchQ.trim().length > 0;
+  const crossTab = searchQ.trim().length > 0 && activeTags.size === 0 && activeStar === null;
   const pool = crossTab ? allBooks : allBooks.filter(b => b.source === currentTab);
 
   const filtered = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
+    const starOk = activeStar === null || b.star === activeStar;
     const q = searchQ.toLowerCase().trim();
-    const searchOk = !q || b.title.toLowerCase().includes(q) || b.summary.toLowerCase().includes(q);
-    return tagOk && searchOk;
+    const searchOk = !q || b.title.toLowerCase().includes(q);
+    return tagOk && starOk && searchOk;
   });
 
   if (crossTab) {
     const mebCount = filtered.filter(b => b.source === 'meb').length;
     const rawCount = filtered.filter(b => b.source === 'raw').length;
-    document.getElementById('count-bar').textContent = `ค้นหาพบ ${filtered.length} เรื่อง · MEB ${mebCount} · RAW ${rawCount}`;
+    document.getElementById('header-count').textContent = `ค้นหาพบ ${filtered.length} เรื่อง · MEB ${mebCount} · RAW ${rawCount}`;
   } else {
     const total = allBooks.filter(b => b.source === currentTab).length;
-    document.getElementById('count-bar').textContent = `แสดง ${filtered.length} จาก ${total} เรื่อง`;
+    document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${total} เรื่อง`;
   }
 
   if (!filtered.length) {
@@ -258,8 +283,10 @@ function renderGrid() {
     return;
   }
 
-  const html = `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
-  document.getElementById('main-content').innerHTML = html;
+  document.getElementById('main-content').innerHTML =
+    `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
+
+  updateScrollBtns();
 }
 
 function buildCard(b, idx) {
@@ -268,9 +295,10 @@ function buildCard(b, idx) {
     : '';
   const ncStyle = b.cover ? 'display:none' : '';
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+  const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
   return `<div class="card" onclick="openModal(${idx})">
-    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div></div>
-    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>
+    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="editBook(event, ${b.row})" title="แก้ไขใน Google Sheet">✎</button></div>
+    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
       <div class="tags">${tagHtml}</div>
@@ -280,7 +308,6 @@ function buildCard(b, idx) {
 
 function fixCoverUrl(url) {
   if (!url) return "";
-  // Convert any Google Drive URL to direct image URL (avoids CORS/hotlink block)
   const m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (m) return "https://lh3.googleusercontent.com/d/" + m[1];
   return url;
@@ -294,10 +321,11 @@ function esc(s) {
 function switchTab(tab) {
   currentTab = tab;
   activeTags = new Set();
+  activeStar = null;
   searchQ = '';
   document.getElementById('search-input').value = '';
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  buildFilterBar();
+  renderFilterStrip();
   renderGrid();
 }
 
@@ -307,18 +335,28 @@ function setTag(tag) {
   } else {
     activeTags.add(tag);
   }
-  buildFilterBar();
+  renderFilterStrip();
   renderGrid();
 }
 
-function clearTags() {
+function setStar(n) {
+  activeStar = (activeStar === n) ? null : n;
+  renderFilterStrip();
+  renderGrid();
+}
+
+function clearAll() {
   activeTags = new Set();
-  buildFilterBar();
+  activeStar = null;
+  searchQ = '';
+  document.getElementById('search-input').value = '';
+  renderFilterStrip();
   renderGrid();
 }
 
 function filterBooks() {
   searchQ = document.getElementById('search-input').value;
+  updateClearBtn();
   renderGrid();
 }
 
@@ -329,12 +367,14 @@ function openModal(idx) {
   const srcEl = document.getElementById('m-src');
   srcEl.textContent = b.source === 'meb' ? 'MEB Market' : 'RAW';
   srcEl.className = 'm-src ' + b.source;
+  document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
   document.getElementById('m-tags').innerHTML = b.tags.map(t => `<span class="m-tag">${esc(t)}</span>`).join('');
   document.getElementById('m-summary').textContent = b.summary;
   const link = document.getElementById('m-link');
   link.href = b.url || '#';
   link.className = 'm-link' + (b.source === 'raw' ? ' raw-link' : '');
   link.style.display = b.url ? 'inline-block' : 'none';
+  document.getElementById('m-edit').href = SHEET_EDIT + b.row;
   const cover = document.getElementById('m-cover');
   if (b.cover) {
     cover.innerHTML = `<img src="${esc(fixCoverUrl(b.cover))}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'m-nc\\'>📖</div>'">`;
@@ -350,12 +390,42 @@ function closeModalBtn() {
   document.getElementById('modal-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModalBtn(); return; }
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  if (e.shiftKey && e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
+  else if (e.shiftKey && e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+});
 
-/* ===== SCROLL / GO-TOP ===== */
-window.addEventListener('scroll', () => {
-  document.getElementById('go-top').classList.toggle('visible', window.scrollY > 300);
-}, {passive: true});
+/* ===== SCROLL BUTTON ===== */
+let scrollDir = 'down';
+let scrollLock = false;
+
+function scrollJump() {
+  scrollLock = true;
+  const target = scrollDir === 'down' ? document.body.scrollHeight : 0;
+  window.scrollTo({top: target, behavior: 'smooth'});
+  clearTimeout(window._scrollRelease);
+  window._scrollRelease = setTimeout(releaseScroll, 1000);
+}
+
+function releaseScroll() {
+  scrollLock = false;
+  updateScrollBtns();
+}
+
+function updateScrollBtns() {
+  const btn = document.getElementById('scroll-btn');
+  const scrollable = document.body.scrollHeight > window.innerHeight + 60;
+  btn.classList.toggle('visible', scrollable);
+  if (!scrollable || scrollLock) return;
+  const mid = (document.body.scrollHeight - window.innerHeight) / 2;
+  scrollDir = window.scrollY < mid ? 'down' : 'up';
+  btn.textContent = scrollDir === 'down' ? '↓' : '↑';
+}
+window.addEventListener('scroll', updateScrollBtns, {passive: true});
+window.addEventListener('resize', updateScrollBtns, {passive: true});
+window.addEventListener('scrollend', releaseScroll);
 
 /* ===== INIT ===== */
 loadData();
