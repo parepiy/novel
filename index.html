@@ -391,10 +391,24 @@ function closeModalBtn() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModalBtn(); return; }
-  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
-  if (e.shiftKey && e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
-  else if (e.shiftKey && e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+  if (e.key === 'Escape') { closeModalBtn(); if (document.activeElement) document.activeElement.blur(); return; }
+  const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  // "/" focuses search (even when not typing)
+  if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.code === 'Slash') {
+    e.preventDefault(); document.getElementById('search-input').focus(); return;
+  }
+  if (typing) return;
+  // Shift + number -> switch tabs
+  if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
+    else if (e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+    return;
+  }
+  // single-key shortcuts (no modifiers, so Ctrl+C etc. stay intact)
+  if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+  if (e.code === 'KeyC') { clearAll(); }
+  else if (e.code === 'KeyT') { scrollToTop(); }
+  else if (e.code === 'KeyB') { scrollToBottom(); }
 });
 
 /* ===== SCROLL BUTTON ===== */
@@ -402,9 +416,13 @@ let scrollDir = 'down';
 let scrollLock = false;
 
 function scrollJump() {
+  scrollTo_(scrollDir === 'down' ? document.body.scrollHeight : 0);
+}
+function scrollToTop() { scrollTo_(0); }
+function scrollToBottom() { scrollTo_(document.body.scrollHeight); }
+function scrollTo_(top) {
   scrollLock = true;
-  const target = scrollDir === 'down' ? document.body.scrollHeight : 0;
-  window.scrollTo({top: target, behavior: 'smooth'});
+  window.scrollTo({top: top, behavior: 'smooth'});
   clearTimeout(window._scrollRelease);
   window._scrollRelease = setTimeout(releaseScroll, 1000);
 }
