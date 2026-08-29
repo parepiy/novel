@@ -12,6 +12,16 @@
   --mint:#2d9e7a;--mint2:#1a7a5e;--mdim:rgba(45,158,122,0.12);
   --text:#1a2e28;--dim:#5a7a70;--mute:#93b5aa;
   --raw:#7a5ea0;--raw2:#5e4480;--rdim:rgba(122,94,160,0.12);--rbd:#c4b3d9;
+  --star:#9c7d1f;--star-bd:#e2cf8a;--star-dim:#7d6300;--star-hover:#d9a400;
+  --summary:#2d4a40;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1613;--s1:#161f1b;--s2:#1b2621;--s3:#22302a;--bd:#2b3a33;--bd2:#38493f;
+  --mint:#3fb98f;--mint2:#6fd3ad;--mdim:rgba(63,185,143,0.18);
+  --text:#e6f0ea;--dim:#9db3aa;--mute:#6b857a;
+  --raw:#b79ad8;--raw2:#cbb4e6;--rdim:rgba(183,154,216,0.18);--rbd:#4a3d5e;
+  --star:#d9bd6e;--star-bd:#6b5a2a;--star-dim:#e2cf8a;--star-hover:#e2cf8a;
+  --summary:#c2d4ca;
 }
 html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-weight:400;min-height:100%;padding-bottom:60px;}
 a{color:inherit;text-decoration:none;}
@@ -19,10 +29,12 @@ a{color:inherit;text-decoration:none;}
 /* STICKY HEADER */
 .sticky-header{position:sticky;top:0;z-index:100;background:var(--s1);}
 
-/* HEADER — title + count */
-header{padding:10px 16px 8px;border-bottom:none;}
+/* HEADER — title + count + theme toggle */
+header{padding:10px 16px 8px;border-bottom:none;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
 header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:var(--mint2);font-weight:700;line-height:1.2;}
 .header-count{font-size:.75rem;color:var(--mute);margin-top:2px;}
+.theme-btn{background:none;border:1px solid var(--bd2);border-radius:8px;padding:5px 9px;font-size:1rem;line-height:1;cursor:pointer;flex-shrink:0;transition:border-color .15s;}
+.theme-btn:hover{border-color:var(--mint);}
 
 /* TABS — own row, left-aligned */
 .nav-tabs{display:flex;gap:2px;padding:0 12px 0;border-bottom:1px solid var(--bd);}
@@ -47,9 +59,9 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
 .fb.raw-fb:hover{border-color:var(--raw);color:var(--raw);}
 .fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw2);}
-.sfb{background:none;border:1px solid #e2cf8a;color:#9c7d1f;padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
-.sfb:hover{border-color:#d9a400;color:#7d6300;}
-.sfb.active{background:rgba(240,180,0,.16);border-color:#d9a400;color:#7d6300;font-weight:600;}
+.sfb{background:none;border:1px solid var(--star-bd);color:var(--star);padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.sfb:hover{border-color:var(--star-hover);color:var(--star-dim);}
+.sfb.active{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);font-weight:600;}
 .strip-div{flex-shrink:0;width:1px;align-self:stretch;background:var(--bd);margin:2px 3px;}
 
 /* LOADING */
@@ -94,7 +106,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .m-stars{font-size:.95rem;color:#e0a800;letter-spacing:2px;line-height:1;}
 .m-tags{display:flex;flex-wrap:wrap;gap:4px;}
 .m-tag{font-size:.74rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
-.m-summary{font-size:.9rem;line-height:1.9;color:#2d4a40;}
+.m-summary{font-size:.9rem;line-height:1.9;color:var(--summary);}
 .m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
 .m-edit{display:inline-block;margin-top:10px;margin-left:8px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
@@ -122,13 +134,25 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .help-row kbd{background:var(--s2);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;color:var(--text);white-space:nowrap;}
 .help-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
 </style>
+<script>
+(function(){
+  let t; try { t = localStorage.getItem('theme'); } catch(e){}
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 </head>
 <body>
 
 <div class="sticky-header">
   <header>
-    <h1>ห้องสมุดนิยาย 📚</h1>
-    <p class="header-count" id="header-count">กำลังโหลด...</p>
+    <div>
+      <h1>ห้องสมุดนิยาย 📚</h1>
+      <p class="header-count" id="header-count">กำลังโหลด...</p>
+    </div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง">🌙</button>
   </header>
 
   <div class="nav-tabs">
@@ -489,6 +513,16 @@ function updateScrollBtns() {
 window.addEventListener('scroll', updateScrollBtns, {passive: true});
 window.addEventListener('resize', updateScrollBtns, {passive: true});
 window.addEventListener('scrollend', releaseScroll);
+
+/* ===== THEME ===== */
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('theme', next); } catch(e){}
+}
+document.getElementById('theme-btn').textContent =
+  document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
 
 /* ===== INIT ===== */
 loadData();
