@@ -42,14 +42,15 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .nav-tab.active{color:var(--mint2);border-bottom-color:var(--mint);}
 .nav-tab[data-tab="raw"].active{color:var(--raw2);border-bottom-color:var(--raw);}
 
-/* SEARCH ROW */
-.search-row{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;}
-.clear-btn{background:none;border:none;color:var(--mute);font-size:1rem;cursor:pointer;padding:4px 6px;flex-shrink:0;transition:color .15s;line-height:1;}
+/* SEARCH BOX (in tab row, far right) */
+.search-box{flex:0 1 160px;min-width:0;margin-left:auto;align-self:center;display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--bd2);border-radius:18px;padding:4px 9px;transition:border-color .15s;}
+.search-box:focus-within{border-color:var(--mint);}
+.search-ico{font-size:.8rem;color:var(--mute);line-height:1;flex-shrink:0;}
+.search-box input{flex:1;min-width:0;border:none;background:none;outline:none;color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-size:.85rem;padding:0;}
+.search-box input::placeholder{color:var(--mute);}
+.clear-btn{background:none;border:none;color:var(--mute);font-size:.85rem;cursor:pointer;padding:0;margin-left:1px;flex-shrink:0;line-height:1;transition:color .15s,opacity .15s;}
 .clear-btn:hover{color:#b85c5c;}
-.clear-btn.dim{opacity:.25;pointer-events:none;}
-.search-row input{flex:1;background:var(--bg);border:1px solid var(--bd2);color:var(--text);padding:6px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;outline:none;}
-.search-row input:focus{border-color:var(--mint);}
-.search-row input::placeholder{color:var(--mute);}
+.clear-btn.dim{opacity:0;pointer-events:none;}
 
 /* TAG STRIP — single horizontal scroll row */
 .tag-strip{display:flex;gap:6px;padding:0 12px 9px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--bd);}
@@ -158,11 +159,11 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
   <div class="nav-tabs">
     <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
     <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
-  </div>
-
-  <div class="search-row">
-    <button class="clear-btn dim" id="clear-btn" onclick="clearAll()" title="ล้างตัวกรอง">✕</button>
-    <input type="text" id="search-input" placeholder="ค้นหาชื่อเรื่อง..." oninput="filterBooks()">
+    <div class="search-box">
+      <span class="search-ico">🔍</span>
+      <input type="text" id="search-input" placeholder="ค้นหา..." oninput="filterBooks()">
+      <button class="clear-btn dim" id="clear-btn" onclick="clearAll()" title="ล้างตัวกรอง">✕</button>
+    </div>
   </div>
 
   <div class="tag-strip" id="filter-strip"></div>
