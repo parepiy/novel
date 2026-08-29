@@ -390,7 +390,12 @@ function closeModalBtn() {
   document.getElementById('modal-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModalBtn(); return; }
+  if (/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  if (e.shiftKey && e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
+  else if (e.shiftKey && e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+});
 
 /* ===== SCROLL BUTTON ===== */
 let scrollDir = 'down';
