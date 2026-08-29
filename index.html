@@ -108,6 +108,19 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .scroll-btn{position:fixed;bottom:24px;right:20px;z-index:150;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
 .scroll-btn.visible{display:flex;}
 .scroll-btn:hover{transform:translateY(-2px);}
+
+/* HELP / SHORTCUTS */
+.help-btn{position:fixed;bottom:24px;left:20px;z-index:150;width:32px;height:32px;background:var(--s1);color:var(--dim);border:1px solid var(--bd2);border-radius:50%;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:color .15s,border-color .15s;}
+.help-btn:hover{color:var(--mint2);border-color:var(--mint);}
+.help-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;display:none;align-items:center;justify-content:center;padding:20px;}
+.help-overlay.open{display:flex;}
+.help-card{background:var(--s1);border-radius:14px;width:100%;max-width:360px;padding:20px 22px 24px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.2);}
+.help-card h3{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.05rem;color:var(--mint2);margin-bottom:12px;font-weight:700;}
+.help-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--s2);font-size:.9rem;}
+.help-row:last-child{border-bottom:none;}
+.help-row span{color:var(--dim);}
+.help-row kbd{background:var(--s2);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;color:var(--text);white-space:nowrap;}
+.help-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
 </style>
 </head>
 <body>
@@ -158,6 +171,23 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 
 <!-- SCROLL BUTTON -->
 <button class="scroll-btn" id="scroll-btn" onclick="scrollJump()" title="เลื่อนหน้า">↓</button>
+
+<!-- HELP / SHORTCUTS -->
+<button class="help-btn" id="help-btn" onclick="toggleHelp()" title="คีย์ลัด (?)">?</button>
+<div class="help-overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
+  <div class="help-card">
+    <button class="help-close" onclick="toggleHelp()">✕</button>
+    <h3>⌨️ คีย์ลัด</h3>
+    <div class="help-row"><span>แท็บ MEB Market</span><kbd>Shift + 1</kbd></div>
+    <div class="help-row"><span>แท็บ RAW</span><kbd>Shift + 2</kbd></div>
+    <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
+    <div class="help-row"><span>ล้างตัวกรองทั้งหมด</span><kbd>C</kbd></div>
+    <div class="help-row"><span>เลื่อนขึ้นบนสุด</span><kbd>T</kbd></div>
+    <div class="help-row"><span>เลื่อนลงล่างสุด</span><kbd>B</kbd></div>
+    <div class="help-row"><span>ปิดหน้าต่าง / ยกเลิกโ๡5กัส</span><kbd>Esc</kbd></div>
+    <div class="help-row"><span>เปิด/ปิดหน้าคีย์ลัดนี้</span><kbd>?</kbd></div>
+  </div>
+</div>
 
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
@@ -390,12 +420,27 @@ function closeModalBtn() {
   document.getElementById('modal-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
+function toggleHelp() {
+  const o = document.getElementById('help-overlay');
+  const open = o.classList.toggle('open');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModalBtn(); if (document.activeElement) document.activeElement.blur(); return; }
+  if (e.key === 'Escape') {
+    closeModalBtn();
+    const help = document.getElementById('help-overlay');
+    if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
+    if (document.activeElement) document.activeElement.blur();
+    return;
+  }
   const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
-  // "/" focuses search (even when not typing)
+  // "/" focuses search, "?" (Shift+/) toggles the shortcuts panel
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.code === 'Slash') {
-    e.preventDefault(); document.getElementById('search-input').focus(); return;
+    e.preventDefault();
+    if (e.shiftKey) toggleHelp();
+    else document.getElementById('search-input').focus();
+    return;
   }
   if (typing) return;
   // Shift + number -> switch tabs
