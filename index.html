@@ -45,7 +45,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 /* SEARCH BOX (in tab row, far right) */
 .search-box{flex:0 1 160px;min-width:0;margin-left:auto;align-self:center;display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--bd2);border-radius:18px;padding:4px 9px;transition:border-color .15s;}
 .search-box:focus-within{border-color:var(--mint);}
-.search-ico{font-size:.8rem;color:var(--mute);line-height:1;flex-shrink:0;}
+.scope-btn{background:none;border:none;padding:0;font-size:.82rem;line-height:1;cursor:pointer;flex-shrink:0;opacity:.75;transition:opacity .15s;}
+.scope-btn:hover{opacity:1;}
 .search-box input{flex:1;min-width:0;border:none;background:none;outline:none;color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-size:.85rem;padding:0;}
 .search-box input::placeholder{color:var(--mute);}
 .clear-btn{background:none;border:none;color:var(--mute);font-size:.85rem;cursor:pointer;padding:0;margin-left:1px;flex-shrink:0;line-height:1;transition:color .15s,opacity .15s;}
@@ -160,8 +161,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
     <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
     <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
     <div class="search-box">
-      <span class="search-ico">🔍</span>
-      <input type="text" id="search-input" placeholder="ค้นหา..." oninput="filterBooks()">
+      <button class="scope-btn" id="scope-btn" onclick="toggleScope()" title="สลับค้นหา ชื่อเรื่อง / เนื้อเรื่อง">🔍</button>
+      <input type="text" id="search-input" placeholder="ค้นหาชื่อ..." oninput="filterBooks()">
       <button class="clear-btn dim" id="clear-btn" onclick="clearAll()" title="ล้างตัวกรอง">✕</button>
     </div>
   </div>
@@ -206,9 +207,11 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
     <div class="help-row"><span>แท็บ MEB Market</span><kbd>Shift + 1</kbd></div>
     <div class="help-row"><span>แท็บ RAW</span><kbd>Shift + 2</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
+    <div class="help-row"><span>ค้นหาเนื้อเรื่อง</span><kbd>S</kbd></div>
     <div class="help-row"><span>ล้างตัวกรองทั้งหมด</span><kbd>C</kbd></div>
     <div class="help-row"><span>เลื่อนขึ้นบนสุด</span><kbd>T</kbd></div>
     <div class="help-row"><span>เลื่อนลงล่างสุด</span><kbd>B</kbd></div>
+    <div class="help-row"><span>สลับโหมดมืด/สว่าง</span><kbd>D</kbd></div>
     <div class="help-row"><span>ปิดหน้าต่าง / ยกเลิกโฟกัส</span><kbd>Esc</kbd></div>
     <div class="help-row"><span>เปิด/ปิดหน้าคีย์ลัดนี้</span><kbd>?</kbd></div>
   </div>
@@ -228,6 +231,7 @@ let currentTab = 'meb';
 let activeTags = new Set();
 let activeStar = null;
 let searchQ = '';
+let searchScope = 'title';
 
 /* ===== CSV PARSER ===== */
 function parseCSV(text) {
@@ -320,7 +324,7 @@ function renderGrid() {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
     const starOk = activeStar === null || b.star === activeStar;
     const q = searchQ.toLowerCase().trim();
-    const searchOk = !q || b.title.toLowerCase().includes(q);
+    const searchOk = !q || b.title.toLowerCase().includes(q) || (searchScope === 'summary' && b.summary.toLowerCase().includes(q));
     return tagOk && starOk && searchOk;
   });
 
@@ -415,6 +419,26 @@ function filterBooks() {
   renderGrid();
 }
 
+function applyScopeUI() {
+  const btn = document.getElementById('scope-btn');
+  const inp = document.getElementById('search-input');
+  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = 'ค้นหาเนื้อเรื่อง...'; }
+  else { btn.textContent = '🔍'; inp.placeholder = 'ค้นหาชื่อ...'; }
+}
+
+function toggleScope() {
+  searchScope = searchScope === 'title' ? 'summary' : 'title';
+  applyScopeUI();
+  renderGrid();
+}
+
+function focusSearch(scope) {
+  searchScope = scope;
+  applyScopeUI();
+  document.getElementById('search-input').focus();
+  renderGrid();
+}
+
 /* ===== MODAL ===== */
 function openModal(idx) {
   const b = allBooks[idx];
@@ -460,11 +484,11 @@ document.addEventListener('keydown', e => {
     return;
   }
   const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
-  // "/" focuses search, "?" (Shift+/) toggles the shortcuts panel
+  // "/" focuses search (title), "?" (Shift+/) toggles the shortcuts panel
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.code === 'Slash') {
     e.preventDefault();
     if (e.shiftKey) toggleHelp();
-    else document.getElementById('search-input').focus();
+    else focusSearch('title');
     return;
   }
   if (typing) return;
@@ -479,6 +503,8 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyC') { clearAll(); }
   else if (e.code === 'KeyT') { scrollToTop(); }
   else if (e.code === 'KeyB') { scrollToBottom(); }
+  else if (e.code === 'KeyS') { e.preventDefault(); focusSearch('summary'); }
+  else if (e.code === 'KeyD') { toggleTheme(); }
 });
 
 /* ===== SCROLL BUTTON ===== */
@@ -524,6 +550,7 @@ function toggleTheme() {
 }
 document.getElementById('theme-btn').textContent =
   document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+applyScopeUI();
 
 /* ===== INIT ===== */
 loadData();
