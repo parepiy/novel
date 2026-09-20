@@ -322,6 +322,7 @@ let activeStar = null;
 let searchQ = '';
 let searchScope = 'title';
 
+/* ===== EDIT CONFIG (owner only, stored on device) ===== */
 function cfg() {
   try { return { url: localStorage.getItem('gasUrl') || '', token: localStorage.getItem('gasToken') || '' }; }
   catch(e) { return { url:'', token:'' }; }
@@ -333,6 +334,7 @@ function applyEditorUI() {
   document.getElementById('key-btn').classList.toggle('on', isEditor());
 }
 
+/* ===== CSV PARSER (public read path) ===== */
 function parseCSV(text) {
   const rows = [];
   const lines = text.split('\n');
@@ -371,6 +373,7 @@ function splitCSVLine(line) {
   return result;
 }
 
+/* Map an Apps Script book object to the app's book shape */
 function fromGas(b) {
   return {
     title:   (b.title || '').trim(),
@@ -384,6 +387,7 @@ function fromGas(b) {
   };
 }
 
+/* ===== LOAD ===== */
 async function loadData() {
   try {
     const res = await fetch(SHEET_CSV);
@@ -407,9 +411,10 @@ async function refreshFromGas() {
       allBooks = data.books.map(fromGas);
       renderAll();
     }
-  } catch(e) {}
+  } catch(e) { /* keep CSV data on failure */ }
 }
 
+/* ===== RENDER ===== */
 function renderAll() {
   renderFilterStrip();
   renderGrid();
@@ -500,6 +505,7 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+/* ===== TABS / FILTER / SEARCH ===== */
 function switchTab(tab) {
   currentTab = tab;
   activeTags = new Set();
@@ -558,6 +564,7 @@ function focusSearch(scope) {
   renderGrid();
 }
 
+/* ===== VIEW MODAL ===== */
 function openModal(idx) {
   const b = allBooks[idx];
   window._mIdx = idx;
@@ -588,12 +595,14 @@ function closeModalBtn() {
   document.body.style.overflow = '';
 }
 
+/* ===== HELP ===== */
 function toggleHelp() {
   const o = document.getElementById('help-overlay');
   const open = o.classList.toggle('open');
   document.body.style.overflow = open ? 'hidden' : '';
 }
 
+/* ===== SETTINGS (unlock editing) ===== */
 function openSettings() {
   const c = cfg();
   document.getElementById('s-url').value = c.url;
@@ -620,6 +629,7 @@ function clearSettings() {
   closeSettings();
 }
 
+/* ===== ADD / EDIT FORM ===== */
 let formMode = 'add';
 let formRow = null;
 let formCover = '';
@@ -770,6 +780,7 @@ async function deleteBook() {
   }
 }
 
+/* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModalBtn(); closeForm(); closeSettings();
@@ -800,6 +811,7 @@ document.addEventListener('keydown', e => {
   else if (e.code === 'KeyN') { if (isEditor()) { e.preventDefault(); openAdd(); } }
 });
 
+/* ===== SCROLL BUTTON ===== */
 let scrollDir = 'down';
 let scrollLock = false;
 
@@ -826,6 +838,7 @@ window.addEventListener('scroll', updateScrollBtns, {passive: true});
 window.addEventListener('resize', updateScrollBtns, {passive: true});
 window.addEventListener('scrollend', releaseScroll);
 
+/* ===== THEME ===== */
 function toggleTheme() {
   const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
@@ -837,12 +850,14 @@ document.getElementById('theme-btn').textContent =
 applyScopeUI();
 applyEditorUI();
 
+/* ===== PWA SERVICE WORKER ===== */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
 
+/* ===== INIT ===== */
 loadData();
 </script>
 </body>
