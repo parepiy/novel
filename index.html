@@ -334,43 +334,55 @@ function applyEditorUI() {
   document.getElementById('key-btn').classList.toggle('on', isEditor());
 }
 
-/* ===== CSV PARSER (public read path) ===== */
+/* ===== CSV PARSER (public read path) =====
+   Full-text tokenizer: correctly handles quoted fields that contain
+   commas OR line breaks (e.g. multi-line summaries copied from a novel
+   site), so one novel with a multi-line description stays a single row
+   instead of splitting apart. */
 function parseCSV(text) {
+  const records = parseCSVRecords(text);
   const rows = [];
-  const lines = text.split('\n');
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const cols = splitCSVLine(line);
+  for (let r = 1; r < records.length; r++) {   // r = 0 is the header row
+    const cols = records[r];
     if (cols.length < 5) continue;
+    const title = (cols[0] || '').trim();
+    if (!title) continue;
     rows.push({
-      title:   (cols[0] || '').trim(),
+      title:   title,
       summary: (cols[1] || '').trim(),
       url:     (cols[2] || '').trim(),
       tags:    (cols[3] || '').split('|').map(t => t.trim()).filter(Boolean),
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
-      row:     i + 1,
+      row:     r + 1,          // record index → 1-based sheet row
     });
   }
   return rows;
 }
 
-function splitCSVLine(line) {
-  const result = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') {
-      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if (c === ',' && !inQ) {
-      result.push(cur); cur = '';
-    } else cur += c;
+/* Tokenize CSV text into records (arrays of fields), honoring
+   double-quoted fields with embedded commas, newlines and "" escapes. */
+function parseCSVRecords(text) {
+  text = text.replace(/\r\n?/g, '\n');   // normalize line endings
+  const records = [];
+  let field = '', record = [], inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }   // escaped quote
+        else inQ = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { record.push(field); field = ''; }
+      else if (c === '\n') { record.push(field); records.push(record); field = ''; record = []; }
+      else field += c;
+    }
   }
-  result.push(cur);
-  return result;
+  if (field !== '' || record.length) { record.push(field); records.push(record); }
+  return records;
 }
 
 /* Map an Apps Script book object to the app's book shape */
