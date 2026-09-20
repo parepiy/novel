@@ -1,5 +1,12 @@
-/* ห้องสมุดนิยาย — service worker (network-first) */
-const CACHE = 'novel-v1';
+/* ห้องสมุดนิยาย — service worker
+
+   App-shell model:
+   - Navigations (opening the app) are served instantly from cache, then the
+     cached page is refreshed in the background. Cold launches never wait on
+     the network, so the PWA no longer shows "A problem repeatedly occurred".
+   - Data (the Google Sheet CSV) and images use network-first with a cache
+     fallback, so content stays fresh but still works offline. */
+const CACHE = 'novel-v2';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,12 +22,28 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* Network-first: always try fresh, fall back to cache when offline.
-   Successful GET responses (app shell + Google Sheet CSV) are cached so
-   the app still opens — with last-loaded data — without a connection. */
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+
+  /* App-shell navigations: cache-first, refresh in the background. */
+  if (req.mode === 'navigate') {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = (await cache.match('./index.html')) || (await cache.match('./'));
+      const network = fetch(req).then(res => {
+        if (res && res.ok) cache.put('./index.html', res.clone());
+        return res;
+      }).catch(() => null);
+      return cached || (await network) || new Response(
+        '<h1>ออฟไลน์</h1><p>เชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p>',
+        { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      );
+    })());
+    return;
+  }
+
+  /* Everything else (CSV data, cover images): network-first, cache fallback. */
   e.respondWith(
     fetch(req).then(res => {
       if (res && res.ok) {
@@ -28,6 +51,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(req, clone));
       }
       return res;
-    }).catch(() => caches.match(req).then(r => r || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
+    }).catch(() => caches.match(req).then(r => r || Response.error()))
   );
 });
