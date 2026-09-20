@@ -37,12 +37,15 @@ a{color:inherit;text-decoration:none;}
 /* STICKY HEADER */
 .sticky-header{position:sticky;top:0;z-index:100;background:var(--s1);}
 
-/* HEADER — title + count + theme toggle */
+/* HEADER — title + count + actions */
 header{padding:10px 16px 8px;border-bottom:none;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
 header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:var(--mint2);font-weight:700;line-height:1.2;}
 .header-count{font-size:.75rem;color:var(--mute);margin-top:2px;}
-.theme-btn{background:none;border:1px solid var(--bd2);border-radius:8px;padding:5px 9px;font-size:1rem;line-height:1;cursor:pointer;flex-shrink:0;transition:border-color .15s;}
-.theme-btn:hover{border-color:var(--mint);}
+.header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.hdr-btn{background:none;border:1px solid var(--bd2);border-radius:8px;padding:5px 9px;font-size:1rem;line-height:1;cursor:pointer;flex-shrink:0;transition:border-color .15s,color .15s;color:var(--dim);}
+.hdr-btn:hover{border-color:var(--mint);color:var(--mint2);}
+.hdr-btn.on{border-color:var(--mint);color:var(--mint2);}
+#add-btn{display:none;font-weight:700;color:var(--mint2);}
 
 /* TABS — own row, left-aligned */
 .nav-tabs{display:flex;gap:2px;padding:0 12px 0;border-bottom:1px solid var(--bd);}
@@ -97,10 +100,11 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .src-badge.meb{background:rgba(45,158,122,.85);color:#fff;}
 .src-badge.raw{background:rgba(122,94,160,.85);color:#fff;}
 .star-badge{position:absolute;top:5px;right:5px;font-size:.62rem;padding:2px 6px;border-radius:3px;font-weight:700;background:rgba(240,180,0,.94);color:#4a3800;letter-spacing:.3px;}
-.edit-btn{position:absolute;bottom:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:var(--mint2);font-size:.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.22);z-index:3;transition:background .15s,transform .15s;}
+.edit-btn{position:absolute;bottom:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(255,255,255,.92);color:var(--mint2);font-size:.82rem;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.22);z-index:3;transition:background .15s,transform .15s;}
 .edit-btn:hover{background:#fff;transform:scale(1.1);}
+body.editor .edit-btn{display:flex;}
 
-/* MODAL */
+/* MODAL (view) */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-bg.open{display:flex;}
 .modal{background:var(--s1);border-radius:16px;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;padding:22px 18px 36px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.18);}
@@ -117,10 +121,12 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .m-tags{display:flex;flex-wrap:wrap;gap:4px;}
 .m-tag{font-size:.74rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
 .m-summary{font-size:.9rem;line-height:1.9;color:var(--summary);}
+.m-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
-.m-edit{display:inline-block;margin-top:10px;margin-left:8px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
+.m-edit{display:none;margin-top:10px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;background:none;cursor:pointer;font-family:inherit;}
 .m-edit:hover{color:var(--mint2);border-color:var(--mint);}
+body.editor .m-edit{display:inline-block;}
 .m-close{position:absolute;top:13px;right:14px;background:transparent;border:none;font-size:1.25rem;color:var(--mute);cursor:pointer;padding:4px;}
 
 /* EMPTY */
@@ -134,15 +140,37 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 /* HELP / SHORTCUTS */
 .help-btn{position:fixed;bottom:24px;left:20px;z-index:150;width:32px;height:32px;background:var(--s1);color:var(--dim);border:1px solid var(--bd2);border-radius:50%;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:color .15s,border-color .15s;}
 .help-btn:hover{color:var(--mint2);border-color:var(--mint);}
-.help-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;display:none;align-items:center;justify-content:center;padding:20px;}
-.help-overlay.open{display:flex;}
-.help-card{background:var(--s1);border-radius:14px;width:100%;max-width:360px;padding:20px 22px 24px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.2);}
-.help-card h3{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.05rem;color:var(--mint2);margin-bottom:12px;font-weight:700;}
+
+/* OVERLAYS (help / form / settings) */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:210;display:none;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.help-card,.f-card{background:var(--s1);border-radius:14px;width:100%;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.2);}
+.help-card{max-width:360px;padding:20px 22px 24px;}
+.f-card{max-width:480px;max-height:90vh;overflow:auto;padding:20px 18px 24px;}
+.help-card h3,.f-card h3{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.05rem;color:var(--mint2);margin-bottom:12px;font-weight:700;}
 .help-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--s2);font-size:.9rem;}
 .help-row:last-child{border-bottom:none;}
 .help-row span{color:var(--dim);}
 .help-row kbd{background:var(--s2);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;color:var(--text);white-space:nowrap;}
-.help-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
+.ov-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
+
+/* FORM CONTROLS */
+.f-row{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;}
+.f-row label{font-size:.78rem;color:var(--dim);}
+.f-row input,.f-row textarea,.f-row select{background:var(--bg);border:1px solid var(--bd2);color:var(--text);border-radius:8px;padding:8px 10px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;outline:none;width:100%;}
+.f-row input:focus,.f-row textarea:focus,.f-row select:focus{border-color:var(--mint);}
+.f-row textarea{min-height:90px;resize:vertical;line-height:1.7;}
+.f-two{display:flex;gap:10px;}
+.f-two>.f-row{flex:1;}
+.f-cover-line{display:flex;gap:10px;align-items:center;}
+.f-cover-prev{width:70px;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:var(--s3);flex-shrink:0;}
+.f-note{font-size:.75rem;color:var(--mute);line-height:1.6;margin-top:2px;}
+.f-actions{display:flex;gap:8px;margin-top:14px;align-items:center;}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.88rem;cursor:pointer;}
+.btn-primary{background:var(--mint);color:#fff;}
+.btn-ghost{background:none;border:1px solid var(--bd2);color:var(--dim);}
+.btn-danger{background:none;border:1px solid #e0a0a0;color:#b85c5c;margin-left:auto;}
+.f-card.saving{opacity:.55;pointer-events:none;}
 </style>
 <script>
 (function(){
@@ -162,7 +190,11 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
       <h1>ห้องสมุดนิยาย 📚</h1>
       <p class="header-count" id="header-count">กำลังโหลด...</p>
     </div>
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง">🌙</button>
+    <div class="header-actions">
+      <button class="hdr-btn" id="add-btn" onclick="openAdd()" title="เพิ่มนิยาย">＋</button>
+      <button class="hdr-btn" id="key-btn" onclick="openSettings()" title="ตั้งค่าการแก้ไข">🔑</button>
+      <button class="hdr-btn" id="theme-btn" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง">🌙</button>
+    </div>
   </header>
 
   <div class="nav-tabs">
@@ -182,7 +214,7 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
   <div class="loading"><div class="spinner"></div><span>กำลังโหลดข้อมูล...</span></div>
 </div>
 
-<!-- MODAL -->
+<!-- VIEW MODAL -->
 <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
   <div class="modal" id="modal">
     <button class="m-close" onclick="closeModalBtn()">✕</button>
@@ -198,8 +230,61 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
       </div>
     </div>
     <div class="m-summary" id="m-summary"></div>
-    <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
-    <a class="m-edit" id="m-edit" href="#" target="_blank" rel="noopener">✎ แก้ไข</a>
+    <div class="m-actions">
+      <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
+      <button class="m-edit" id="m-edit" onclick="openEdit(window._mIdx)">✎ แก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT FORM -->
+<div class="overlay" id="form-bg" onclick="if(event.target===this)closeForm()">
+  <div class="f-card" id="form-card">
+    <button class="ov-close" onclick="closeForm()">✕</button>
+    <h3 id="form-title">เพิ่มนิยาย</h3>
+    <div class="f-row"><label>ชื่อเรื่อง *</label><input type="text" id="f-title"></div>
+    <div class="f-two">
+      <div class="f-row"><label>หมวด</label>
+        <select id="f-source"><option value="meb">MEB Market</option><option value="raw">RAW</option></select>
+      </div>
+      <div class="f-row"><label>ดาว</label>
+        <select id="f-star"><option value="0">— ไม่มี —</option><option value="1">1 ★</option><option value="2">2 ★</option><option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option></select>
+      </div>
+    </div>
+    <div class="f-row"><label>แท็ก (คั่นด้วย , หรือ |)</label><input type="text" id="f-tags" placeholder="เช่น โรแมนซ์, ดราม่า"></div>
+    <div class="f-row"><label>ลิงก์อ่านนิยาย</label><input type="text" id="f-url" placeholder="https://..."></div>
+    <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
+    <div class="f-row"><label>รูปปก</label>
+      <div class="f-cover-line">
+        <img class="f-cover-prev" id="f-cover-prev" alt="" style="display:none">
+        <div style="flex:1;">
+          <input type="file" id="f-image" accept="image/*" onchange="previewImage()">
+          <div class="f-note" id="f-cover-note">เลือกรูปเพื่ออัปโหลดขึ้น Google Drive (ไม่บังคับ)</div>
+          <label style="font-size:.78rem;color:var(--dim);display:none;margin-top:6px;" id="f-remove-line"><input type="checkbox" id="f-removecover" style="width:auto;"> เอารูปปกออก</label>
+        </div>
+      </div>
+    </div>
+    <div class="f-actions">
+      <button class="btn btn-primary" id="f-save" onclick="saveForm()">บันทึก</button>
+      <button class="btn btn-ghost" onclick="closeForm()">ยกเลิก</button>
+      <button class="btn btn-danger" id="f-delete" onclick="deleteBook()" style="display:none">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settings-bg" onclick="if(event.target===this)closeSettings()">
+  <div class="f-card" style="max-width:440px;" id="settings-card">
+    <button class="ov-close" onclick="closeSettings()">✕</button>
+    <h3>🔑 ตั้งค่าการแก้ไข</h3>
+    <p class="f-note" style="margin-bottom:12px;">ใส่ URL ของ Apps Script Web App และรหัสลับ เพื่อปลดล็อกการเพิ่ม/แก้ไข/ลบ (เก็บไว้ในเครื่องนี้เท่านั้น)</p>
+    <div class="f-row"><label>Web App URL</label><input type="text" id="s-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="f-row"><label>รหัสลับ (SECRET)</label><input type="password" id="s-token" placeholder="รหัสที่ตั้งไว้ในสคริปต์"></div>
+    <div class="f-actions">
+      <button class="btn btn-primary" onclick="saveSettings()">บันทึก & ปลดล็อก</button>
+      <button class="btn btn-ghost" onclick="clearSettings()">ล็อก / ล้าง</button>
+    </div>
+    <p class="f-note" id="s-status" style="margin-top:10px;"></p>
   </div>
 </div>
 
@@ -208,14 +293,15 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 
 <!-- HELP / SHORTCUTS -->
 <button class="help-btn" id="help-btn" onclick="toggleHelp()" title="คีย์ลัด (?)">?</button>
-<div class="help-overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
+<div class="overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
   <div class="help-card">
-    <button class="help-close" onclick="toggleHelp()">✕</button>
+    <button class="ov-close" onclick="toggleHelp()">✕</button>
     <h3>⌨️ คีย์ลัด</h3>
     <div class="help-row"><span>แท็บ MEB Market</span><kbd>Shift + 1</kbd></div>
     <div class="help-row"><span>แท็บ RAW</span><kbd>Shift + 2</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
     <div class="help-row"><span>ค้นหาเนื้อเรื่อง</span><kbd>S</kbd></div>
+    <div class="help-row"><span>เพิ่มนิยาย (เมื่อปลดล็อก)</span><kbd>N</kbd></div>
     <div class="help-row"><span>ล้างตัวกรองทั้งหมด</span><kbd>C</kbd></div>
     <div class="help-row"><span>เลื่อนขึ้นบนสุด</span><kbd>T</kbd></div>
     <div class="help-row"><span>เลื่อนลงล่างสุด</span><kbd>B</kbd></div>
@@ -229,11 +315,6 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
 const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit#gid=1147646991&range=A';
 
-function editBook(e, row) {
-  e.stopPropagation();
-  window.open(SHEET_EDIT + row, '_blank', 'noopener');
-}
-
 let allBooks = [];
 let currentTab = 'meb';
 let activeTags = new Set();
@@ -241,7 +322,19 @@ let activeStar = null;
 let searchQ = '';
 let searchScope = 'title';
 
-/* ===== CSV PARSER ===== */
+/* ===== EDIT CONFIG (owner only, stored on device) ===== */
+function cfg() {
+  try { return { url: localStorage.getItem('gasUrl') || '', token: localStorage.getItem('gasToken') || '' }; }
+  catch(e) { return { url:'', token:'' }; }
+}
+function isEditor() { const c = cfg(); return !!(c.url && c.token); }
+function applyEditorUI() {
+  document.body.classList.toggle('editor', isEditor());
+  document.getElementById('add-btn').style.display = isEditor() ? 'flex' : 'none';
+  document.getElementById('key-btn').classList.toggle('on', isEditor());
+}
+
+/* ===== CSV PARSER (public read path) ===== */
 function parseCSV(text) {
   const rows = [];
   const lines = text.split('\n');
@@ -280,6 +373,20 @@ function splitCSVLine(line) {
   return result;
 }
 
+/* Map an Apps Script book object to the app's book shape */
+function fromGas(b) {
+  return {
+    title:   (b.title || '').trim(),
+    summary: (b.summary || '').trim(),
+    url:     (b.url || '').trim(),
+    tags:    (b.tags || '').split('|').map(t => t.trim()).filter(Boolean),
+    source:  (b.source || '').trim(),
+    cover:   (b.cover || '').trim(),
+    star:    parseInt(b.star, 10) || 0,
+    row:     b.row,
+  };
+}
+
 /* ===== LOAD ===== */
 async function loadData() {
   try {
@@ -288,9 +395,23 @@ async function loadData() {
     const text = await res.text();
     allBooks = parseCSV(text);
     renderAll();
+    if (isEditor()) refreshFromGas();
   } catch(e) {
     document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${e.message}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
   }
+}
+
+async function refreshFromGas() {
+  const c = cfg();
+  if (!c.url) return;
+  try {
+    const res = await fetch(c.url, { method: 'GET' });
+    const data = await res.json();
+    if (data && data.ok && Array.isArray(data.books)) {
+      allBooks = data.books.map(fromGas);
+      renderAll();
+    }
+  } catch(e) { /* keep CSV data on failure */ }
 }
 
 /* ===== RENDER ===== */
@@ -364,7 +485,7 @@ function buildCard(b, idx) {
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
   const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
   return `<div class="card" onclick="openModal(${idx})">
-    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="editBook(event, ${b.row})" title="แก้ไขใน Google Sheet">✎</button></div>
+    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
     <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
@@ -397,11 +518,7 @@ function switchTab(tab) {
 }
 
 function setTag(tag) {
-  if (activeTags.has(tag)) {
-    activeTags.delete(tag);
-  } else {
-    activeTags.add(tag);
-  }
+  if (activeTags.has(tag)) { activeTags.delete(tag); } else { activeTags.add(tag); }
   renderFilterStrip();
   renderGrid();
 }
@@ -447,9 +564,10 @@ function focusSearch(scope) {
   renderGrid();
 }
 
-/* ===== MODAL ===== */
+/* ===== VIEW MODAL ===== */
 function openModal(idx) {
   const b = allBooks[idx];
+  window._mIdx = idx;
   document.getElementById('m-title').textContent = b.title;
   const srcEl = document.getElementById('m-src');
   srcEl.textContent = b.source === 'meb' ? 'MEB Market' : 'RAW';
@@ -461,7 +579,6 @@ function openModal(idx) {
   link.href = b.url || '#';
   link.className = 'm-link' + (b.source === 'raw' ? ' raw-link' : '');
   link.style.display = b.url ? 'inline-block' : 'none';
-  document.getElementById('m-edit').href = SHEET_EDIT + b.row;
   const cover = document.getElementById('m-cover');
   if (b.cover) {
     cover.innerHTML = `<img src="${esc(fixCoverUrl(b.cover))}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'m-nc\\'>📖</div>'">`;
@@ -477,22 +594,202 @@ function closeModalBtn() {
   document.getElementById('modal-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
+
+/* ===== HELP ===== */
 function toggleHelp() {
   const o = document.getElementById('help-overlay');
   const open = o.classList.toggle('open');
   document.body.style.overflow = open ? 'hidden' : '';
 }
 
+/* ===== SETTINGS (unlock editing) ===== */
+function openSettings() {
+  const c = cfg();
+  document.getElementById('s-url').value = c.url;
+  document.getElementById('s-token').value = c.token;
+  document.getElementById('s-status').textContent = isEditor() ? '✓ ปลดล็อกแล้ว' : 'ยังไม่ได้ตั้งค่า (โหมดอ่านอย่างเดียว)';
+  document.getElementById('settings-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSettings() {
+  document.getElementById('settings-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveSettings() {
+  const url = document.getElementById('s-url').value.trim();
+  const token = document.getElementById('s-token').value.trim();
+  try { localStorage.setItem('gasUrl', url); localStorage.setItem('gasToken', token); } catch(e){}
+  applyEditorUI();
+  closeSettings();
+  if (isEditor()) refreshFromGas();
+}
+function clearSettings() {
+  try { localStorage.removeItem('gasUrl'); localStorage.removeItem('gasToken'); } catch(e){}
+  applyEditorUI();
+  closeSettings();
+}
+
+/* ===== ADD / EDIT FORM ===== */
+let formMode = 'add';
+let formRow = null;
+let formCover = '';
+
+function fval(id){ return document.getElementById(id).value; }
+
+function openForm() {
+  document.getElementById('form-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeForm() {
+  document.getElementById('form-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function openAdd() {
+  if (!isEditor()) { openSettings(); return; }
+  formMode = 'add'; formRow = null; formCover = '';
+  document.getElementById('form-title').textContent = 'เพิ่มนิยาย';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-source').value = currentTab;
+  document.getElementById('f-star').value = '0';
+  document.getElementById('f-tags').value = '';
+  document.getElementById('f-url').value = '';
+  document.getElementById('f-summary').value = '';
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-cover-prev').style.display = 'none';
+  document.getElementById('f-remove-line').style.display = 'none';
+  document.getElementById('f-removecover').checked = false;
+  document.getElementById('f-delete').style.display = 'none';
+  openForm();
+}
+
+function openEdit(idx) {
+  if (!isEditor()) { openSettings(); return; }
+  if (idx == null || !allBooks[idx]) return;
+  closeModalBtn();
+  const b = allBooks[idx];
+  formMode = 'edit'; formRow = b.row; formCover = b.cover || '';
+  document.getElementById('form-title').textContent = 'แก้ไขนิยาย';
+  document.getElementById('f-title').value = b.title;
+  document.getElementById('f-source').value = b.source === 'raw' ? 'raw' : 'meb';
+  document.getElementById('f-star').value = String(b.star || 0);
+  document.getElementById('f-tags').value = (b.tags || []).join(', ');
+  document.getElementById('f-url').value = b.url || '';
+  document.getElementById('f-summary').value = b.summary || '';
+  document.getElementById('f-image').value = '';
+  const prev = document.getElementById('f-cover-prev');
+  if (b.cover) { prev.src = fixCoverUrl(b.cover); prev.style.display = 'block'; }
+  else { prev.style.display = 'none'; }
+  document.getElementById('f-remove-line').style.display = b.cover ? 'block' : 'none';
+  document.getElementById('f-removecover').checked = false;
+  document.getElementById('f-delete').style.display = 'inline-block';
+  openForm();
+}
+
+function previewImage() {
+  const f = document.getElementById('f-image').files[0];
+  const prev = document.getElementById('f-cover-prev');
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { prev.src = r.result; prev.style.display = 'block'; };
+  r.readAsDataURL(f);
+}
+
+function fileToUpload(file) {
+  return new Promise((resolve, reject) => {
+    const rd = new FileReader();
+    rd.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 900;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) { const s = Math.min(max/w, max/h); w = Math.round(w*s); h = Math.round(h*s); }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+        resolve({ b64: dataUrl.split(',')[1], type: 'image/jpeg', name: (file.name || 'cover') + '.jpg' });
+      };
+      img.onerror = reject;
+      img.src = rd.result;
+    };
+    rd.onerror = reject;
+    rd.readAsDataURL(file);
+  });
+}
+
+async function gasPost(payload) {
+  const c = cfg();
+  payload.token = c.token;
+  const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (!data || !data.ok) throw new Error((data && data.error) || 'error');
+  return data;
+}
+
+function setSaving(on) {
+  document.getElementById('form-card').classList.toggle('saving', on);
+  document.getElementById('f-save').textContent = on ? 'กำลังบันทึก...' : 'บันทึก';
+}
+
+async function saveForm() {
+  const title = fval('f-title').trim();
+  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  const payload = {
+    action: formMode,
+    title: title,
+    summary: fval('f-summary'),
+    url: fval('f-url').trim(),
+    tags: fval('f-tags').split(/[,|]/).map(s => s.trim()).filter(Boolean).join('|'),
+    source: fval('f-source'),
+    star: parseInt(fval('f-star'), 10) || 0,
+    cover: formCover
+  };
+  if (formMode === 'edit') payload.row = formRow;
+  if (document.getElementById('f-removecover').checked) payload.cover = '';
+
+  setSaving(true);
+  try {
+    const fileEl = document.getElementById('f-image');
+    if (fileEl.files && fileEl.files[0]) {
+      const up = await fileToUpload(fileEl.files[0]);
+      payload.imageB64 = up.b64; payload.imageType = up.type; payload.imageName = up.name;
+    }
+    await gasPost(payload);
+    await refreshFromGas();
+    closeForm();
+  } catch(err) {
+    alert('บันทึกไม่ได้: ' + err.message + '\n(ตรวจสอบ URL/รหัสลับ และการ Deploy ของสคริปต์)');
+  } finally {
+    setSaving(false);
+  }
+}
+
+async function deleteBook() {
+  if (formMode !== 'edit' || !formRow) return;
+  if (!confirm('ลบนิยายเรื่องนี้ออกจากชีตถาวร?')) return;
+  setSaving(true);
+  try {
+    await gasPost({ action: 'delete', row: formRow });
+    await refreshFromGas();
+    closeForm();
+  } catch(err) {
+    alert('ลบไม่ได้: ' + err.message);
+  } finally {
+    setSaving(false);
+  }
+}
+
+/* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closeModalBtn();
+    closeModalBtn(); closeForm(); closeSettings();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
     if (document.activeElement) document.activeElement.blur();
     return;
   }
-  const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
-  // "/" focuses search (title), "?" (Shift+/) toggles the shortcuts panel
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.code === 'Slash') {
     e.preventDefault();
     if (e.shiftKey) toggleHelp();
@@ -500,28 +797,25 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (typing) return;
-  // Shift + number -> switch tabs
   if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
     if (e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
     else if (e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
     return;
   }
-  // single-key shortcuts (no modifiers, so Ctrl+C etc. stay intact)
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
   if (e.code === 'KeyC') { clearAll(); }
   else if (e.code === 'KeyT') { scrollToTop(); }
   else if (e.code === 'KeyB') { scrollToBottom(); }
   else if (e.code === 'KeyS') { e.preventDefault(); focusSearch('summary'); }
   else if (e.code === 'KeyD') { toggleTheme(); }
+  else if (e.code === 'KeyN') { if (isEditor()) { e.preventDefault(); openAdd(); } }
 });
 
 /* ===== SCROLL BUTTON ===== */
 let scrollDir = 'down';
 let scrollLock = false;
 
-function scrollJump() {
-  scrollTo_(scrollDir === 'down' ? document.body.scrollHeight : 0);
-}
+function scrollJump() { scrollTo_(scrollDir === 'down' ? document.body.scrollHeight : 0); }
 function scrollToTop() { scrollTo_(0); }
 function scrollToBottom() { scrollTo_(document.body.scrollHeight); }
 function scrollTo_(top) {
@@ -530,12 +824,7 @@ function scrollTo_(top) {
   clearTimeout(window._scrollRelease);
   window._scrollRelease = setTimeout(releaseScroll, 1000);
 }
-
-function releaseScroll() {
-  scrollLock = false;
-  updateScrollBtns();
-}
-
+function releaseScroll() { scrollLock = false; updateScrollBtns(); }
 function updateScrollBtns() {
   const btn = document.getElementById('scroll-btn');
   const scrollable = document.body.scrollHeight > window.innerHeight + 60;
@@ -559,9 +848,7 @@ function toggleTheme() {
 document.getElementById('theme-btn').textContent =
   document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
 applyScopeUI();
-
-/* ===== INIT ===== */
-loadData();
+applyEditorUI();
 
 /* ===== PWA SERVICE WORKER ===== */
 if ('serviceWorker' in navigator) {
@@ -569,6 +856,9 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
+
+/* ===== INIT ===== */
+loadData();
 </script>
 </body>
 </html>
