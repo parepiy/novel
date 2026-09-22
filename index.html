@@ -1149,6 +1149,16 @@ applyEditorUI();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').catch(function () {});
+    // When a newly-deployed service worker takes control, reload once so the
+    // page picks up the fresh code instead of the previously-cached version.
+    if (navigator.serviceWorker.controller) {
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+    }
   });
 }
 
