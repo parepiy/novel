@@ -1,0 +1,37 @@
+name: reading-reminders
+
+# Free scheduled sender for reading reminders (Web Push).
+# GitHub's scheduler can be a few minutes late, so reminders arrive
+# within roughly 5-20 minutes of the time you set.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reading-reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: .github/scripts
+        run: npm install --no-audit --no-fund
+      - name: Send due reminders
+        working-directory: .github/scripts
+        env:
+          GAS_URL: ${{ secrets.GAS_URL }}
+          GAS_SECRET: ${{ secrets.GAS_SECRET }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: node send-reminders.js

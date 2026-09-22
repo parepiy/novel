@@ -6,7 +6,7 @@
      the network, so the PWA no longer shows "A problem repeatedly occurred".
    - Data (the Google Sheet CSV) and images use network-first with a cache
      fallback, so content stays fresh but still works offline. */
-const CACHE = 'novel-v2';
+const CACHE = 'novel-v3';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -52,5 +52,35 @@ self.addEventListener('fetch', e => {
       }
       return res;
     }).catch(() => caches.match(req).then(r => r || Response.error()))
+  );
+});
+
+/* ===== PUSH NOTIFICATIONS (reading reminders) ===== */
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; }
+  catch (_) { data = { title: 'ถึงเวลาอ่านนิยาย 📖', body: e.data ? e.data.text() : '' }; }
+  const title = data.title || 'ถึงเวลาอ่านนิยาย 📖';
+  const options = {
+    body: data.body || '',
+    data: { url: data.url || './' },
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    tag: data.tag || ('novel-' + Date.now()),
+    renotify: true
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if ('focus' in c) { try { c.navigate(url); } catch (_) {} return c.focus(); }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
   );
 });
