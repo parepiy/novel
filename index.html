@@ -77,6 +77,17 @@ body.editor .notify-tab{display:inline-block;}
 .nf-del:hover{border-color:#e0a0a0;}
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
+.nf-form input[type="datetime-local"]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;text-align:left;}
+
+/* GLOBAL BUSY OVERLAY (reminder add/delete/enable) */
+.busy-overlay{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:loaderIn .2s ease;}
+.busy-overlay.show{display:flex;}
+.busy-ring{position:relative;width:52px;height:52px;}
+.busy-ring::before,.busy-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid transparent;}
+.busy-ring::before{border-color:var(--mdim);}
+.busy-ring::after{border-top-color:var(--mint);border-right-color:var(--mint);animation:spin .8s cubic-bezier(.5,.15,.5,.85) infinite;}
+.busy-text{font-family:'Sarabun','Cordia New',sans-serif;font-size:.92rem;font-weight:600;color:var(--mint2);}
+.busy-text::after{content:'';animation:loaderDots 1.4s steps(1,end) infinite;}
 
 /* SEARCH BOX (in tab row, far right) */
 .search-box{flex:0 1 160px;min-width:0;margin-left:auto;align-self:center;display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--bd2);border-radius:18px;padding:4px 9px;transition:border-color .15s;}
@@ -316,6 +327,12 @@ body.editor .m-edit{display:inline-block;}
       <div class="f-loader-text" id="f-loader-text">กำลังบันทึก</div>
     </div>
   </div>
+</div>
+
+<!-- BUSY OVERLAY (reminders) -->
+<div class="busy-overlay" id="busy-overlay" aria-hidden="true">
+  <div class="busy-ring"></div>
+  <div class="busy-text" id="busy-text">กำลังทำงาน</div>
 </div>
 
 <!-- SETTINGS -->
@@ -859,6 +876,13 @@ async function deleteBook() {
 const VAPID_PUBLIC = 'BKupyHHuqMQIRDBqNUK4yAUWRzhmkCEB9zRM1BYt6sPdtl3QqpSDtpCj6PwtvONH3umvNoeD7yKP62URnBV1dHU';
 let reminders = [];
 
+function setBusy(on, msg) {
+  const el = document.getElementById('busy-overlay');
+  if (!el) return;
+  if (on && msg) document.getElementById('busy-text').textContent = msg;
+  el.classList.toggle('show', on);
+}
+
 function urlB64ToUint8(base64) {
   const pad = '='.repeat((4 - base64.length % 4) % 4);
   const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
@@ -882,6 +906,7 @@ async function enableNotify() {
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') { alert('ยังไม่ได้อนุญาตการแจ้งเตือน'); renderNotifyStatus(); return; }
+    setBusy(true, 'กำลังเปิดการแจ้งเตือน');
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
@@ -890,6 +915,7 @@ async function enableNotify() {
     alert('เปิดการแจ้งเตือนบนอุปกรณ์นี้แล้ว ✅');
     renderNotifyStatus();
   } catch(e) { alert('เปิดการแจ้งเตือนไม่ได้: ' + e.message); }
+  finally { setBusy(false); }
 }
 
 async function loadReminders() {
@@ -916,20 +942,24 @@ async function addReminder() {
   if (!when) { alert('กรุณาเลือกวันและเวลา'); return; }
   const ms = new Date(when).getTime();
   if (isNaN(ms)) { alert('วันเวลาไม่ถูกต้อง'); return; }
+  setBusy(true, 'กำลังบันทึก');
   try {
     await gasPost({ action: 'remind_add', title: title, url: url, remind_at: ms });
     await loadReminders();
     renderNotify();
   } catch(e) { alert('เพิ่มไม่ได้: ' + e.message); }
+  finally { setBusy(false); }
 }
 
 async function deleteReminder(id) {
   if (!confirm('ลบการแจ้งเตือนนี้?')) return;
+  setBusy(true, 'กำลังลบ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
     await loadReminders();
     renderNotify();
   } catch(e) { alert('ลบไม่ได้: ' + e.message); }
+  finally { setBusy(false); }
 }
 
 function fmtWhen(ms) {
