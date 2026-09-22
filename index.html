@@ -22,6 +22,7 @@
   --raw:#7a5ea0;--raw2:#5e4480;--rdim:rgba(122,94,160,0.12);--rbd:#c4b3d9;
   --star:#9c7d1f;--star-bd:#e2cf8a;--star-dim:#7d6300;--star-hover:#d9a400;
   --summary:#2d4a40;
+  --scrim:rgba(255,255,255,0.72);
 }
 :root[data-theme="dark"]{
   --bg:#0f1613;--s1:#161f1b;--s2:#1b2621;--s3:#22302a;--bd:#2b3a33;--bd2:#38493f;
@@ -30,6 +31,7 @@
   --raw:#b79ad8;--raw2:#cbb4e6;--rdim:rgba(183,154,216,0.18);--rbd:#4a3d5e;
   --star:#d9bd6e;--star-bd:#6b5a2a;--star-dim:#e2cf8a;--star-hover:#e2cf8a;
   --summary:#c2d4ca;
+  --scrim:rgba(19,27,23,0.74);
 }
 html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-weight:400;min-height:100%;padding-bottom:60px;}
 a{color:inherit;text-decoration:none;}
@@ -170,7 +172,23 @@ body.editor .m-edit{display:inline-block;}
 .btn-primary{background:var(--mint);color:#fff;}
 .btn-ghost{background:none;border:1px solid var(--bd2);color:var(--dim);}
 .btn-danger{background:none;border:1px solid #e0a0a0;color:#b85c5c;margin-left:auto;}
-.f-card.saving{opacity:.55;pointer-events:none;}
+/* SAVING OVERLAY — shown inside the form card while add/edit/delete runs */
+.f-card.saving{pointer-events:none;}
+.f-loader{position:absolute;inset:0;border-radius:14px;z-index:5;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  pointer-events:auto;animation:loaderIn .2s ease;}
+.f-card.saving .f-loader{display:flex;}
+.f-loader-ring{position:relative;width:52px;height:52px;}
+.f-loader-ring::before,.f-loader-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid transparent;}
+.f-loader-ring::before{border-color:var(--mdim);}
+.f-loader-ring::after{border-top-color:var(--mint);border-right-color:var(--mint);animation:spin .8s cubic-bezier(.5,.15,.5,.85) infinite;}
+.f-loader-emoji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.05rem;animation:loaderPulse 1.3s ease-in-out infinite;}
+.f-loader-text{font-family:'Sarabun','Cordia New',sans-serif;font-size:.92rem;font-weight:600;color:var(--mint2);letter-spacing:.2px;}
+.f-loader-text::after{content:'';animation:loaderDots 1.4s steps(1,end) infinite;}
+@keyframes loaderIn{from{opacity:0}to{opacity:1}}
+@keyframes loaderPulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+@keyframes loaderDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 </style>
 <script>
 (function(){
@@ -268,6 +286,10 @@ body.editor .m-edit{display:inline-block;}
       <button class="btn btn-primary" id="f-save" onclick="saveForm()">บันทึก</button>
       <button class="btn btn-ghost" onclick="closeForm()">ยกเลิก</button>
       <button class="btn btn-danger" id="f-delete" onclick="deleteBook()" style="display:none">ลบ</button>
+    </div>
+    <div class="f-loader" id="f-loader" aria-hidden="true">
+      <div class="f-loader-ring"><span class="f-loader-emoji" id="f-loader-emoji">💾</span></div>
+      <div class="f-loader-text" id="f-loader-text">กำลังบันทึก</div>
     </div>
   </div>
 </div>
@@ -739,9 +761,13 @@ async function gasPost(payload) {
   return data;
 }
 
-function setSaving(on) {
+function setSaving(on, msg, emoji) {
   document.getElementById('form-card').classList.toggle('saving', on);
   document.getElementById('f-save').textContent = on ? 'กำลังบันทึก...' : 'บันทึก';
+  if (on) {
+    if (msg)   document.getElementById('f-loader-text').textContent = msg;
+    if (emoji) document.getElementById('f-loader-emoji').textContent = emoji;
+  }
 }
 
 async function saveForm() {
@@ -760,14 +786,17 @@ async function saveForm() {
   if (formMode === 'edit') payload.row = formRow;
   if (document.getElementById('f-removecover').checked) payload.cover = '';
 
-  setSaving(true);
+  setSaving(true, 'กำลังบันทึก', '💾');
   try {
     const fileEl = document.getElementById('f-image');
     if (fileEl.files && fileEl.files[0]) {
+      setSaving(true, 'กำลังอัปโหลดรูป', '📤');
       const up = await fileToUpload(fileEl.files[0]);
       payload.imageB64 = up.b64; payload.imageType = up.type; payload.imageName = up.name;
     }
+    setSaving(true, 'กำลังบันทึก', '💾');
     await gasPost(payload);
+    setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
   } catch(err) {
@@ -780,9 +809,10 @@ async function saveForm() {
 async function deleteBook() {
   if (formMode !== 'edit' || !formRow) return;
   if (!confirm('ลบนิยายเรื่องนี้ออกจากชีตถาวร?')) return;
-  setSaving(true);
+  setSaving(true, 'กำลังลบ', '🗑️');
   try {
     await gasPost({ action: 'delete', row: formRow });
+    setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
   } catch(err) {
