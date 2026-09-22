@@ -6,7 +6,7 @@
      the network, so the PWA no longer shows "A problem repeatedly occurred".
    - Data (the Google Sheet CSV) and images use network-first with a cache
      fallback, so content stays fresh but still works offline. */
-const CACHE = 'novel-v3';
+const CACHE = 'novel-v4';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -26,19 +26,26 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
 
-  /* App-shell navigations: cache-first, refresh in the background. */
+  /* App-shell navigations: network-first with a short timeout, falling back
+     to cache. This loads freshly-deployed code on every online launch while
+     still opening instantly (from cache) when offline or on a slow network. */
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
-      const cached = (await cache.match('./index.html')) || (await cache.match('./'));
-      const network = fetch(req).then(res => {
-        if (res && res.ok) cache.put('./index.html', res.clone());
-        return res;
-      }).catch(() => null);
-      return cached || (await network) || new Response(
-        '<h1>ออฟไลน์</h1><p>เชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p>',
-        { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-      );
+      try {
+        const net = await Promise.race([
+          fetch(req),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
+        ]);
+        if (net && net.ok) { cache.put('./index.html', net.clone()); return net; }
+        throw new Error('bad status');
+      } catch (_) {
+        const cached = (await cache.match('./index.html')) || (await cache.match('./'));
+        return cached || new Response(
+          '<h1>ออฟไลน์</h1><p>เชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p>',
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
+      }
     })());
     return;
   }
