@@ -387,6 +387,7 @@ const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ER
 
 let allBooks = [];
 let currentTab = 'meb';
+let notifyView = false;   // true while the 🔔 Notification tab is showing
 let activeTags = new Set();
 let activeStar = null;
 let searchQ = '';
@@ -499,6 +500,7 @@ async function refreshFromGas() {
 
 /* ===== RENDER ===== */
 function renderAll() {
+  if (notifyView) return;   // don't let a background data refresh overwrite the Notification view
   renderFilterStrip();
   renderGrid();
 }
@@ -595,11 +597,13 @@ function switchTab(tab) {
   document.getElementById('filter-strip').style.display = notify ? 'none' : '';
   document.querySelector('.search-box').style.display = notify ? 'none' : '';
   if (notify) {
+    notifyView = true;
     nfEditId = null;
     renderNotify();
-    loadReminders().then(() => renderNotify());
+    loadReminders().then(() => { if (notifyView) renderNotify(); });
     return;
   }
+  notifyView = false;
   currentTab = tab;
   activeTags = new Set();
   activeStar = null;
