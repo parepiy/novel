@@ -77,7 +77,7 @@ body.editor .notify-tab{display:inline-block;}
 .nf-del:hover{border-color:#e0a0a0;}
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
-.nf-form input[type="datetime-local"]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;text-align:left;}
+.nf-form input[type="datetime-local"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
 
 /* GLOBAL BUSY OVERLAY (reminder add/delete/enable) */
 .busy-overlay{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:loaderIn .2s ease;}
@@ -968,6 +968,13 @@ function fmtWhen(ms) {
   return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/* value string for <input type="datetime-local"> in LOCAL time, default = now + 1h */
+function defaultWhenValue() {
+  const d = new Date(Date.now() + 60 * 60000);
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
 async function renderNotifyStatus() {
   const el = document.getElementById('nf-status');
   if (!el) return;
@@ -1007,6 +1014,8 @@ function renderNotify() {
       '<div class="nf-list">' + (items || '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>') + '</div>' +
     '</div>';
   document.getElementById('header-count').textContent = 'การแจ้งเตือน ' + reminders.length + ' รายการ';
+  const w = document.getElementById('nf-when');
+  if (w) w.value = defaultWhenValue();
   renderNotifyStatus();
 }
 
