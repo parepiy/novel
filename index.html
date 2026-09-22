@@ -54,6 +54,29 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .nav-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:7px 14px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s;}
 .nav-tab.active{color:var(--mint2);border-bottom-color:var(--mint);}
 .nav-tab[data-tab="raw"].active{color:var(--raw2);border-bottom-color:var(--raw);}
+.notify-tab{display:none;}
+body.editor .notify-tab{display:inline-block;}
+.nav-tab[data-tab="notify"].active{color:var(--star-dim);border-bottom-color:var(--star-hover);}
+.nf-badge{background:#d98c00;color:#fff;border-radius:10px;padding:0 6px;font-size:.68rem;font-weight:700;vertical-align:middle;}
+
+/* NOTIFICATION VIEW */
+.notify-view{padding:16px;max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.nf-status{font-size:.85rem;color:var(--dim);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;}
+.nf-form{display:flex;flex-direction:column;gap:8px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:14px;}
+.nf-form input{border:1px solid var(--bd2);border-radius:8px;padding:9px 11px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);width:100%;}
+.nf-form input:focus{outline:none;border-color:var(--mint);}
+.nf-list{display:flex;flex-direction:column;gap:8px;}
+.nf-item{display:flex;align-items:flex-start;gap:10px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;transition:border-color .15s;}
+.nf-item.done{opacity:.6;}
+.nf-item.due{border-color:var(--star-hover);box-shadow:0 0 0 1px var(--star-hover);}
+.nf-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.nf-item-title{font-weight:600;font-size:.92rem;color:var(--text);line-height:1.45;}
+.nf-item-when{font-size:.77rem;color:var(--dim);}
+.nf-item-url{font-size:.75rem;color:var(--mint2);word-break:break-all;}
+.nf-del{background:none;border:1px solid var(--bd2);color:#b85c5c;border-radius:8px;padding:5px 10px;font-size:.8rem;cursor:pointer;flex-shrink:0;}
+.nf-del:hover{border-color:#e0a0a0;}
+.nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
+.btn-sm{padding:6px 13px;font-size:.82rem;}
 
 /* SEARCH BOX (in tab row, far right) */
 .search-box{flex:0 1 160px;min-width:0;margin-left:auto;align-self:center;display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--bd2);border-radius:18px;padding:4px 9px;transition:border-color .15s;}
@@ -218,6 +241,7 @@ body.editor .m-edit{display:inline-block;}
   <div class="nav-tabs">
     <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
     <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
+    <button class="nav-tab notify-tab" data-tab="notify" onclick="switchTab('notify')">🔔 แจ้งเตือน</button>
     <div class="search-box">
       <button class="scope-btn" id="scope-btn" onclick="toggleScope()" title="สลับค้นหา ชื่อเรื่อง / เนื้อเรื่อง">🔍</button>
       <input type="text" id="search-input" placeholder="ค้นหาชื่อ..." oninput="filterBooks()">
@@ -354,6 +378,7 @@ function applyEditorUI() {
   document.body.classList.toggle('editor', isEditor());
   document.getElementById('add-btn').style.display = isEditor() ? 'flex' : 'none';
   document.getElementById('key-btn').classList.toggle('on', isEditor());
+  if (isEditor()) loadReminders();
 }
 
 /* ===== CSV PARSER (public read path) =====
@@ -541,12 +566,20 @@ function esc(s) {
 
 /* ===== TABS / FILTER / SEARCH ===== */
 function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const notify = tab === 'notify';
+  document.getElementById('filter-strip').style.display = notify ? 'none' : '';
+  document.querySelector('.search-box').style.display = notify ? 'none' : '';
+  if (notify) {
+    renderNotify();
+    loadReminders().then(() => renderNotify());
+    return;
+  }
   currentTab = tab;
   activeTags = new Set();
   activeStar = null;
   searchQ = '';
   document.getElementById('search-input').value = '';
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   renderFilterStrip();
   renderGrid();
 }
@@ -684,7 +717,7 @@ function openAdd() {
   formMode = 'add'; formRow = null; formCover = '';
   document.getElementById('form-title').textContent = 'เพิ่มนิยาย';
   document.getElementById('f-title').value = '';
-  document.getElementById('f-source').value = currentTab;
+  document.getElementById('f-source').value = (currentTab === 'raw' ? 'raw' : 'meb');
   document.getElementById('f-star').value = '0';
   document.getElementById('f-tags').value = '';
   document.getElementById('f-url').value = '';
@@ -820,6 +853,131 @@ async function deleteBook() {
   } finally {
     setSaving(false);
   }
+}
+
+/* ===== NOTIFICATIONS (reminders + web push) ===== */
+const VAPID_PUBLIC = 'BKupyHHuqMQIRDBqNUK4yAUWRzhmkCEB9zRM1BYt6sPdtl3QqpSDtpCj6PwtvONH3umvNoeD7yKP62URnBV1dHU';
+let reminders = [];
+
+function urlB64ToUint8(base64) {
+  const pad = '='.repeat((4 - base64.length % 4) % 4);
+  const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function pushStatus() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub ? 'on' : 'off';
+  } catch(e) { return 'off'; }
+}
+
+async function enableNotify() {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { alert('ยังไม่ได้อนุญาตการแจ้งเตือน'); renderNotifyStatus(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await gasPost({ action: 'sub_save', endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
+    alert('เปิดการแจ้งเตือนบนอุปกรณ์นี้แล้ว ✅');
+    renderNotifyStatus();
+  } catch(e) { alert('เปิดการแจ้งเตือนไม่ได้: ' + e.message); }
+}
+
+async function loadReminders() {
+  if (!isEditor()) { reminders = []; updateNotifyBadge(); return; }
+  try {
+    const d = await gasPost({ action: 'remind_list' });
+    reminders = (d.reminders || []).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
+  } catch(e) { reminders = []; }
+  updateNotifyBadge();
+}
+
+function updateNotifyBadge() {
+  const now = Date.now();
+  const due = reminders.filter(r => !Number(r.sent) && Number(r.remind_at) <= now).length;
+  const btn = document.querySelector('.notify-tab');
+  if (btn) btn.innerHTML = '🔔 แจ้งเตือน' + (due ? ' <span class="nf-badge">' + due + '</span>' : '');
+}
+
+async function addReminder() {
+  const title = document.getElementById('nf-title').value.trim();
+  const url = document.getElementById('nf-url').value.trim();
+  const when = document.getElementById('nf-when').value;
+  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  if (!when) { alert('กรุณาเลือกวันและเวลา'); return; }
+  const ms = new Date(when).getTime();
+  if (isNaN(ms)) { alert('วันเวลาไม่ถูกต้อง'); return; }
+  try {
+    await gasPost({ action: 'remind_add', title: title, url: url, remind_at: ms });
+    await loadReminders();
+    renderNotify();
+  } catch(e) { alert('เพิ่มไม่ได้: ' + e.message); }
+}
+
+async function deleteReminder(id) {
+  if (!confirm('ลบการแจ้งเตือนนี้?')) return;
+  try {
+    await gasPost({ action: 'remind_delete', id: id });
+    await loadReminders();
+    renderNotify();
+  } catch(e) { alert('ลบไม่ได้: ' + e.message); }
+}
+
+function fmtWhen(ms) {
+  const d = new Date(Number(ms));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+async function renderNotifyStatus() {
+  const el = document.getElementById('nf-status');
+  if (!el) return;
+  const st = await pushStatus();
+  if (st === 'unsupported') el.innerHTML = '⚠️ อุปกรณ์/เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือนแบบพุช (บน iPhone ต้องเพิ่มลงหน้าโฮม)';
+  else if (st === 'denied') el.innerHTML = '🚫 การแจ้งเตือนถูกปิดกั้น — เปิดใหม่ได้ที่การตั้งค่าระบบ › การแจ้งเตือน';
+  else if (st === 'on') el.innerHTML = '✅ การแจ้งเตือนเปิดอยู่บนอุปกรณ์นี้';
+  else el.innerHTML = '<span>ยังไม่ได้เปิดการแจ้งเตือนบนอุปกรณ์นี้</span> <button class="btn btn-primary btn-sm" onclick="enableNotify()">เปิดการแจ้งเตือน</button>';
+}
+
+function renderNotify() {
+  const now = Date.now();
+  const items = reminders.map(r => {
+    const sent = !!Number(r.sent);
+    const due = !sent && Number(r.remind_at) <= now;
+    const cls = sent ? ' done' : (due ? ' due' : '');
+    const label = sent ? '✅ แจ้งเตือนแล้ว' : (due ? '⏰ ถึงเวลาแล้ว' : '🕒 ตั้งเวลาไว้');
+    const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
+    return '<div class="nf-item' + cls + '">' +
+        '<div class="nf-item-main">' +
+          '<div class="nf-item-title">' + esc(r.title) + '</div>' +
+          '<div class="nf-item-when">' + label + ' · ' + fmtWhen(r.remind_at) + '</div>' +
+          urlHtml +
+        '</div>' +
+        '<button class="nf-del" onclick="deleteReminder(\'' + String(r.id).replace(/'/g, "\\'") + '\')">ลบ</button>' +
+      '</div>';
+  }).join('');
+  document.getElementById('main-content').innerHTML =
+    '<div class="notify-view">' +
+      '<div class="nf-status" id="nf-status">…</div>' +
+      '<div class="nf-form">' +
+        '<input id="nf-title" placeholder="ชื่อเรื่อง">' +
+        '<input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+        '<input id="nf-when" type="datetime-local">' +
+        '<button class="btn btn-primary" onclick="addReminder()">＋ เพิ่มการแจ้งเตือน</button>' +
+      '</div>' +
+      '<div class="nf-list">' + (items || '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>') + '</div>' +
+    '</div>';
+  document.getElementById('header-count').textContent = 'การแจ้งเตือน ' + reminders.length + ' รายการ';
+  renderNotifyStatus();
 }
 
 /* ===== KEYBOARD ===== */
