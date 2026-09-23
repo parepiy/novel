@@ -888,6 +888,7 @@ async function deleteBook() {
 const VAPID_PUBLIC = 'BKupyHHuqMQIRDBqNUK4yAUWRzhmkCEB9zRM1BYt6sPdtl3QqpSDtpCj6PwtvONH3umvNoeD7yKP62URnBV1dHU';
 let reminders = [];
 let nfEditId = null;   // id of the reminder currently being edited (null = add mode)
+let reminderError = '';   // last load error, shown in the list area for diagnosis
 
 function setBusy(on, msg) {
   const el = document.getElementById('busy-overlay');
@@ -932,11 +933,12 @@ async function enableNotify() {
 }
 
 async function loadReminders() {
-  if (!isEditor()) { reminders = []; updateNotifyBadge(); return; }
+  if (!isEditor()) { reminders = []; reminderError = ''; updateNotifyBadge(); return; }
   try {
     const d = await gasPost({ action: 'remind_list' });
     reminders = (d.reminders || []).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
-  } catch(e) { reminders = []; }
+    reminderError = '';
+  } catch(e) { reminders = []; reminderError = e.message || 'error'; }
   updateNotifyBadge();
 }
 
@@ -1059,7 +1061,9 @@ function renderNotify() {
           cancelBtn +
         '</div>' +
       '</div>' +
-      '<div class="nf-list">' + (items || '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>') + '</div>' +
+      '<div class="nf-list">' + (items || (reminderError
+        ? '<div class="nf-empty" style="color:#b85c5c;">โหลดรายการแจ้งเตือนไม่ได้: ' + esc(reminderError) + '<br><br>ตรวจสอบ: 1) รหัสลับใน 🔑 ตรงกับสคริปต์  2) Deploy › Manage deployments › Who has access = Anyone  3) อัปเดต remind_list ในสคริปต์แล้ว</div>'
+        : '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>')) + '</div>' +
     '</div>';
   document.getElementById('header-count').textContent = 'การแจ้งเตือน ' + reminders.length + ' รายการ';
   const t = document.getElementById('nf-title');
