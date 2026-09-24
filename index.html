@@ -113,6 +113,22 @@ body.editor .notify-tab{display:inline-block;}
 .cal-badge{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:var(--mint);color:#fff;font-size:.66rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;}
 .cal-badge.overdue{background:var(--overdue);}
 .cal-hint{text-align:center;font-size:.74rem;color:var(--mute);margin-top:10px;}
+
+/* larger, roomier notification view on tablet/desktop */
+@media(min-width:700px){
+  .notify-view{max-width:860px;padding:24px 16px;gap:18px;}
+  .cal-wrap{padding:18px;}
+  .cal-days{grid-auto-rows:74px;gap:6px;}
+  .cal-grid{gap:6px;}
+  .cal-day{font-size:1.05rem;}
+  .cal-title{font-size:1.15rem;}
+  .cal-wdc{font-size:.85rem;padding:4px 0;}
+  .cal-badge{min-width:20px;height:20px;font-size:.75rem;top:4px;right:4px;}
+  .cal-nav{width:38px;height:38px;font-size:1.25rem;}
+  .cal-hint{font-size:.82rem;}
+  .nf-item-title{font-size:1rem;}
+  .nf-vt{font-size:.95rem;padding:10px;}
+}
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
 .nf-form input[type="datetime-local"],.nf-form input[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
