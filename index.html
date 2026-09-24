@@ -88,6 +88,30 @@ body.editor .notify-tab{display:inline-block;}
 .nf-form-actions{display:flex;gap:8px;}
 .nf-form-actions .btn{flex:1;}
 .nf-edit-hint{font-size:.82rem;font-weight:600;color:var(--mint2);}
+
+/* view toggle (list / calendar) */
+.nf-viewtoggle{display:flex;gap:6px;margin-bottom:14px;}
+.nf-vt{flex:1;background:none;border:1px solid var(--bd2);border-radius:9px;padding:8px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.86rem;color:var(--dim);cursor:pointer;transition:all .12s;}
+.nf-vt.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);font-weight:600;}
+
+/* calendar */
+.cal-wrap{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:12px;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-title{font-weight:700;color:var(--mint2);font-size:.98rem;}
+.cal-nav{background:none;border:1px solid var(--bd2);border-radius:8px;width:34px;height:34px;font-size:1.15rem;color:var(--dim);cursor:pointer;line-height:1;}
+.cal-nav:hover{border-color:var(--mint);color:var(--mint2);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-wd{margin-bottom:4px;}
+.cal-wdc{text-align:center;font-size:.72rem;color:var(--mute);padding:2px 0;}
+.cal-cell{position:relative;min-width:0;min-height:46px;border:1px solid var(--bd);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);transition:border-color .12s,background .12s;}
+.cal-cell.empty{border:none;background:none;cursor:default;}
+.cal-cell:not(.empty):hover{border-color:var(--mint);}
+.cal-cell.has{background:var(--mdim);}
+.cal-cell.today{border:2px solid var(--mint);}
+.cal-day{font-size:.85rem;color:var(--text);}
+.cal-badge{position:absolute;top:3px;right:3px;min-width:16px;height:16px;padding:0 3px;border-radius:8px;background:var(--mint);color:#fff;font-size:.66rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;}
+.cal-badge.overdue{background:var(--overdue);}
+.cal-hint{text-align:center;font-size:.74rem;color:var(--mute);margin-top:10px;}
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
 .nf-form input[type="datetime-local"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
@@ -346,6 +370,11 @@ body.editor .m-edit{display:inline-block;}
 <div class="busy-overlay" id="busy-overlay" aria-hidden="true">
   <div class="busy-ring"></div>
   <div class="busy-text" id="busy-text">กำลังทำงาน</div>
+</div>
+
+<!-- CALENDAR DAY POPUP -->
+<div class="overlay" id="day-bg" onclick="if(event.target===this)closeDayPopup()">
+  <div class="f-card" id="day-card" style="max-width:460px;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -895,6 +924,11 @@ const VAPID_PUBLIC = 'BKupyHHuqMQIRDBqNUK4yAUWRzhmkCEB9zRM1BYt6sPdtl3QqpSDtpCj6P
 let reminders = [];
 let nfEditId = null;   // id of the reminder currently being edited (null = add mode)
 let reminderError = '';   // last load error, shown in the list area for diagnosis
+let nfView = (function(){ try { return localStorage.getItem('nfView') || 'list'; } catch(e){ return 'list'; } })();
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();   // 0-based
+let dayPopupKey = null;   // 'YYYY-MM-DD' of the open day popup (null = closed)
+let dayEditId = null;     // reminder being edited inside the day popup
 
 function setBusy(on, msg) {
   const el = document.getElementById('busy-overlay');
@@ -996,6 +1030,7 @@ async function deleteReminder(id) {
     await gasPost({ action: 'remind_delete', id: id });
     await loadReminders();
     renderNotify();
+    if (dayPopupKey) renderDayPopup();
   } catch(e) { alert('ลบไม่ได้: ' + e.message); }
   finally { setBusy(false); }
 }
@@ -1007,6 +1042,7 @@ async function completeReminder(id) {
     await gasPost({ action: 'remind_delete', id: id });
     await loadReminders();
     renderNotify();
+    if (dayPopupKey) renderDayPopup();
   } catch(e) { alert('ทำเครื่องหมายไม่ได้: ' + e.message); }
   finally { setBusy(false); }
 }
@@ -1039,7 +1075,28 @@ async function renderNotifyStatus() {
   else el.innerHTML = '<span>ยังไม่ได้เปิดการแจ้งเตือนบนอุปกรณ์นี้</span> <button class="btn btn-primary btn-sm" onclick="enableNotify()">เปิดการแจ้งเตือน</button>';
 }
 
-function renderNotify() {
+/* epoch ms -> 'YYYY-MM-DD' local date key */
+function dkey(ms) {
+  const d = new Date(Number(ms));
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+function setNotifyView(v) {
+  nfView = v;
+  try { localStorage.setItem('nfView', v); } catch(e) {}
+  nfEditId = null;
+  renderNotify();
+}
+
+function calShift(delta) {
+  calMonth += delta;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  else if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderNotify();
+}
+
+function listBodyHtml() {
   const now = Date.now();
   const editing = nfEditId ? reminders.find(r => String(r.id) === String(nfEditId)) : null;
   const items = reminders.map(r => {
@@ -1047,9 +1104,7 @@ function renderNotify() {
     const notified = !!Number(r.sent);
     const beingEdited = String(r.id) === String(nfEditId);
     const cls = (overdue ? ' overdue' : '') + (beingEdited ? ' editing' : '');
-    const label = overdue
-      ? ('⏰ เลยกำหนด' + (notified ? ' · แจ้งแล้ว' : ''))
-      : '🕒 ตั้งเวลาไว้';
+    const label = overdue ? ('⏰ เลยกำหนด' + (notified ? ' · แจ้งแล้ว' : '')) : '🕒 ตั้งเวลาไว้';
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
     const idAttr = String(r.id).replace(/'/g, "\\'");
     return '<div class="nf-item' + cls + '">' +
@@ -1068,41 +1123,177 @@ function renderNotify() {
   const primaryLabel = editing ? '💾 บันทึกการแก้ไข' : '＋ เพิ่มการแจ้งเตือน';
   const cancelBtn = editing ? '<button class="btn btn-ghost" onclick="cancelEdit()">ยกเลิก</button>' : '';
   const editHint = editing ? '<div class="nf-edit-hint">✏️ กำลังแก้ไข</div>' : '';
-  document.getElementById('main-content').innerHTML =
-    '<div class="notify-view">' +
-      '<div class="nf-status" id="nf-status">…</div>' +
-      '<div class="nf-form">' +
-        editHint +
-        '<input id="nf-title" placeholder="ชื่อเรื่อง">' +
-        '<input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
-        '<input id="nf-when" type="datetime-local">' +
-        '<div class="nf-form-actions">' +
-          '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' +
-          cancelBtn +
-        '</div>' +
+  const empty = reminderError
+    ? '<div class="nf-empty" style="color:#b85c5c;">โหลดรายการแจ้งเตือนไม่ได้: ' + esc(reminderError) + '<br><br>ตรวจสอบ: 1) รหัสลับใน 🔑 ตรงกับสคริปต์  2) Deploy › Manage deployments › Who has access = Anyone  3) อัปเดต remind_list ในสคริปต์แล้ว</div>'
+    : '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>';
+  return '<div class="nf-form">' + editHint +
+      '<input id="nf-title" placeholder="ชื่อเรื่อง">' +
+      '<input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+      '<input id="nf-when" type="datetime-local">' +
+      '<div class="nf-form-actions">' +
+        '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' + cancelBtn +
       '</div>' +
-      '<div class="nf-list">' + (items || (reminderError
-        ? '<div class="nf-empty" style="color:#b85c5c;">โหลดรายการแจ้งเตือนไม่ได้: ' + esc(reminderError) + '<br><br>ตรวจสอบ: 1) รหัสลับใน 🔑 ตรงกับสคริปต์  2) Deploy › Manage deployments › Who has access = Anyone  3) อัปเดต remind_list ในสคริปต์แล้ว</div>'
-        : '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>')) + '</div>' +
+    '</div>' +
+    '<div class="nf-list">' + (items || empty) + '</div>';
+}
+
+function calendarHtml() {
+  const now = Date.now();
+  const tKey = dkey(now);
+  const first = new Date(calYear, calMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const monthLabel = first.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  const counts = {}, overdueMap = {};
+  reminders.forEach(r => {
+    const k = dkey(r.remind_at);
+    counts[k] = (counts[k] || 0) + 1;
+    if (Number(r.remind_at) <= now) overdueMap[k] = true;
+  });
+  const wd = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const cnt = counts[key] || 0;
+    const badge = cnt ? '<span class="cal-badge' + (overdueMap[key] ? ' overdue' : '') + '">' + cnt + '</span>' : '';
+    cells += '<div class="cal-cell' + (key === tKey ? ' today' : '') + (cnt ? ' has' : '') + '" onclick="openDayPopup(\'' + key + '\')">' +
+      '<span class="cal-day">' + d + '</span>' + badge + '</div>';
+  }
+  return '<div class="cal-wrap">' +
+      '<div class="cal-header">' +
+        '<button class="cal-nav" onclick="calShift(-1)">‹</button>' +
+        '<span class="cal-title">' + monthLabel + '</span>' +
+        '<button class="cal-nav" onclick="calShift(1)">›</button>' +
+      '</div>' +
+      '<div class="cal-grid cal-wd">' + wd.map(w => '<div class="cal-wdc">' + w + '</div>').join('') + '</div>' +
+      '<div class="cal-grid">' + cells + '</div>' +
+      '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>' +
     '</div>';
+}
+
+function renderNotify() {
+  const toggle = '<div class="nf-viewtoggle">' +
+    '<button class="nf-vt' + (nfView === 'list' ? ' active' : '') + '" onclick="setNotifyView(\'list\')">📋 รายการ</button>' +
+    '<button class="nf-vt' + (nfView === 'calendar' ? ' active' : '') + '" onclick="setNotifyView(\'calendar\')">📅 ปฏิทิน</button>' +
+  '</div>';
+  const body = nfView === 'calendar' ? calendarHtml() : listBodyHtml();
+  document.getElementById('main-content').innerHTML =
+    '<div class="notify-view"><div class="nf-status" id="nf-status">…</div>' + toggle + body + '</div>';
   document.getElementById('header-count').textContent = 'การแจ้งเตือน ' + reminders.length + ' รายการ';
-  const t = document.getElementById('nf-title');
-  const u = document.getElementById('nf-url');
-  const w = document.getElementById('nf-when');
-  if (editing) {
-    if (t) t.value = editing.title || '';
-    if (u) u.value = editing.url || '';
-    if (w) w.value = msToWhenValue(editing.remind_at);
-  } else {
-    if (w) w.value = defaultWhenValue();
+  if (nfView === 'list') {
+    const editing = nfEditId ? reminders.find(r => String(r.id) === String(nfEditId)) : null;
+    const t = document.getElementById('nf-title');
+    const u = document.getElementById('nf-url');
+    const w = document.getElementById('nf-when');
+    if (editing) {
+      if (t) t.value = editing.title || '';
+      if (u) u.value = editing.url || '';
+      if (w) w.value = msToWhenValue(editing.remind_at);
+    } else if (w) { w.value = defaultWhenValue(); }
   }
   renderNotifyStatus();
 }
 
+/* ===== CALENDAR DAY POPUP ===== */
+function openDayPopup(key) {
+  dayPopupKey = key;
+  dayEditId = null;
+  document.getElementById('day-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderDayPopup();
+}
+
+function closeDayPopup() {
+  dayPopupKey = null;
+  dayEditId = null;
+  document.getElementById('day-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderDayPopup() {
+  const key = dayPopupKey;
+  if (!key) return;
+  const parts = key.split('-').map(Number);
+  const y = parts[0], mo = parts[1], d = parts[2];
+  const dateObj = new Date(y, mo - 1, d);
+  const dateLabel = dateObj.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const now = Date.now();
+  const dayItems = reminders.filter(r => dkey(r.remind_at) === key).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
+  const editing = dayEditId ? reminders.find(r => String(r.id) === String(dayEditId)) : null;
+
+  const itemsHtml = dayItems.length ? dayItems.map(r => {
+    const overdue = Number(r.remind_at) <= now;
+    const timeStr = new Date(Number(r.remind_at)).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
+    const idAttr = String(r.id).replace(/'/g, "\\'");
+    return '<div class="nf-item' + (overdue ? ' overdue' : '') + (String(r.id) === String(dayEditId) ? ' editing' : '') + '">' +
+        '<div class="nf-item-main">' +
+          '<div class="nf-item-title">' + esc(r.title) + '</div>' +
+          '<div class="nf-item-when">' + (overdue ? '⏰ ' : '🕒 ') + timeStr + ' น.</div>' +
+          urlHtml +
+        '</div>' +
+        '<div class="nf-actions">' +
+          '<button class="nf-done-btn" onclick="completeReminder(\'' + idAttr + '\')">✓</button>' +
+          '<button class="nf-edit" onclick="editFromDay(\'' + idAttr + '\')">แก้ไข</button>' +
+          '<button class="nf-del" onclick="deleteReminder(\'' + idAttr + '\')">ลบ</button>' +
+        '</div>' +
+      '</div>';
+  }).join('') : '<div class="nf-empty" style="padding:16px;">ยังไม่มีการแจ้งเตือนในวันนี้</div>';
+
+  const addLabel = editing ? '💾 บันทึกการแก้ไข' : '＋ เพิ่มในวันนี้';
+  const cancelBtn = editing ? '<button class="btn btn-ghost" onclick="cancelDayEdit()">ยกเลิก</button>' : '';
+  const editHint = editing ? '<div class="nf-edit-hint">✏️ กำลังแก้ไข</div>' : '';
+
+  document.getElementById('day-card').innerHTML =
+    '<button class="ov-close" onclick="closeDayPopup()">✕</button>' +
+    '<h3>' + dateLabel + '</h3>' +
+    '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
+    '<div class="nf-form">' + editHint +
+      '<input id="day-title" placeholder="ชื่อเรื่อง">' +
+      '<input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+      '<input id="day-time" type="time">' +
+      '<div class="nf-form-actions">' +
+        '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
+      '</div>' +
+    '</div>';
+
+  const p = n => String(n).padStart(2, '0');
+  const tv = editing ? new Date(Number(editing.remind_at)) : new Date(y, mo - 1, d, 9, 0);
+  document.getElementById('day-title').value = editing ? (editing.title || '') : '';
+  document.getElementById('day-url').value = editing ? (editing.url || '') : '';
+  document.getElementById('day-time').value = p(tv.getHours()) + ':' + p(tv.getMinutes());
+}
+
+async function saveFromDay() {
+  const title = document.getElementById('day-title').value.trim();
+  const url = document.getElementById('day-url').value.trim();
+  const time = document.getElementById('day-time').value;
+  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  if (!time) { alert('กรุณาเลือกเวลา'); return; }
+  const parts = dayPopupKey.split('-').map(Number);
+  const tp = time.split(':').map(Number);
+  const ms = new Date(parts[0], parts[1] - 1, parts[2], tp[0] || 0, tp[1] || 0).getTime();
+  const editingId = dayEditId;
+  setBusy(true, editingId ? 'กำลังบันทึกการแก้ไข' : 'กำลังบันทึก');
+  try {
+    await gasPost({ action: 'remind_add', title: title, url: url, remind_at: ms });
+    if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
+    dayEditId = null;
+    await loadReminders();
+    renderNotify();
+    renderDayPopup();
+  } catch(e) { alert('บันทึกไม่ได้: ' + e.message); }
+  finally { setBusy(false); }
+}
+
+function editFromDay(id) { dayEditId = id; renderDayPopup(); }
+function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
+
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closeModalBtn(); closeForm(); closeSettings();
+    closeModalBtn(); closeForm(); closeSettings(); closeDayPopup();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
     if (document.activeElement) document.activeElement.blur();
