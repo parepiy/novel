@@ -101,10 +101,11 @@ body.editor .notify-tab{display:inline-block;}
 .cal-nav{background:none;border:1px solid var(--bd2);border-radius:8px;width:34px;height:34px;font-size:1.15rem;color:var(--dim);cursor:pointer;line-height:1;}
 .cal-nav:hover{border-color:var(--mint);color:var(--mint2);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-days{grid-auto-rows:46px;}
 .cal-wd{margin-bottom:4px;}
 .cal-wdc{text-align:center;font-size:.72rem;color:var(--mute);padding:2px 0;}
 .cal-cell{position:relative;min-width:0;min-height:46px;border:1px solid var(--bd);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);transition:border-color .12s,background .12s;}
-.cal-cell.empty{border:none;background:none;cursor:default;}
+.cal-cell.empty{border:none;background:none;cursor:default;pointer-events:none;min-height:0;}
 .cal-cell:not(.empty):hover{border-color:var(--mint);}
 .cal-cell.has{background:var(--mdim);}
 .cal-cell.today{border:2px solid var(--mint);}
@@ -114,7 +115,7 @@ body.editor .notify-tab{display:inline-block;}
 .cal-hint{text-align:center;font-size:.74rem;color:var(--mute);margin-top:10px;}
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
-.nf-form input[type="datetime-local"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
+.nf-form input[type="datetime-local"],.nf-form input[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
 
 /* GLOBAL BUSY OVERLAY (reminder add/delete/enable) */
 .busy-overlay{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:loaderIn .2s ease;}
@@ -1152,12 +1153,12 @@ function calendarHtml() {
   });
   const wd = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
   let cells = '';
-  for (let i = 0; i < startDow; i++) cells += '<div class="cal-cell empty"></div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const key = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
     const cnt = counts[key] || 0;
     const badge = cnt ? '<span class="cal-badge' + (overdueMap[key] ? ' overdue' : '') + '">' + cnt + '</span>' : '';
-    cells += '<div class="cal-cell' + (key === tKey ? ' today' : '') + (cnt ? ' has' : '') + '" onclick="openDayPopup(\'' + key + '\')">' +
+    const style = d === 1 ? ' style="grid-column-start:' + (startDow + 1) + '"' : '';
+    cells += '<div class="cal-cell' + (key === tKey ? ' today' : '') + (cnt ? ' has' : '') + '"' + style + ' onclick="openDayPopup(\'' + key + '\')">' +
       '<span class="cal-day">' + d + '</span>' + badge + '</div>';
   }
   return '<div class="cal-wrap">' +
@@ -1167,7 +1168,7 @@ function calendarHtml() {
         '<button class="cal-nav" onclick="calShift(1)">›</button>' +
       '</div>' +
       '<div class="cal-grid cal-wd">' + wd.map(w => '<div class="cal-wdc">' + w + '</div>').join('') + '</div>' +
-      '<div class="cal-grid">' + cells + '</div>' +
+      '<div class="cal-grid cal-days">' + cells + '</div>' +
       '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>' +
     '</div>';
 }
