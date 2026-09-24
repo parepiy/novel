@@ -421,6 +421,7 @@ body.editor .m-edit{display:inline-block;}
     <h3>⌨️ คีย์ลัด</h3>
     <div class="help-row"><span>แท็บ MEB Market</span><kbd>Shift + 1</kbd></div>
     <div class="help-row"><span>แท็บ RAW</span><kbd>Shift + 2</kbd></div>
+    <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>Shift + 3</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
     <div class="help-row"><span>ค้นหาเนื้อเรื่อง</span><kbd>S</kbd></div>
     <div class="help-row"><span>เพิ่มนิยาย (เมื่อปลดล็อก)</span><kbd>N</kbd></div>
@@ -1327,6 +1328,7 @@ document.addEventListener('keydown', e => {
   if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
     if (e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
     else if (e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+    else if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } }
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
