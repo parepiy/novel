@@ -496,8 +496,8 @@ body.editor .m-edit{display:inline-block;}
   <div class="help-card">
     <button class="ov-close" onclick="toggleHelp()">✕</button>
     <h3>⌨️ คีย์ลัด</h3>
-    <div class="help-row"><span>กรองเฉพาะ MEB</span><kbd>Shift + 1</kbd></div>
-    <div class="help-row"><span>กรองเฉพาะ RAW</span><kbd>Shift + 2</kbd></div>
+    <div class="help-row"><span>กรองเฉพาะ MEB</span><kbd>M</kbd></div>
+    <div class="help-row"><span>กรองเฉพาะ RAW</span><kbd>R</kbd></div>
     <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>Shift + 3</kbd></div>
     <div class="help-row"><span>แท็บสถิติ</span><kbd>Shift + 4</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
@@ -1596,14 +1596,14 @@ document.addEventListener('keydown', e => {
   }
   if (typing) return;
   if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (e.code === 'Digit1') { e.preventDefault(); setSource('meb'); }
-    else if (e.code === 'Digit2') { e.preventDefault(); setSource('raw'); }
-    else if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } }
+    if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } }
     else if (e.code === 'Digit4') { e.preventDefault(); switchTab('stats'); }
     return;
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-  if (e.code === 'KeyC') { clearAll(); }
+  if (e.code === 'KeyM') { setSource('meb'); }
+  else if (e.code === 'KeyR') { setSource('raw'); }
+  else if (e.code === 'KeyC') { clearAll(); }
   else if (e.code === 'KeyT') { scrollToTop(); }
   else if (e.code === 'KeyB') { scrollToBottom(); }
   else if (e.code === 'KeyS') { e.preventDefault(); focusSearch('summary'); }
