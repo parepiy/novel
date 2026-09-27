@@ -165,6 +165,20 @@ body.editor .notify-tab{display:inline-block;}
 .fb.src-fb{font-weight:600;}
 .fb.meb-fb{color:var(--mint2);}
 .fb.raw-fb{color:var(--raw2);}
+/* reading-status filter chips */
+.fb.st-reading{color:#2f7db0;} .fb.st-reading:hover{border-color:#2f7db0;color:#2f7db0;} .fb.st-reading.active{background:rgba(47,125,176,.16);border-color:#2f7db0;color:#2f7db0;}
+.fb.st-toread{color:#b07d00;} .fb.st-toread:hover{border-color:#c98a00;color:#a06f00;} .fb.st-toread.active{background:rgba(200,138,0,.16);border-color:#c98a00;color:#a06f00;}
+.fb.st-finished{color:#2e9e6a;} .fb.st-finished:hover{border-color:#2e9e6a;color:#25805a;} .fb.st-finished.active{background:rgba(46,158,106,.16);border-color:#2e9e6a;color:#25805a;}
+.fb.st-dropped{color:var(--mute);} .fb.st-dropped:hover{border-color:var(--mute);color:var(--dim);} .fb.st-dropped.active{background:rgba(140,140,140,.16);border-color:var(--mute);color:var(--dim);}
+/* sort dropdown pill */
+.sort-sel{flex-shrink:0;border:1px solid var(--bd2);background:var(--bg);color:var(--dim);border-radius:20px;padding:3px 26px 3px 12px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
+.sort-sel:focus{outline:none;border-color:var(--mint);}
+/* status pill on cards */
+.st-pill{display:inline-block;align-self:flex-start;font-size:.66rem;font-weight:600;padding:1px 7px;border-radius:10px;}
+.st-pill.st-reading{background:rgba(47,125,176,.16);color:#2f7db0;}
+.st-pill.st-toread{background:rgba(200,138,0,.16);color:#a06f00;}
+.st-pill.st-finished{background:rgba(46,158,106,.16);color:#25805a;}
+.st-pill.st-dropped{background:rgba(140,140,140,.16);color:var(--dim);}
 .sfb{background:none;border:1px solid var(--star-bd);color:var(--star);padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
 .sfb:hover{border-color:var(--star-hover);color:var(--star-dim);}
 .sfb.active{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);font-weight:600;}
@@ -301,6 +315,7 @@ body.editor .m-edit{display:inline-block;}
     </div>
     <div class="header-actions">
       <button class="hdr-btn" id="add-btn" onclick="openAdd()" title="เพิ่มนิยาย">＋</button>
+      <button class="hdr-btn" id="surprise-btn" onclick="surpriseMe()" title="สุ่มนิยาย">🎲</button>
       <button class="hdr-btn" id="key-btn" onclick="openSettings()" title="ตั้งค่าการแก้ไข">🔑</button>
       <button class="hdr-btn" id="theme-btn" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง">🌙</button>
     </div>
@@ -359,6 +374,15 @@ body.editor .m-edit{display:inline-block;}
       <div class="f-row"><label>ดาว</label>
         <select id="f-star"><option value="0">— ไม่มี —</option><option value="1">1 ★</option><option value="2">2 ★</option><option value="3">3 ★</option><option value="4">4 ★</option><option value="5">5 ★</option></select>
       </div>
+    </div>
+    <div class="f-row"><label>สถานะการอ่าน</label>
+      <select id="f-status">
+        <option value="">— ไม่ระบุ —</option>
+        <option value="reading">กำลังอ่าน</option>
+        <option value="toread">อยากอ่าน</option>
+        <option value="finished">อ่านจบ</option>
+        <option value="dropped">ดรอป</option>
+      </select>
     </div>
     <div class="f-row"><label>แท็ก (คั่นด้วย , หรือ |)</label><input type="text" id="f-tags" placeholder="เช่น โรแมนซ์, ดราม่า"></div>
     <div class="f-row"><label>ลิงก์อ่านนิยาย</label><input type="text" id="f-url" placeholder="https://..."></div>
@@ -445,8 +469,19 @@ let activeSource = null;  // null = all novels, 'meb', or 'raw' (single-select s
 let notifyView = false;   // true while the 🔔 Notification tab is showing
 let activeTags = new Set();
 let activeStar = null;
+let activeStatus = null;   // null = any, or a reading-status key
 let searchQ = '';
 let searchScope = 'title';
+let sortBy = (function(){ try { return localStorage.getItem('sortBy') || 'default'; } catch(e){ return 'default'; } })();
+
+/* reading-status options (stored in Sheet column H) */
+const STATUS_META = {
+  reading:  { label: 'กำลังอ่าน', cls: 'st-reading' },
+  toread:   { label: 'อยากอ่าน',  cls: 'st-toread' },
+  finished: { label: 'อ่านจบ',    cls: 'st-finished' },
+  dropped:  { label: 'ดรอป',      cls: 'st-dropped' }
+};
+const STATUS_ORDER = ['reading', 'toread', 'finished', 'dropped'];
 
 /* ===== EDIT CONFIG (owner only, stored on device) ===== */
 function cfg() {
@@ -482,6 +517,7 @@ function parseCSV(text) {
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
+      status:  (cols[7] || '').trim(),
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -522,6 +558,7 @@ function fromGas(b) {
     source:  (b.source || '').trim(),
     cover:   (b.cover || '').trim(),
     star:    parseInt(b.star, 10) || 0,
+    status:  (b.status || '').trim(),
     row:     b.row,
   };
 }
@@ -577,7 +614,20 @@ function renderFilterStrip() {
     `<button class="fb${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
   ).join('');
 
-  const groups = [srcBtns];
+  const statusesPresent = STATUS_ORDER.filter(k => pool.some(b => b.status === k));
+  const statusBtns = statusesPresent.map(k =>
+    `<button class="fb ${STATUS_META[k].cls}${activeStatus === k ? ' active' : ''}" onclick="setStatus('${k}')">${STATUS_META[k].label}</button>`
+  ).join('');
+
+  const sortSel = '<select class="sort-sel" onchange="setSort(this.value)" title="เรียงลำดับ">' +
+    '<option value="default"' + (sortBy === 'default' ? ' selected' : '') + '>↕ ตามชีต</option>' +
+    '<option value="newest"'  + (sortBy === 'newest'  ? ' selected' : '') + '>↕ เพิ่มล่าสุด</option>' +
+    '<option value="star"'    + (sortBy === 'star'    ? ' selected' : '') + '>↕ คะแนนสูงสุด</option>' +
+    '<option value="title"'   + (sortBy === 'title'   ? ' selected' : '') + '>↕ ชื่อ ก-ฮ</option>' +
+  '</select>';
+
+  const groups = [sortSel, srcBtns];
+  if (statusBtns) groups.push(statusBtns);
   if (starBtns) groups.push(starBtns);
   if (tagBtns) groups.push(tagBtns);
   document.getElementById('filter-strip').innerHTML = groups.join('<span class="strip-div"></span>');
@@ -586,32 +636,41 @@ function renderFilterStrip() {
 }
 
 function updateClearBtn() {
-  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null;
+  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null || activeStatus !== null;
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
-function renderGrid() {
+function getFilteredBooks() {
   const pool = activeSource ? allBooks.filter(b => b.source === activeSource) : allBooks;
-
-  const filtered = pool.filter(b => {
+  const q = searchQ.toLowerCase().trim();
+  const list = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
     const starOk = activeStar === null || b.star === activeStar;
-    const q = searchQ.toLowerCase().trim();
+    const statusOk = activeStatus === null || b.status === activeStatus;
     const searchOk = !q || b.title.toLowerCase().includes(q) || (searchScope === 'summary' && b.summary.toLowerCase().includes(q));
-    return tagOk && starOk && searchOk;
+    return tagOk && starOk && statusOk && searchOk;
   });
+  return sortBooks(list);
+}
 
+function sortBooks(list) {
+  const arr = list.slice();
+  if (sortBy === 'newest') arr.sort((a, b) => (b.row || 0) - (a.row || 0));
+  else if (sortBy === 'star') arr.sort((a, b) => (b.star || 0) - (a.star || 0) || (b.row || 0) - (a.row || 0));
+  else if (sortBy === 'title') arr.sort((a, b) => a.title.localeCompare(b.title, 'th'));
+  return arr;   // 'default' keeps sheet order
+}
+
+function renderGrid() {
+  const filtered = getFilteredBooks();
   const scope = activeSource ? (activeSource === 'meb' ? ' · MEB' : ' · RAW') : '';
   document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${allBooks.length} เรื่อง${scope}`;
-
   if (!filtered.length) {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน</div>';
     return;
   }
-
   document.getElementById('main-content').innerHTML =
     `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
-
   updateScrollBtns();
 }
 
@@ -622,11 +681,14 @@ function buildCard(b, idx) {
   const ncStyle = b.cover ? 'display:none' : '';
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
   const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
+  const stMeta = b.status && STATUS_META[b.status];
+  const stHtml = stMeta ? `<span class="st-pill ${stMeta.cls}">${stMeta.label}</span>` : '';
   return `<div class="card" onclick="openModal(${idx})">
     <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
     <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
+      ${stHtml}
       <div class="tags">${tagHtml}</div>
     </div>
   </div>`;
@@ -668,6 +730,26 @@ function setSource(s) {
   renderGrid();
 }
 
+function setStatus(s) {
+  if (notifyView) switchTab('all');
+  activeStatus = (activeStatus === s) ? null : s;
+  renderFilterStrip();
+  renderGrid();
+}
+
+function setSort(v) {
+  sortBy = v;
+  try { localStorage.setItem('sortBy', v); } catch(e) {}
+  renderGrid();
+}
+
+function surpriseMe() {
+  if (notifyView) switchTab('all');
+  const list = getFilteredBooks();
+  if (!list.length) { alert('ไม่มีนิยายให้สุ่ม'); return; }
+  openModal(allBooks.indexOf(list[Math.floor(Math.random() * list.length)]));
+}
+
 function setTag(tag) {
   if (activeTags.has(tag)) { activeTags.delete(tag); } else { activeTags.add(tag); }
   renderFilterStrip();
@@ -685,6 +767,7 @@ function clearAll() {
   activeStar = null;
   searchQ = '';
   activeSource = null;
+  activeStatus = null;
   document.getElementById('search-input').value = '';
   renderFilterStrip();
   renderGrid();
@@ -804,6 +887,7 @@ function openAdd() {
   document.getElementById('f-title').value = '';
   document.getElementById('f-source').value = (activeSource === 'raw' ? 'raw' : 'meb');
   document.getElementById('f-star').value = '0';
+  document.getElementById('f-status').value = activeStatus || '';
   document.getElementById('f-tags').value = '';
   document.getElementById('f-url').value = '';
   document.getElementById('f-summary').value = '';
@@ -825,6 +909,7 @@ function openEdit(idx) {
   document.getElementById('f-title').value = b.title;
   document.getElementById('f-source').value = b.source === 'raw' ? 'raw' : 'meb';
   document.getElementById('f-star').value = String(b.star || 0);
+  document.getElementById('f-status').value = b.status || '';
   document.getElementById('f-tags').value = (b.tags || []).join(', ');
   document.getElementById('f-url').value = b.url || '';
   document.getElementById('f-summary').value = b.summary || '';
@@ -899,6 +984,7 @@ async function saveForm() {
     tags: fval('f-tags').split(/[,|]/).map(s => s.trim()).filter(Boolean).join('|'),
     source: fval('f-source'),
     star: parseInt(fval('f-star'), 10) || 0,
+    status: fval('f-status'),
     cover: formCover
   };
   if (formMode === 'edit') payload.row = formRow;
