@@ -535,6 +535,19 @@ const STATUS_META = {
   dropped:  { label: 'Dropped',  cls: 'st-dropped' }
 };
 const STATUS_ORDER = ['reading', 'finished', 'dropped'];
+/* Normalize a raw status cell to one of the keys above (case-insensitive,
+   also accepts the Thai labels), or '' if it isn't a known status. */
+const STATUS_ALIAS = {
+  reading: 'reading', finished: 'finished', dropped: 'dropped',
+  read: 'finished', done: 'finished', complete: 'finished', completed: 'finished',
+  drop: 'dropped', abandoned: 'dropped',
+  'กำลังอ่าน': 'reading', 'อ่านจบ': 'finished', 'จบ': 'finished', 'เลิกอ่าน': 'dropped', 'ดรอป': 'dropped'
+};
+function normStatus(v) {
+  const s = (v == null ? '' : String(v)).trim();
+  if (!s) return '';
+  return STATUS_ALIAS[s.toLowerCase()] || STATUS_ALIAS[s] || '';
+}
 
 /* your Google Sheet (opened via the 📊 header button, editor only) */
 const SHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit?gid=1147646991#gid=1147646991';
@@ -573,7 +586,7 @@ function parseCSV(text) {
       source:  (cols[4] || '').trim(),
       cover:   (cols[5] || '').trim(),
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
-      status:  (cols[7] || '').trim(),
+      status:  normStatus(cols[7]),
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -614,7 +627,7 @@ function fromGas(b) {
     source:  (b.source || '').trim(),
     cover:   (b.cover || '').trim(),
     star:    parseInt(b.star, 10) || 0,
-    status:  (b.status || '').trim(),
+    status:  normStatus(b.status),
     row:     b.row,
   };
 }
