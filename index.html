@@ -162,6 +162,9 @@ body.editor .notify-tab{display:inline-block;}
 .fb.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
 .fb.raw-fb:hover{border-color:var(--raw);color:var(--raw);}
 .fb.raw-fb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw2);}
+.fb.src-fb{font-weight:600;}
+.fb.meb-fb{color:var(--mint2);}
+.fb.raw-fb{color:var(--raw2);}
 .sfb{background:none;border:1px solid var(--star-bd);color:var(--star);padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
 .sfb:hover{border-color:var(--star-hover);color:var(--star-dim);}
 .sfb.active{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);font-weight:600;}
@@ -304,8 +307,7 @@ body.editor .m-edit{display:inline-block;}
   </header>
 
   <div class="nav-tabs">
-    <button class="nav-tab active" data-tab="meb" onclick="switchTab('meb')">MEB Market</button>
-    <button class="nav-tab" data-tab="raw" onclick="switchTab('raw')">RAW</button>
+    <button class="nav-tab active" data-tab="all" onclick="switchTab('all')">นิยาย</button>
     <button class="nav-tab notify-tab" data-tab="notify" onclick="switchTab('notify')">🔔 แจ้งเตือน</button>
     <div class="search-box">
       <button class="scope-btn" id="scope-btn" onclick="toggleScope()" title="สลับค้นหา ชื่อเรื่อง / เนื้อเรื่อง">🔍</button>
@@ -419,8 +421,8 @@ body.editor .m-edit{display:inline-block;}
   <div class="help-card">
     <button class="ov-close" onclick="toggleHelp()">✕</button>
     <h3>⌨️ คีย์ลัด</h3>
-    <div class="help-row"><span>แท็บ MEB Market</span><kbd>Shift + 1</kbd></div>
-    <div class="help-row"><span>แท็บ RAW</span><kbd>Shift + 2</kbd></div>
+    <div class="help-row"><span>กรองเฉพาะ MEB</span><kbd>Shift + 1</kbd></div>
+    <div class="help-row"><span>กรองเฉพาะ RAW</span><kbd>Shift + 2</kbd></div>
     <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>Shift + 3</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
     <div class="help-row"><span>ค้นหาเนื้อเรื่อง</span><kbd>S</kbd></div>
@@ -439,7 +441,7 @@ const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0s
 const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit#gid=1147646991&range=A';
 
 let allBooks = [];
-let currentTab = 'meb';
+let activeSource = null;  // null = all novels, 'meb', or 'raw' (single-select source filter)
 let notifyView = false;   // true while the 🔔 Notification tab is showing
 let activeTags = new Set();
 let activeStar = null;
@@ -559,33 +561,37 @@ function renderAll() {
 }
 
 function renderFilterStrip() {
-  const books = allBooks.filter(b => b.source === currentTab);
-  const isRaw = currentTab === 'raw';
+  const pool = activeSource ? allBooks.filter(b => b.source === activeSource) : allBooks;
 
-  const starVals = [...new Set(books.map(b => b.star).filter(s => s > 0))].sort((a, b) => b - a);
+  const srcBtns =
+    `<button class="fb src-fb meb-fb${activeSource === 'meb' ? ' active' : ''}" onclick="setSource('meb')">MEB</button>` +
+    `<button class="fb src-fb raw-fb${activeSource === 'raw' ? ' active' : ''}" onclick="setSource('raw')">RAW</button>`;
+
+  const starVals = [...new Set(pool.map(b => b.star).filter(s => s > 0))].sort((a, b) => b - a);
   const starBtns = starVals.map(s =>
     `<button class="sfb${activeStar === s ? ' active' : ''}" onclick="setStar(${s})">${s}★</button>`
   ).join('');
 
-  const tags = [...new Set(books.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
+  const tags = [...new Set(pool.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
   const tagBtns = tags.map(t =>
-    `<button class="fb${isRaw ? ' raw-fb' : ''}${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
+    `<button class="fb${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
   ).join('');
 
-  const divider = (starBtns && tagBtns) ? '<span class="strip-div"></span>' : '';
-  document.getElementById('filter-strip').innerHTML = starBtns + divider + tagBtns;
+  const groups = [srcBtns];
+  if (starBtns) groups.push(starBtns);
+  if (tagBtns) groups.push(tagBtns);
+  document.getElementById('filter-strip').innerHTML = groups.join('<span class="strip-div"></span>');
 
   updateClearBtn();
 }
 
 function updateClearBtn() {
-  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0;
+  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null;
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
 function renderGrid() {
-  const crossTab = searchQ.trim().length > 0 && activeTags.size === 0 && activeStar === null;
-  const pool = crossTab ? allBooks : allBooks.filter(b => b.source === currentTab);
+  const pool = activeSource ? allBooks.filter(b => b.source === activeSource) : allBooks;
 
   const filtered = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
@@ -595,14 +601,8 @@ function renderGrid() {
     return tagOk && starOk && searchOk;
   });
 
-  if (crossTab) {
-    const mebCount = filtered.filter(b => b.source === 'meb').length;
-    const rawCount = filtered.filter(b => b.source === 'raw').length;
-    document.getElementById('header-count').textContent = `ค้นหาพบ ${filtered.length} เรื่อง · MEB ${mebCount} · RAW ${rawCount}`;
-  } else {
-    const total = allBooks.filter(b => b.source === currentTab).length;
-    document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${total} เรื่อง`;
-  }
+  const scope = activeSource ? (activeSource === 'meb' ? ' · MEB' : ' · RAW') : '';
+  document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${allBooks.length} เรื่อง${scope}`;
 
   if (!filtered.length) {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน</div>';
@@ -657,11 +657,13 @@ function switchTab(tab) {
     return;
   }
   notifyView = false;
-  currentTab = tab;
-  activeTags = new Set();
-  activeStar = null;
-  searchQ = '';
-  document.getElementById('search-input').value = '';
+  renderFilterStrip();
+  renderGrid();
+}
+
+function setSource(s) {
+  if (notifyView) switchTab('all');
+  activeSource = (activeSource === s) ? null : s;
   renderFilterStrip();
   renderGrid();
 }
@@ -682,6 +684,7 @@ function clearAll() {
   activeTags = new Set();
   activeStar = null;
   searchQ = '';
+  activeSource = null;
   document.getElementById('search-input').value = '';
   renderFilterStrip();
   renderGrid();
@@ -799,7 +802,7 @@ function openAdd() {
   formMode = 'add'; formRow = null; formCover = '';
   document.getElementById('form-title').textContent = 'เพิ่มนิยาย';
   document.getElementById('f-title').value = '';
-  document.getElementById('f-source').value = (currentTab === 'raw' ? 'raw' : 'meb');
+  document.getElementById('f-source').value = (activeSource === 'raw' ? 'raw' : 'meb');
   document.getElementById('f-star').value = '0';
   document.getElementById('f-tags').value = '';
   document.getElementById('f-url').value = '';
@@ -1326,8 +1329,8 @@ document.addEventListener('keydown', e => {
   }
   if (typing) return;
   if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (e.code === 'Digit1') { e.preventDefault(); switchTab('meb'); }
-    else if (e.code === 'Digit2') { e.preventDefault(); switchTab('raw'); }
+    if (e.code === 'Digit1') { e.preventDefault(); setSource('meb'); }
+    else if (e.code === 'Digit2') { e.preventDefault(); setSource('raw'); }
     else if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } }
     return;
   }
