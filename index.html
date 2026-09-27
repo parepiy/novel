@@ -50,6 +50,8 @@ header h1{font-family:'Sarabun','Cordia New',sans-serif;font-size:1.35rem;color:
 .hdr-btn:hover{border-color:var(--mint);color:var(--mint2);}
 .hdr-btn.on{border-color:var(--mint);color:var(--mint2);}
 #add-btn{display:none;font-weight:700;color:var(--mint2);}
+#sheet-btn{display:none;}
+body.editor #sheet-btn{display:flex;}
 
 /* TABS — own row, left-aligned */
 .nav-tabs{display:flex;gap:2px;padding:0 12px 0;border-bottom:1px solid var(--bd);}
@@ -179,6 +181,22 @@ body.editor .notify-tab{display:inline-block;}
 .st-pill.st-toread{background:rgba(200,138,0,.16);color:#a06f00;}
 .st-pill.st-finished{background:rgba(46,158,106,.16);color:#25805a;}
 .st-pill.st-dropped{background:rgba(140,140,140,.16);color:var(--dim);}
+/* form: status pick chips */
+.f-status-pick{display:flex;gap:8px;flex-wrap:wrap;}
+.stpick{background:none;border:1px solid var(--bd2);color:var(--dim);padding:6px 16px;border-radius:18px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.86rem;cursor:pointer;transition:all .12s;}
+.stpick:hover{border-color:var(--mint);}
+.stpick.st-reading.active{background:rgba(47,125,176,.16);border-color:#2f7db0;color:#2f7db0;font-weight:600;}
+.stpick.st-finished.active{background:rgba(46,158,106,.16);border-color:#2e9e6a;color:#25805a;font-weight:600;}
+.stpick.st-dropped.active{background:rgba(140,140,140,.16);border-color:var(--mute);color:var(--dim);font-weight:600;}
+/* form: tag picker */
+.f-tag-picker{display:flex;flex-wrap:wrap;gap:6px;max-height:132px;overflow-y:auto;padding:9px;border:1px solid var(--bd2);border-radius:8px;background:var(--bg);}
+.tagpick{background:none;border:1px solid var(--bd2);color:var(--dim);padding:3px 11px;border-radius:16px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.8rem;cursor:pointer;white-space:nowrap;transition:all .12s;}
+.tagpick:hover{border-color:var(--mint);color:var(--mint);}
+.tagpick.active{background:var(--mdim);border-color:var(--mint);color:var(--mint2);font-weight:600;}
+.f-tag-add{display:flex;gap:8px;margin-top:8px;}
+.f-tag-add input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:8px;padding:8px 11px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);}
+.f-tag-add input:focus{outline:none;border-color:var(--mint);}
+.f-tag-add .btn-sm{flex-shrink:0;}
 .sfb{background:none;border:1px solid var(--star-bd);color:var(--star);padding:3px 11px;border-radius:20px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
 .sfb:hover{border-color:var(--star-hover);color:var(--star-dim);}
 .sfb.active{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);font-weight:600;}
@@ -316,6 +334,7 @@ body.editor .m-edit{display:inline-block;}
     <div class="header-actions">
       <button class="hdr-btn" id="add-btn" onclick="openAdd()" title="เพิ่มนิยาย">＋</button>
       <button class="hdr-btn" id="surprise-btn" onclick="surpriseMe()" title="สุ่มนิยาย">🎲</button>
+      <button class="hdr-btn" id="sheet-btn" onclick="openSheet()" title="เปิด Google Sheet">📊</button>
       <button class="hdr-btn" id="key-btn" onclick="openSettings()" title="ตั้งค่าการแก้ไข">🔑</button>
       <button class="hdr-btn" id="theme-btn" onclick="toggleTheme()" title="สลับโหมดมืด/สว่าง">🌙</button>
     </div>
@@ -376,15 +395,16 @@ body.editor .m-edit{display:inline-block;}
       </div>
     </div>
     <div class="f-row"><label>สถานะการอ่าน</label>
-      <select id="f-status">
-        <option value="">— ไม่ระบุ —</option>
-        <option value="reading">กำลังอ่าน</option>
-        <option value="toread">อยากอ่าน</option>
-        <option value="finished">อ่านจบ</option>
-        <option value="dropped">ดรอป</option>
-      </select>
+      <div class="f-status-pick" id="f-status-pick"></div>
+      <input type="hidden" id="f-status" value="">
     </div>
-    <div class="f-row"><label>แท็ก (คั่นด้วย , หรือ |)</label><input type="text" id="f-tags" placeholder="เช่น โรแมนซ์, ดราม่า"></div>
+    <div class="f-row"><label>แท็ก (แตะเพื่อเลือก)</label>
+      <div class="f-tag-picker" id="f-tag-picker"></div>
+      <div class="f-tag-add">
+        <input type="text" id="f-newtag" placeholder="เพิ่มแท็กใหม่..." onkeydown="if(event.key==='Enter'){event.preventDefault();addNewTag();}">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="addNewTag()">＋ เพิ่ม</button>
+      </div>
+    </div>
     <div class="f-row"><label>ลิงก์อ่านนิยาย</label><input type="text" id="f-url" placeholder="https://..."></div>
     <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
     <div class="f-row"><label>รูปปก</label>
@@ -473,15 +493,18 @@ let activeStatus = null;   // null = any, or a reading-status key
 let searchQ = '';
 let searchScope = 'title';
 let sortBy = (function(){ try { return localStorage.getItem('sortBy') || 'default'; } catch(e){ return 'default'; } })();
+let formTags = new Set();   // tags selected in the add/edit form
 
 /* reading-status options (stored in Sheet column H) */
 const STATUS_META = {
-  reading:  { label: 'กำลังอ่าน', cls: 'st-reading' },
-  toread:   { label: 'อยากอ่าน',  cls: 'st-toread' },
-  finished: { label: 'อ่านจบ',    cls: 'st-finished' },
-  dropped:  { label: 'ดรอป',      cls: 'st-dropped' }
+  reading:  { label: 'Reading',  cls: 'st-reading' },
+  finished: { label: 'Finished', cls: 'st-finished' },
+  dropped:  { label: 'Dropped',  cls: 'st-dropped' }
 };
-const STATUS_ORDER = ['reading', 'toread', 'finished', 'dropped'];
+const STATUS_ORDER = ['reading', 'finished', 'dropped'];
+
+/* your Google Sheet (opened via the 📊 header button, editor only) */
+const SHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit?gid=1147646991#gid=1147646991';
 
 /* ===== EDIT CONFIG (owner only, stored on device) ===== */
 function cfg() {
@@ -750,6 +773,46 @@ function surpriseMe() {
   openModal(allBooks.indexOf(list[Math.floor(Math.random() * list.length)]));
 }
 
+function openSheet() {
+  window.open(SHEET_EDIT_URL, '_blank', 'noopener');
+}
+
+/* ===== FORM: status picker + tag picker ===== */
+function renderStatusPick() {
+  const cur = document.getElementById('f-status').value;
+  document.getElementById('f-status-pick').innerHTML = STATUS_ORDER.map(k =>
+    `<button type="button" class="stpick ${STATUS_META[k].cls}${cur === k ? ' active' : ''}" onclick="pickStatus('${k}')">${STATUS_META[k].label}</button>`
+  ).join('');
+}
+function pickStatus(s) {
+  const el = document.getElementById('f-status');
+  el.value = (el.value === s) ? '' : s;   // tap again to clear
+  renderStatusPick();
+}
+
+function allTagList() {
+  return [...new Set(allBooks.flatMap(b => b.tags))];
+}
+function renderTagPicker() {
+  const all = new Set(allTagList());
+  formTags.forEach(t => all.add(t));   // include newly-added (selected) tags
+  const sorted = [...all].sort((a, b) => a.localeCompare(b, 'th'));
+  const html = sorted.map(t =>
+    `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${t.replace(/'/g, "\\'")}')">${esc(t)}</button>`
+  ).join('');
+  document.getElementById('f-tag-picker').innerHTML = html || '<span class="f-note">ยังไม่มีแท็ก — เพิ่มด้านล่าง</span>';
+}
+function toggleFormTag(t) {
+  if (formTags.has(t)) formTags.delete(t); else formTags.add(t);
+  renderTagPicker();
+}
+function addNewTag() {
+  const inp = document.getElementById('f-newtag');
+  inp.value.split(/[,|]/).map(s => s.trim()).filter(Boolean).forEach(t => formTags.add(t));
+  inp.value = '';
+  renderTagPicker();
+}
+
 function setTag(tag) {
   if (activeTags.has(tag)) { activeTags.delete(tag); } else { activeTags.add(tag); }
   renderFilterStrip();
@@ -888,7 +951,10 @@ function openAdd() {
   document.getElementById('f-source').value = (activeSource === 'raw' ? 'raw' : 'meb');
   document.getElementById('f-star').value = '0';
   document.getElementById('f-status').value = activeStatus || '';
-  document.getElementById('f-tags').value = '';
+  renderStatusPick();
+  formTags = new Set();
+  renderTagPicker();
+  document.getElementById('f-newtag').value = '';
   document.getElementById('f-url').value = '';
   document.getElementById('f-summary').value = '';
   document.getElementById('f-image').value = '';
@@ -910,7 +976,10 @@ function openEdit(idx) {
   document.getElementById('f-source').value = b.source === 'raw' ? 'raw' : 'meb';
   document.getElementById('f-star').value = String(b.star || 0);
   document.getElementById('f-status').value = b.status || '';
-  document.getElementById('f-tags').value = (b.tags || []).join(', ');
+  renderStatusPick();
+  formTags = new Set(b.tags || []);
+  renderTagPicker();
+  document.getElementById('f-newtag').value = '';
   document.getElementById('f-url').value = b.url || '';
   document.getElementById('f-summary').value = b.summary || '';
   document.getElementById('f-image').value = '';
@@ -976,12 +1045,14 @@ function setSaving(on, msg, emoji) {
 async function saveForm() {
   const title = fval('f-title').trim();
   if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  const nt = document.getElementById('f-newtag');
+  if (nt && nt.value.trim()) { nt.value.split(/[,|]/).map(s => s.trim()).filter(Boolean).forEach(t => formTags.add(t)); nt.value = ''; }
   const payload = {
     action: formMode,
     title: title,
     summary: fval('f-summary'),
     url: fval('f-url').trim(),
-    tags: fval('f-tags').split(/[,|]/).map(s => s.trim()).filter(Boolean).join('|'),
+    tags: [...formTags].join('|'),
     source: fval('f-source'),
     star: parseInt(fval('f-star'), 10) || 0,
     status: fval('f-status'),
