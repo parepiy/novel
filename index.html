@@ -290,6 +290,26 @@ body.editor .edit-btn{display:flex;}
 .m-tags{display:flex;flex-wrap:wrap;gap:4px;}
 .m-tag{font-size:.74rem;padding:3px 8px;border-radius:4px;border:1px solid var(--bd2);color:var(--dim);}
 .m-summary{font-size:.9rem;line-height:1.9;color:var(--summary);}
+/* Quick star/status inside the detail popup (editor only) */
+#m-quick{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--s2);flex-direction:column;gap:9px;}
+body.editor #m-quick{display:flex;}
+.mq-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.mq-lbl{font-size:.78rem;color:var(--mute);width:44px;flex-shrink:0;}
+.mq-stars{display:flex;gap:2px;}
+.mq-star{background:none;border:none;cursor:pointer;font-size:1.35rem;line-height:1;color:var(--bd2);padding:0 1px;font-family:inherit;transition:color .12s,transform .1s;}
+.mq-star:hover{transform:scale(1.15);}
+.mq-star.on{color:var(--star-hover);}
+.mq-status{display:flex;gap:6px;flex-wrap:wrap;}
+.mq-st{background:var(--s2);border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:4px 12px;font-family:inherit;font-size:.8rem;cursor:pointer;transition:all .12s;}
+.mq-st.active.st-reading{background:var(--mdim);border-color:var(--mint);color:var(--mint2);font-weight:600;}
+.mq-st.active.st-finished{background:rgba(74,144,217,.15);border-color:#4a90d9;color:#356fb0;font-weight:600;}
+.mq-st.active.st-dropped{background:var(--s3);border-color:var(--bd2);color:var(--dim);font-weight:600;}
+:root[data-theme="dark"] .mq-st.active.st-finished{color:#8fbdf0;}
+.mq-msg{font-size:.74rem;color:var(--mint2);min-height:1em;transition:opacity .3s;}
+/* URL field with a paste button */
+.f-url-line{display:flex;gap:8px;}
+.f-url-line input{flex:1;}
+.f-url-line .btn-sm{flex-shrink:0;}
 .m-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
@@ -419,6 +439,8 @@ body.editor .m-edit{display:inline-block;}
       </div>
     </div>
     <div class="m-summary" id="m-summary"></div>
+    <div id="m-quick"></div>
+    <div class="mq-msg" id="m-quick-msg"></div>
     <div class="m-actions">
       <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
       <button class="m-edit" id="m-edit" onclick="openEdit(window._mIdx)">✎ แก้ไข</button>
@@ -451,7 +473,12 @@ body.editor .m-edit{display:inline-block;}
         <button type="button" class="btn btn-ghost btn-sm" onclick="addNewTag()">＋ เพิ่ม</button>
       </div>
     </div>
-    <div class="f-row"><label>ลิงก์อ่านนิยาย</label><input type="text" id="f-url" placeholder="https://..."></div>
+    <div class="f-row"><label>ลิงก์อ่านนิยาย</label>
+      <div class="f-url-line">
+        <input type="text" id="f-url" placeholder="https://...">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="pasteUrl()" title="วางลิงก์ที่คัดลอก">📋 วาง</button>
+      </div>
+    </div>
     <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
     <div class="f-row"><label>รูปปก</label>
       <div class="f-cover-line">
@@ -1053,8 +1080,76 @@ function openModal(idx) {
   } else {
     cover.innerHTML = '<div class="m-nc">📖</div>';
   }
+  document.getElementById('m-quick-msg').textContent = '';
+  renderModalQuick(b);
   document.getElementById('modal-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+/* Quick star + status editing straight from the detail popup (editor only) */
+function renderModalQuick(b) {
+  const wrap = document.getElementById('m-quick');
+  if (!wrap) return;
+  const stars = [1, 2, 3, 4, 5].map(n =>
+    '<button class="mq-star' + (n <= (b.star || 0) ? ' on' : '') + '" onclick="quickStar(' + n + ')">★</button>'
+  ).join('');
+  const status = STATUS_ORDER.map(k =>
+    '<button class="mq-st ' + STATUS_META[k].cls + (b.status === k ? ' active' : '') + '" onclick="quickStatus(\'' + k + '\')">' + STATUS_META[k].label + '</button>'
+  ).join('');
+  wrap.innerHTML =
+    '<div class="mq-row"><span class="mq-lbl">ดาว</span><div class="mq-stars">' + stars + '</div></div>' +
+    '<div class="mq-row"><span class="mq-lbl">สถานะ</span><div class="mq-status">' + status + '</div></div>';
+}
+function quickStar(n) {
+  const b = allBooks[window._mIdx]; if (!b) return;
+  quickSave('star', b.star === n ? 0 : n);
+}
+function quickStatus(k) {
+  const b = allBooks[window._mIdx]; if (!b) return;
+  quickSave('status', b.status === k ? '' : k);
+}
+async function quickSave(field, value) {
+  if (!isEditor()) return;
+  const b = allBooks[window._mIdx]; if (!b) return;
+  const prev = b[field];
+  if (prev === value) return;
+  b[field] = value;                     // optimistic
+  renderModalQuick(b);
+  document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
+  const msg = document.getElementById('m-quick-msg');
+  msg.style.opacity = '1'; msg.textContent = 'กำลังบันทึก…';
+  try {
+    await gasPost({
+      action: 'edit', row: b.row,
+      title: b.title, summary: b.summary, url: b.url,
+      tags: (b.tags || []).join('|'), source: b.source,
+      star: b.star || 0, status: b.status || '', cover: b.cover || ''
+    });
+    renderGrid();                       // reflect the change on the card behind
+    msg.textContent = 'บันทึกแล้ว ✓';
+    setTimeout(() => { msg.style.opacity = '0'; }, 1500);
+  } catch (err) {
+    b[field] = prev;                    // rollback
+    renderModalQuick(b);
+    document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
+    msg.textContent = '';
+    alert('บันทึกไม่ได้: ' + err.message);
+  }
+}
+
+/* Paste a copied link (e.g. from readawrite) into the URL field */
+async function pasteUrl() {
+  let txt = '';
+  try { txt = (await navigator.clipboard.readText() || '').trim(); }
+  catch (e) { alert('อ่านคลิปบอร์ดไม่ได้ — แตะช่องลิงก์แล้ววางเองได้เลย'); return; }
+  if (!txt) { alert('คลิปบอร์ดว่างเปล่า'); return; }
+  const m = txt.match(/https?:\/\/\S+/);
+  document.getElementById('f-url').value = m ? m[0] : txt;
+  const ti = document.getElementById('f-title');
+  if (ti && !ti.value.trim()) {
+    const name = txt.replace(/https?:\/\/\S+/g, '').trim();
+    if (name) ti.value = name;
+  }
 }
 
 function closeModal(e) { if (e.target === document.getElementById('modal-bg')) closeModalBtn(); }
