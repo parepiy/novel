@@ -496,10 +496,13 @@ body.editor .m-edit{display:inline-block;}
   <div class="help-card">
     <button class="ov-close" onclick="toggleHelp()">✕</button>
     <h3>⌨️ คีย์ลัด</h3>
+    <div class="help-row"><span>แท็บนิยาย</span><kbd>⌘/Ctrl + 1</kbd></div>
+    <div class="help-row"><span>แท็บสถิติ</span><kbd>⌘/Ctrl + 2</kbd></div>
+    <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>⌘/Ctrl + 3</kbd></div>
+    <div class="help-row"><span>แจ้งเตือน · มุมมองรายการ</span><kbd>1</kbd></div>
+    <div class="help-row"><span>แจ้งเตือน · มุมมองปฏิทิน</span><kbd>2</kbd></div>
     <div class="help-row"><span>กรองเฉพาะ MEB</span><kbd>M</kbd></div>
     <div class="help-row"><span>กรองเฉพาะ RAW</span><kbd>R</kbd></div>
-    <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>Shift + 3</kbd></div>
-    <div class="help-row"><span>แท็บสถิติ</span><kbd>Shift + 4</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
     <div class="help-row"><span>ค้นหาเนื้อเรื่อง</span><kbd>S</kbd></div>
     <div class="help-row"><span>เพิ่มนิยาย (เมื่อปลดล็อก)</span><kbd>N</kbd></div>
@@ -1607,11 +1610,17 @@ document.addEventListener('keydown', e => {
     else focusSearch('title');
     return;
   }
+  /* Tab switching: ⌘/Ctrl + 1/2/3 (works even while a field is focused) */
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+    if (e.code === 'Digit1') { e.preventDefault(); switchTab('all'); return; }
+    if (e.code === 'Digit2') { e.preventDefault(); switchTab('stats'); return; }
+    if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } return; }
+  }
   if (typing) return;
-  if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } }
-    else if (e.code === 'Digit4') { e.preventDefault(); switchTab('stats'); }
-    return;
+  /* Notification sub-views: plain 1 = list, 2 = calendar (only in that tab) */
+  if (notifyView && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+    if (e.code === 'Digit1') { e.preventDefault(); setNotifyView('list'); return; }
+    if (e.code === 'Digit2') { e.preventDefault(); setNotifyView('calendar'); return; }
   }
   if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
   if (e.code === 'KeyM') { setSource('meb'); }
