@@ -232,6 +232,20 @@ body.editor .notify-tab{display:inline-block;}
 .sfb.active{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);font-weight:600;}
 .strip-div{flex-shrink:0;width:1px;align-self:stretch;background:var(--bd);margin:2px 3px;}
 
+/* ACTIVE FILTER CHIPS */
+.active-filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:2px 12px 8px;}
+.af-chip{display:inline-flex;align-items:center;gap:5px;background:var(--mdim);border:1px solid var(--mint);color:var(--mint2);border-radius:999px;padding:3px 8px 3px 10px;font-family:inherit;font-size:.78rem;font-weight:500;cursor:pointer;line-height:1.4;}
+.af-chip.raw{background:var(--rdim);border-color:var(--raw);color:var(--raw2);}
+.af-chip.star{background:rgba(240,180,0,.16);border-color:var(--star-hover);color:var(--star-dim);}
+.af-chip.reading{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
+.af-chip.finished{background:rgba(74,144,217,.15);border-color:#4a90d9;color:#356fb0;}
+.af-chip.dropped{background:var(--s3);border-color:var(--bd2);color:var(--dim);}
+:root[data-theme="dark"] .af-chip.finished{color:#8fbdf0;}
+.af-x{font-size:.72rem;opacity:.7;}
+.af-chip:hover .af-x{opacity:1;}
+.af-clear{background:none;border:none;color:var(--dim);font-family:inherit;font-size:.76rem;cursor:pointer;padding:3px 6px;text-decoration:underline;}
+.af-clear:hover{color:var(--mint2);}
+
 /* LOADING */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:14px;color:var(--mute);}
 .spinner{width:36px;height:36px;border:3px solid var(--bd);border-top-color:var(--mint);border-radius:50%;animation:spin .7s linear infinite;}
@@ -382,6 +396,7 @@ body.editor .m-edit{display:inline-block;}
   </div>
 
   <div class="tag-strip" id="filter-strip"></div>
+  <div class="active-filters" id="active-filters" style="display:none"></div>
 </div>
 
 <div id="main-content">
@@ -713,6 +728,33 @@ function updateClearBtn() {
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
+/* Removable chips showing exactly which filters are active */
+function afChip(label, onclick, cls) {
+  return '<button class="af-chip ' + (cls || '') + '" onclick="' + onclick + '">' + esc(label) + '<span class="af-x">✕</span></button>';
+}
+function renderActiveFilters() {
+  const el = document.getElementById('active-filters');
+  if (!el) return;
+  if (notifyView || statsView) { el.style.display = 'none'; return; }
+  const chips = [];
+  if (activeSource) chips.push(afChip(activeSource === 'meb' ? 'MEB' : 'RAW', "setSource('" + activeSource + "')", activeSource === 'raw' ? 'raw' : 'meb'));
+  if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
+  if (activeStar !== null) chips.push(afChip(activeStar + '★', 'setStar(' + activeStar + ')', 'star'));
+  [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + t.replace(/'/g, "\\'") + "')", '')));
+  const q = searchQ.trim();
+  if (q) chips.push(afChip('🔍 ' + q, 'clearSearch()', ''));
+  if (!chips.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  el.innerHTML = chips.join('') + '<button class="af-clear" onclick="clearAll()">ล้างทั้งหมด</button>';
+}
+function clearSearch() {
+  searchQ = '';
+  const inp = document.getElementById('search-input');
+  if (inp) inp.value = '';
+  updateClearBtn();
+  renderGrid();
+}
+
 function getFilteredBooks() {
   const pool = activeSource ? allBooks.filter(b => b.source === activeSource) : allBooks;
   const q = searchQ.toLowerCase().trim();
@@ -735,6 +777,7 @@ function sortBooks(list) {
 }
 
 function renderGrid() {
+  renderActiveFilters();
   const filtered = getFilteredBooks();
   const scope = activeSource ? (activeSource === 'meb' ? ' · MEB' : ' · RAW') : '';
   document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${allBooks.length} เรื่อง${scope}`;
@@ -786,6 +829,7 @@ function switchTab(tab) {
   const hideFilters = notify || stats;
   document.getElementById('filter-strip').style.display = hideFilters ? 'none' : '';
   document.querySelector('.search-box').style.display = hideFilters ? 'none' : '';
+  if (hideFilters) document.getElementById('active-filters').style.display = 'none';
   if (notify) {
     notifyView = true; statsView = false;
     nfEditId = null;
@@ -1685,8 +1729,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+/* ===== SHARE TARGET (share a novel URL into the installed app) ===== */
+function handleShareTarget() {
+  let params;
+  try { params = new URLSearchParams(location.search); } catch (e) { return; }
+  if (!params.has('url') && !params.has('text') && !params.has('title')) return;
+  const rawUrl = (params.get('url') || '').trim();
+  const text = (params.get('text') || '').trim();
+  const title = (params.get('title') || '').trim();
+  // Some apps put the link inside "text" instead of "url".
+  let url = rawUrl;
+  if (!url) { const m = text.match(/https?:\/\/\S+/); if (m) url = m[0]; }
+  let name = title;
+  if (!name && text) name = text.replace(/https?:\/\/\S+/g, '').trim();
+  // Clean the query string so a reload doesn't re-trigger the Add form.
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  if (!url && !name) return;
+  if (!isEditor()) { alert('ปลดล็อกการแก้ไข (🔑) ก่อน แล้วแชร์อีกครั้งเพื่อเพิ่มนิยาย'); return; }
+  openAdd();
+  if (url) document.getElementById('f-url').value = url;
+  if (name) document.getElementById('f-title').value = name;
+}
+
 /* ===== INIT ===== */
 loadData();
+handleShareTarget();
 </script>
 </body>
 </html>
