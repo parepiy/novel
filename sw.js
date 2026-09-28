@@ -6,7 +6,7 @@
      the network, so the PWA no longer shows "A problem repeatedly occurred".
    - Data (the Google Sheet CSV) and images use network-first with a cache
      fallback, so content stays fresh but still works offline. */
-const CACHE = 'novel-v4';
+const CACHE = 'novel-v5';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
