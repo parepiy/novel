@@ -380,7 +380,7 @@
         } else if (m.type === 'nv-done') {
           window.removeEventListener('message', onMsg);
           progress('');
-          log('✅ อัปเดตแล้ว! ' + (m.added ? 'เพิ่มเรื่องใหม่ ' + m.added + ' เรื่อง' : 'รายการพร้อมแล้ว') + ' — ดูได้ในแท็บแอปที่เปิดขึ้นมา', '#6fd3ad');
+          log('✅ อัปเดตแล้ว! ' + (m.added ? 'เพิ่มเรื่องใหม่ ' + m.added + ' เรื่อง' : 'รายการพร้อมแล้ว') + ' — กลับไปที่แอป › 💡 แนะนำ รายการจะโหลดใหม่เอง (แท็บแอปที่เพิ่งเปิดปิดได้)', '#6fd3ad');
         } else if (m.type === 'nv-error') {
           window.removeEventListener('message', onMsg);
           progress('');
