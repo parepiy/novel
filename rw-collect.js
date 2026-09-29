@@ -9,8 +9,10 @@
    lists, merges them with the list + marks saved in your Google Sheet
    (marked novels are dropped, unmarked ones stay, new ones fill the empty
    slots up to 20), fetches synopses for the newly added novels, and saves
-   the result back to the Sheet. If the Sheet can't be reached from this
-   page, it downloads a JSON file to upload in the app instead.
+   the result back to the Sheet. ReadAWrite blocks connections to Google
+   from its pages, so normally it hands the data to the app in a new tab
+   (postMessage) and the app saves it; downloading a JSON file to upload
+   in the app is the last-resort fallback.
 
    Written with block comments and explicit semicolons only, so it still
    runs if a browser strips newlines from the bookmarklet. */
@@ -316,6 +318,88 @@
     return j;
   }
 
+  function btn(label, primary) {
+    var b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'font:inherit;cursor:pointer;border-radius:9px;padding:7px 14px;' +
+      (primary ? 'background:#3fb98f;color:#0f1613;border:none;font-weight:700;' : 'background:none;color:#9db3aa;border:1px solid #38493f;');
+    return b;
+  }
+
+  /* Fallback 1: download the pool as a file to upload in the app. */
+  async function downloadPools(pools) {
+    var trimmed = { t1: pools.t1.slice(0, 60), t2: pools.t2.slice(0, 60), t3: pools.t3.slice(0, 60) };
+    await fetchSyn([].concat(trimmed.t1.slice(0, 25), trimmed.t2.slice(0, 25), trimmed.t3.slice(0, 25)));
+    progress('');
+    var day = new Date().toISOString().slice(0, 10);
+    download({ kind: 'novel-suggest-pool', generated_at: new Date().toISOString(), pools: trimmed }, 'novel-suggest_' + day + '.json');
+    log('📥 ดาวน์โหลดไฟล์แล้ว → เปิดแอป › 💡 แนะนำ › 🔄 อัปเดตรายการ › อัปโหลดไฟล์', '#6fd3ad');
+  }
+
+  /* Handoff: ReadAWrite's security policy blocks connections to Google from
+     its pages, so open the app in a new tab and pass the data with
+     postMessage (not affected by that policy). The app loads the saved list +
+     marks and sends them here; this tab merges, fetches synopses for the new
+     novels (only possible on readawrite.com) and sends the final list back
+     for the app to save. */
+  function offerHandoff(pools) {
+    var appUrl = (CFG.a || 'https://parepiy.github.io/novel/').split('#')[0];
+    var appOrigin = new URL(appUrl, location.href).origin;
+    log('เก็บข้อมูลเสร็จแล้ว — กด “ส่งเข้าแอป” เพื่อบันทึก', '#6fd3ad');
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;';
+    var send = btn('📤 ส่งเข้าแอป', true);
+    var dl = btn('📥 ดาวน์โหลดไฟล์แทน', false);
+    row.appendChild(send);
+    row.appendChild(dl);
+    logEl.appendChild(row);
+    dl.onclick = function () { dl.disabled = true; downloadPools(pools); };
+    send.onclick = function () {
+      var working = false;
+      function onMsg(ev) {
+        if (ev.origin !== appOrigin || !ev.data || typeof ev.data !== 'object') return;
+        var m = ev.data;
+        var reply = function (msg) { ev.source.postMessage(msg, appOrigin); };
+        if (m.type === 'nv-ready') {
+          reply({ type: 'nv-hello', u: CFG.u || '', t: CFG.t || '' });
+        } else if (m.type === 'nv-state' && !working) {
+          working = true;
+          (async function () {
+            try {
+              var res = merge((m.list || []).map(fromRow), pools, m.marks || []);
+              await fetchSyn(res.list);
+              progress('💾 แอปกำลังบันทึก…');
+              reply({ type: 'nv-save', list: res.list.map(toRow), added: res.added, updated_at: new Date().toISOString() });
+            } catch (e) {
+              working = false;
+              progress('');
+              log('❌ ' + e.message, '#f28b82');
+              reply({ type: 'nv-abort', error: e.message });
+            }
+          })();
+        } else if (m.type === 'nv-done') {
+          window.removeEventListener('message', onMsg);
+          progress('');
+          log('✅ อัปเดตแล้ว! ' + (m.added ? 'เพิ่มเรื่องใหม่ ' + m.added + ' เรื่อง' : 'รายการพร้อมแล้ว') + ' — ดูได้ในแท็บแอปที่เปิดขึ้นมา', '#6fd3ad');
+        } else if (m.type === 'nv-error') {
+          window.removeEventListener('message', onMsg);
+          progress('');
+          send.disabled = false;
+          log('❌ แอปบันทึกไม่ได้: ' + m.error + ' — ลองอีกครั้ง หรือกด “ดาวน์โหลดไฟล์แทน”', '#f28b82');
+        }
+      }
+      window.addEventListener('message', onMsg);
+      var w = window.open(appUrl + '#sg-bridge', 'nv_bridge');
+      if (!w) {
+        window.removeEventListener('message', onMsg);
+        log('เปิดแท็บแอปไม่ได้ (ป๊อปอัปถูกบล็อก) — กด “ดาวน์โหลดไฟล์แทน”', '#f0a94d');
+        return;
+      }
+      send.disabled = true;
+      log('เปิดแอปในแท็บใหม่แล้ว — กำลังส่งข้อมูล อย่าปิดแท็บนี้');
+    };
+  }
+
   function download(obj, name) {
     var blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
     var a = document.createElement('a');
@@ -344,7 +428,7 @@
     if (CFG.u && CFG.t) {
       progress('🔗 เชื่อมต่อ Google Sheet…');
       try { state = await gas({ action: 'sg_state' }); }
-      catch (e) { log('ส่งเข้า Google Sheet จากหน้านี้ไม่ได้ (' + e.message + ') → จะดาวน์โหลดไฟล์แทน', '#f0a94d'); }
+      catch (e) { console.log('[นิยายแนะนำ] direct Sheet access blocked on this page (' + e.message + ') — using the app handoff'); }
     }
 
     if (state) {
@@ -355,12 +439,8 @@
       progress('');
       log('✅ อัปเดตแล้ว! ' + (res.added ? 'เพิ่มเรื่องใหม่ ' + res.added + ' เรื่อง' : 'รายการพร้อมแล้ว') + ' — เปิดแอป › 💡 แนะนำ แล้วกดโหลดใหม่', '#6fd3ad');
     } else {
-      var trimmed = { t1: pools.t1.slice(0, 60), t2: pools.t2.slice(0, 60), t3: pools.t3.slice(0, 60) };
-      await fetchSyn([].concat(trimmed.t1.slice(0, 25), trimmed.t2.slice(0, 25), trimmed.t3.slice(0, 25)));
       progress('');
-      var day = new Date().toISOString().slice(0, 10);
-      download({ kind: 'novel-suggest-pool', generated_at: new Date().toISOString(), pools: trimmed }, 'novel-suggest_' + day + '.json');
-      log('📥 ดาวน์โหลดไฟล์แล้ว → เปิดแอป › 💡 แนะนำ › 🔄 อัปเดตรายการ › อัปโหลดไฟล์', '#6fd3ad');
+      offerHandoff(pools);
     }
   } catch (e) {
     progress('');
