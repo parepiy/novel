@@ -775,12 +775,9 @@ async function refreshFromGas() {
   const c = cfg();
   if (!c.url) return;
   try {
-    const res = await fetch(c.url, { method: 'GET' });
-    const data = await res.json();
-    if (data && data.ok && Array.isArray(data.books)) {
-      allBooks = data.books.map(fromGas);
-      renderAll();
-    }
+    const books = await gasGetBooks();
+    allBooks = books.map(fromGas);
+    renderAll();
   } catch(e) { /* keep CSV data on failure */ }
 }
 
@@ -1198,21 +1195,14 @@ async function loadSuggest() {
   if (sgLoading) return sgLoading;          // don't fire overlapping loads
   sgLoading = (async () => {
     let lastErr = null;
-    for (let attempt = 0; attempt < 2; attempt++) {   // one retry for a flaky Apps Script reply
-      try {
-        const d = await gasPost({ action: 'sg_state' });
-        if (!Array.isArray(d.list)) throw new Error('สคริปต์ยังไม่รองรับแท็บแนะนำ');
-        sgList = d.list.map(sgFromRow);
-        sgMarks = Array.isArray(d.marks) ? d.marks : [];
-        sgMarkMap = sgMakeMarkMap(sgMarks);
-        sgUpdated = String(d.updated_at || '');
-        lastErr = null;
-        break;
-      } catch (e) {
-        lastErr = e;
-        if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
-      }
-    }
+    try {   // gasPost already retries temporary Google errors
+      const d = await gasPost({ action: 'sg_state' });
+      if (!Array.isArray(d.list)) throw new Error('สคริปต์ยังไม่รองรับแท็บแนะนำ');
+      sgList = d.list.map(sgFromRow);
+      sgMarks = Array.isArray(d.marks) ? d.marks : [];
+      sgMarkMap = sgMakeMarkMap(sgMarks);
+      sgUpdated = String(d.updated_at || '');
+    } catch (e) { lastErr = e; }
     sgError = lastErr ? (lastErr.message || 'error') : '';   // on failure the previous list stays
     sgLoaded = true;
     if (suggestView) renderSuggest();
@@ -1457,10 +1447,10 @@ async function sgSyncLibrary(x, status) {
   }
   setBusy(true, 'กำลังเพิ่มเข้าคลัง');
   try {
-    await gasPost({
+    await gasWrite({
       action: 'add', title: x.name, summary: x.syn || '', url: sgUrl(x), tags: '',
       source: 'raw', star: 0, status: status, cover: x.thumb || ''
-    });
+    }, () => bookSaved(x.name, sgUrl(x)));
     await refreshFromGas();
     toast('เพิ่ม “' + x.name + '” เข้าคลังแล้ว (' + label + ') ✓');
   } catch (e) { alert('เพิ่มเข้าคลังไม่ได้: ' + e.message); }
@@ -1482,10 +1472,10 @@ function sgNextFriday9pm() {
 async function sgEnableWeekly() {
   setBusy(true, 'กำลังตั้งเตือนทุกวันศุกร์');
   try {
-    await gasPost({
-      action: 'remind_add', title: '💡 ถึงเวลาอัปเดตนิยายแนะนำ (ReadAWrite)',
-      url: location.origin + location.pathname + SG_REMIND_MARK, remind_at: sgNextFriday9pm()
-    });
+    const title = '💡 ถึงเวลาอัปเดตนิยายแนะนำ (ReadAWrite)';
+    const url = location.origin + location.pathname + SG_REMIND_MARK;
+    const ms = sgNextFriday9pm();
+    await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
     await loadReminders();
     toast('ตั้งเตือนทุกวันศุกร์ 21:00 แล้ว 🔔');
   } catch (e) { alert('ตั้งเตือนไม่ได้: ' + e.message); }
@@ -1885,19 +1875,91 @@ function fileToUpload(file) {
   });
 }
 
+/* Google sometimes answers an Apps Script call with a temporary error page
+   ("ไดรฟ์ขออภัย ไม่สามารถเปิดไฟล์ได้ในเวลานี้", HTTP 404/5xx) or the connection
+   drops. Those are retried automatically with growing waits (the loader says so).
+   Actions that are safe to repeat are always retried. Actions that create or
+   delete something are only retried when the script clearly never ran;
+   otherwise the error is marked `uncertain` and gasWrite() checks whether it
+   actually happened before sending it again, so nothing gets duplicated. */
+const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_RETRY_WAITS = [1500, 3500, 7000];
+const gasSleep = ms => new Promise(r => setTimeout(r, ms));
+function gasRetryNotice(text) {
+  const b = document.getElementById('busy-overlay');
+  if (b && b.classList.contains('show')) document.getElementById('busy-text').textContent = text;
+  const fc = document.getElementById('form-card');
+  if (fc && fc.classList.contains('saving')) document.getElementById('f-loader-text').textContent = text;
+}
 async function gasPostWith(c, payload) {
   payload.token = c.token;
-  const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); }
-  catch (e) {
-    // Apps Script answered with an HTML error page instead of JSON — show what it says
-    // (Safari's own message for this is the cryptic "string did not match the expected pattern").
-    throw new Error('สคริปต์ตอบกลับเป็นหน้าข้อผิดพลาด' + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : '') + ': ' + gasErrorText(text));
+  const repeatable = GAS_REPEATABLE.has(payload.action);
+  for (let attempt = 0; ; attempt++) {
+    let ran = 'unknown';   // did the script run? (Google redirects to the result page only after it has)
+    let problem;
+    try {
+      const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
+      ran = res.redirected || /googleusercontent\.com/.test(res.url || '');
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch (e) { /* HTML error page */ }
+      if (data) {
+        if (!data.ok) throw Object.assign(new Error(data.error || 'error'), { fromScript: true });
+        return data;
+      }
+      problem = 'Google ขัดข้องชั่วคราว' + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : '') + ': ' + gasErrorText(text);
+    } catch (e) {
+      if (e.fromScript) throw e;   // a real answer from your script (e.g. unauthorized) — don't retry
+      problem = 'เชื่อมต่อ Google ไม่ได้: ' + (e.message || e);
+    }
+    const safe = repeatable || ran === false;
+    if (safe && attempt < GAS_RETRY_WAITS.length) {
+      gasRetryNotice('Google ขัดข้องชั่วคราว — กำลังลองใหม่ (' + (attempt + 1) + '/' + GAS_RETRY_WAITS.length + ')…');
+      await gasSleep(GAS_RETRY_WAITS[attempt]);
+      continue;
+    }
+    const err = new Error(problem + (attempt ? ' (ลองแล้ว ' + (attempt + 1) + ' ครั้ง)' : ''));
+    err.uncertain = !safe;
+    throw err;
   }
-  if (!data || !data.ok) throw new Error((data && data.error) || 'error');
-  return data;
+}
+/* For add / remind_add / delete: if Google's answer got lost, check whether the
+   change happened before sending it once more. */
+async function gasWrite(payload, happened) {
+  try { return await gasPost(payload); }
+  catch (e) {
+    if (!e.uncertain) throw e;
+    gasRetryNotice('Google ขัดข้องชั่วคราว — กำลังตรวจสอบว่าบันทึกแล้วหรือยัง…');
+    let done;
+    try { done = await happened(); }
+    catch (e2) { throw new Error('Google ขัดข้อง และตรวจสอบไม่ได้ว่าบันทึกไปแล้วหรือยัง — รอสักครู่ โหลดแอปใหม่ แล้วดูรายการก่อนกดบันทึกซ้ำ'); }
+    if (done) return { ok: true, verified: true };
+    gasRetryNotice('ยังไม่ได้บันทึก — กำลังส่งใหม่…');
+    return await gasPost(payload);
+  }
+}
+/* Library rows straight from the script (GET), with the same retries. */
+async function gasGetBooks() {
+  const c = cfg();
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(c.url, { method: 'GET' });
+      const data = JSON.parse(await res.text());
+      if (data && data.ok && Array.isArray(data.books)) return data.books;
+      throw new Error((data && data.error) || 'bad response');
+    } catch (e) {
+      if (attempt >= GAS_RETRY_WAITS.length) throw e;
+      await gasSleep(GAS_RETRY_WAITS[attempt]);
+    }
+  }
+}
+async function reminderSaved(title, url, ms) {
+  const d = await gasPost({ action: 'remind_list' });
+  return (d.reminders || []).some(r => String(r.title) === title && String(r.url || '') === url && Number(r.remind_at) === ms);
+}
+async function bookSaved(title, url) {
+  const books = await gasGetBooks();
+  return books.some(b => String(b.title || '').trim() === title.trim() && String(b.url || '').trim() === String(url || '').trim());
 }
 function gasErrorText(html) {
   try {
@@ -1946,7 +2008,8 @@ async function saveForm() {
       payload.imageB64 = up.b64; payload.imageType = up.type; payload.imageName = up.name;
     }
     setSaving(true, 'กำลังบันทึก', '💾');
-    await gasPost(payload);
+    if (payload.action === 'add') await gasWrite(payload, () => bookSaved(payload.title, payload.url));
+    else await gasPost(payload);
     setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
@@ -1961,8 +2024,15 @@ async function deleteBook() {
   if (formMode !== 'edit' || !formRow) return;
   if (!confirm('ลบนิยายเรื่องนี้ออกจากชีตถาวร?')) return;
   setSaving(true, 'กำลังลบ', '🗑️');
+  const row = formRow;
+  const cur = allBooks.find(b => b.row === row);
+  const title = cur ? cur.title : fval('f-title').trim();
   try {
-    await gasPost({ action: 'delete', row: formRow });
+    // deleting shifts the rows below, so never re-send blindly: check the row first
+    await gasWrite({ action: 'delete', row: row }, async () => {
+      const b = (await gasGetBooks()).find(x => Number(x.row) === Number(row));
+      return !b || String(b.title || '').trim() !== title.trim();
+    });
     setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
@@ -2055,7 +2125,7 @@ async function saveReminder() {
   setBusy(true, editingId ? 'กำลังบันทึกการแก้ไข' : 'กำลังบันทึก');
   try {
     // add the new/updated reminder first (so nothing is lost on failure)
-    await gasPost({ action: 'remind_add', title: title, url: url, remind_at: ms });
+    await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
     // then, if editing, remove the old row
     if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
     nfEditId = null;
@@ -2332,7 +2402,7 @@ async function saveFromDay() {
   const editingId = dayEditId;
   setBusy(true, editingId ? 'กำลังบันทึกการแก้ไข' : 'กำลังบันทึก');
   try {
-    await gasPost({ action: 'remind_add', title: title, url: url, remind_at: ms });
+    await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
     if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
     dayEditId = null;
     await loadReminders();
