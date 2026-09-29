@@ -1333,7 +1333,8 @@ async function sgEnsureCollector() {
 function sgCollectorCode() {
   const c = cfg();
   const src = sgCollectorSrc.replace(/^\/\*[\s\S]*?\*\/\s*/, '').replace(/^[ \t]+/gm, '');
-  return '(function(){window.__NV=' + JSON.stringify({ u: c.url, t: c.token }) + ';\n' + src + '\n})();';
+  const app = location.origin + location.pathname;
+  return '(function(){window.__NV=' + JSON.stringify({ u: c.url, t: c.token, a: app }) + ';\n' + src + '\n})();';
 }
 async function sgPrepareBookmarklet() {
   const a = document.getElementById('sg-bm');
@@ -1470,10 +1471,71 @@ async function sgDisableWeekly() {
   finally { setBusy(false); if (suggestView) renderSuggest(); }
 }
 
-/* Opening the app from the weekly notification (…/#suggest) jumps to this tab */
+/* ---- handoff from rw-collect.js ----
+   ReadAWrite's pages can't connect to Google, so after collecting, the
+   bookmarklet opens the app at …/#sg-bridge and they talk via postMessage:
+   app → nv-ready, collector → nv-hello (Sheet URL/secret from the bookmark),
+   app → nv-state (saved list + marks), collector merges + fetches synopses →
+   nv-save, app saves to the Sheet → nv-done. */
+const RA_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)?readawrite\.com$/;
+function sgStartBridge() {
+  const src = window.opener;
+  const fail = msg => { setBusy(false); alert(msg + '\n\nกลับไปที่แท็บ readawrite แล้วกด “ดาวน์โหลดไฟล์แทน” จากนั้นอัปโหลดในแท็บ 💡 แนะนำ'); };
+  if (!src) { fail('เชื่อมกับแท็บ readawrite ไม่ได้'); return; }
+  setBusy(true, 'กำลังรับนิยายแนะนำจาก ReadAWrite');
+  let creds = null;
+  let saving = false;
+  let tries = 0;
+  const ping = setInterval(() => {
+    if (creds) { clearInterval(ping); return; }
+    if (++tries > 20) { clearInterval(ping); fail('ไม่ได้รับข้อมูลจากแท็บ readawrite'); return; }
+    try { src.postMessage({ type: 'nv-ready' }, '*'); } catch (e) {}
+  }, 700);
+  const safety = setTimeout(() => setBusy(false), 6 * 60 * 1000);
+  window.addEventListener('message', async function onMsg(ev) {
+    if (!RA_ORIGIN_RE.test(ev.origin) || !ev.data || typeof ev.data !== 'object') return;
+    const m = ev.data;
+    const reply = msg => { try { ev.source.postMessage(msg, ev.origin); } catch (e) {} };
+    try {
+      if (m.type === 'nv-hello' && !creds) {
+        creds = isEditor() ? cfg() : { url: String(m.u || ''), token: String(m.t || '') };
+        if (!creds.url || !creds.token) throw new Error('ยังไม่ได้ตั้งค่า URL/รหัสลับ');
+        const st = await gasPostWith(creds, { action: 'sg_state' });
+        setBusy(true, 'กำลังดึงเรื่องย่อเรื่องใหม่ (แท็บ readawrite)');
+        reply({ type: 'nv-state', list: st.list || [], marks: st.marks || [] });
+      } else if (m.type === 'nv-save' && creds && !saving) {
+        saving = true;
+        setBusy(true, 'กำลังบันทึกนิยายแนะนำ');
+        await gasPostWith(creds, {
+          action: 'sg_save', list: Array.isArray(m.list) ? m.list : [],
+          updated_at: String(m.updated_at || new Date().toISOString())
+        });
+        reply({ type: 'nv-done', added: +m.added || 0 });
+        window.removeEventListener('message', onMsg);
+        clearTimeout(safety);
+        setBusy(false);
+        if (isEditor()) switchTab('suggest');
+        toast('อัปเดตนิยายแนะนำแล้ว ✓' + (+m.added ? ' · เรื่องใหม่ ' + m.added + ' เรื่อง' : '') + (isEditor() ? '' : ' — ปลดล็อก 🔑 เพื่อดูรายการ'));
+      } else if (m.type === 'nv-abort') {
+        clearTimeout(safety);
+        setBusy(false);
+        alert('แท็บ readawrite หยุดทำงาน: ' + (m.error || ''));
+      }
+    } catch (e) {
+      saving = false;
+      clearTimeout(safety);
+      reply({ type: 'nv-error', error: e.message || 'error' });
+      fail('บันทึกไม่ได้: ' + (e.message || 'error'));
+    }
+  });
+}
+
+/* …/#suggest (weekly notification) opens this tab; …/#sg-bridge receives a handoff */
 function handleHashRoute() {
-  if (location.hash !== SG_REMIND_MARK) return;
+  const h = location.hash;
+  if (h !== SG_REMIND_MARK && h !== '#sg-bridge') return;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  if (h === '#sg-bridge') { sgStartBridge(); return; }
   if (isEditor()) switchTab('suggest');
 }
 window.addEventListener('hashchange', handleHashRoute);
@@ -1793,14 +1855,14 @@ function fileToUpload(file) {
   });
 }
 
-async function gasPost(payload) {
-  const c = cfg();
+async function gasPostWith(c, payload) {
   payload.token = c.token;
   const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
   const data = await res.json();
   if (!data || !data.ok) throw new Error((data && data.error) || 'error');
   return data;
 }
+function gasPost(payload) { return gasPostWith(cfg(), payload); }
 
 function setSaving(on, msg, emoji) {
   document.getElementById('form-card').classList.toggle('saving', on);
