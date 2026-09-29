@@ -131,6 +131,8 @@ body.editor .suggest-tab{display:inline-block;}
 :root[data-theme="dark"] .sg-mk.active.mk-finished{color:#8fbdf0;}
 .sg-empty{text-align:center;color:var(--mute);padding:28px 12px;font-size:.9rem;line-height:1.7;}
 .sg-err{color:#b85c5c;}
+.sg-warnbar{background:rgba(224,137,43,.1);border:1px solid var(--overdue);color:var(--overdue);border-radius:12px;padding:9px 14px;font-size:.82rem;}
+.sg-warnbar .sg-sub{margin-top:3px;overflow-wrap:anywhere;}
 
 /* TOAST */
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:600;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2);}
@@ -1190,19 +1192,32 @@ function sgAgo(iso) {
   return { text: days <= 0 ? 'อัปเดตวันนี้' : 'อัปเดต ' + days + ' วันก่อน', stale: days >= 8 };
 }
 
+let sgLoading = null;
 async function loadSuggest() {
   if (!isEditor()) return;
-  try {
-    const d = await gasPost({ action: 'sg_state' });
-    if (!Array.isArray(d.list)) throw new Error('สคริปต์ยังไม่รองรับแท็บแนะนำ');
-    sgList = d.list.map(sgFromRow);
-    sgMarks = Array.isArray(d.marks) ? d.marks : [];
-    sgMarkMap = sgMakeMarkMap(sgMarks);
-    sgUpdated = String(d.updated_at || '');
-    sgError = '';
-  } catch (e) { sgError = e.message || 'error'; }
-  sgLoaded = true;
-  if (suggestView) renderSuggest();
+  if (sgLoading) return sgLoading;          // don't fire overlapping loads
+  sgLoading = (async () => {
+    let lastErr = null;
+    for (let attempt = 0; attempt < 2; attempt++) {   // one retry for a flaky Apps Script reply
+      try {
+        const d = await gasPost({ action: 'sg_state' });
+        if (!Array.isArray(d.list)) throw new Error('สคริปต์ยังไม่รองรับแท็บแนะนำ');
+        sgList = d.list.map(sgFromRow);
+        sgMarks = Array.isArray(d.marks) ? d.marks : [];
+        sgMarkMap = sgMakeMarkMap(sgMarks);
+        sgUpdated = String(d.updated_at || '');
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+    sgError = lastErr ? (lastErr.message || 'error') : '';   // on failure the previous list stays
+    sgLoaded = true;
+    if (suggestView) renderSuggest();
+  })();
+  try { await sgLoading; } finally { sgLoading = null; }
 }
 /* Re-load when you come back to the app (e.g. after the bookmarklet saved a new
    list from another tab/window), at most every 15 s. */
@@ -1245,7 +1260,7 @@ function renderSuggest() {
   const shown = items.map((x, i) => ({ x, rank: i + 1 })).filter(o => !(sgHideMarked && sgMarkOf(o.x)));
   const ago = sgUpdated ? sgAgo(sgUpdated) : null;
   const weekly = sgWeeklyReminder();
-  const panelOpen = sgPanelOpen || !sgList.length || !!sgError;
+  const panelOpen = sgPanelOpen || !sgList.length;
 
   const meta = '<div class="sg-meta">' +
       '<span>' + cur.desc + ' · 🚫 ไม่มีดราม่า · เรียงตามยอดวิว</span>' +
@@ -1258,9 +1273,11 @@ function renderSuggest() {
     '</div>';
 
   let body;
-  if (sgError) {
+  const warn = (sgError && sgList.length)
+    ? '<div class="sg-warnbar">⚠️ โหลดรายการล่าสุดไม่ได้ — แสดงรายการเดิมไว้ก่อน · <button class="sg-link" onclick="sgReload()">ลองใหม่</button><div class="sg-sub">' + esc(sgError) + '</div></div>'
+    : '';
+  if (sgError && !sgList.length) {
     body = '<div class="sg-empty sg-err">โหลดนิยายแนะนำไม่ได้: ' + esc(sgError) +
-      '<br>ติดตั้งสคริปต์ส่วนแนะนำ (suggest-addon.gs) ใน Apps Script แล้ว Deploy เวอร์ชันใหม่หรือยัง?' +
       '<br><button class="sg-link" onclick="sgReload()">ลองใหม่</button></div>';
   } else if (!sgList.length) {
     body = '<div class="sg-empty">ยังไม่มีรายการแนะนำ — ทำตามขั้นตอนด้านบนเพื่ออัปเดตครั้งแรก</div>';
@@ -1272,7 +1289,7 @@ function renderSuggest() {
 
   main.innerHTML = '<div class="sg-view">' +
     '<div class="sg-tabs">' + tabsHtml + '</div>' + meta +
-    (panelOpen ? sgPanelHtml() : '') + body + '</div>';
+    (panelOpen ? sgPanelHtml() : '') + warn + body + '</div>';
   if (panelOpen) sgPrepareBookmarklet();
 }
 
@@ -1871,9 +1888,24 @@ function fileToUpload(file) {
 async function gasPostWith(c, payload) {
   payload.token = c.token;
   const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
-  const data = await res.json();
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch (e) {
+    // Apps Script answered with an HTML error page instead of JSON — show what it says
+    // (Safari's own message for this is the cryptic "string did not match the expected pattern").
+    throw new Error('สคริปต์ตอบกลับเป็นหน้าข้อผิดพลาด' + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : '') + ': ' + gasErrorText(text));
+  }
   if (!data || !data.ok) throw new Error((data && data.error) || 'error');
   return data;
+}
+function gasErrorText(html) {
+  try {
+    const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    doc.querySelectorAll('script,style').forEach(n => n.remove());
+    const t = (doc.body ? doc.body.textContent : '').replace(/\s+/g, ' ').trim();
+    return t.slice(0, 200) || '(ว่างเปล่า)';
+  } catch (e) { return String(html || '').slice(0, 200); }
 }
 function gasPost(payload) { return gasPostWith(cfg(), payload); }
 
