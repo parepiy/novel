@@ -9,6 +9,9 @@ const GAS_URL = process.env.GAS_URL;
 const SECRET = process.env.GAS_SECRET;
 const SUBJECT = process.env.VAPID_SUBJECT || 'https://parepiy.github.io/novel/';
 const DEFAULT_URL = 'https://parepiy.github.io/novel/';
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+// Reminders whose URL contains this repeat every week (the 💡 suggestion refresh).
+const WEEKLY_MARK = '#suggest';
 
 if (!GAS_URL || !SECRET || !process.env.VAPID_PUBLIC || !process.env.VAPID_PRIVATE) {
   console.error('Missing required env vars: GAS_URL, GAS_SECRET, VAPID_PUBLIC, VAPID_PRIVATE');
@@ -43,8 +46,9 @@ async function gas(body) {
   if (!subs.length) { console.log('no push subscriptions saved yet'); return; }
 
   for (const rem of due) {
+    const weekly = String(rem.url || '').includes(WEEKLY_MARK);
     const payload = JSON.stringify({
-      title: '📖 ถึงเวลาอ่านนิยาย',
+      title: weekly ? '💡 นิยายแนะนำ' : '📖 ถึงเวลาอ่านนิยาย',
       body: rem.title || '',
       url: rem.url || DEFAULT_URL,
       tag: 'reminder-' + rem.id
@@ -63,7 +67,14 @@ async function gas(body) {
         }
       }
     }
-    if (delivered) {
+    if (delivered && weekly) {
+      // Keep the same weekday/time: step forward whole weeks past "now".
+      let next = Number(rem.remind_at) + WEEK;
+      while (next <= now) next += WEEK;
+      await gas({ action: 'remind_add', token: SECRET, title: rem.title, url: rem.url, remind_at: next });
+      await gas({ action: 'remind_delete', token: SECRET, id: rem.id });
+      console.log('sent weekly:', rem.id, '- next at', new Date(next).toISOString());
+    } else if (delivered) {
       await gas({ action: 'remind_mark', token: SECRET, id: rem.id });
       console.log('sent + marked:', rem.id, '-', rem.title);
     } else {
