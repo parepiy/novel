@@ -1093,13 +1093,13 @@ let sgTab = sgPref('sgTab', 't1');
 let sgHideMarked = sgPref('sgHideMarked', '0') === '1';
 
 let toastTimer = null;
-function toast(msg) {
+function toast(msg, ms) {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2800);
 }
 
 /* title key used for duplicate detection: drop (…)/[…] parts, spaces, punctuation, emoji */
@@ -1204,6 +1204,18 @@ async function loadSuggest() {
   sgLoaded = true;
   if (suggestView) renderSuggest();
 }
+/* Re-load when you come back to the app (e.g. after the bookmarklet saved a new
+   list from another tab/window), at most every 15 s. */
+let sgLastAutoLoad = 0;
+function sgAutoRefresh() {
+  if (!suggestView || !isEditor() || document.visibilityState !== 'visible') return;
+  if (Date.now() - sgLastAutoLoad < 15000) return;
+  sgLastAutoLoad = Date.now();
+  loadSuggest();
+}
+document.addEventListener('visibilitychange', sgAutoRefresh);
+window.addEventListener('focus', sgAutoRefresh);
+
 async function sgReload() {
   toast('กำลังโหลดรายการ…');
   await loadSuggest();
@@ -1515,7 +1527,8 @@ function sgStartBridge() {
         clearTimeout(safety);
         setBusy(false);
         if (isEditor()) switchTab('suggest');
-        toast('อัปเดตนิยายแนะนำแล้ว ✓' + (+m.added ? ' · เรื่องใหม่ ' + m.added + ' เรื่อง' : '') + (isEditor() ? '' : ' — ปลดล็อก 🔑 เพื่อดูรายการ'));
+        toast('บันทึกนิยายแนะนำลงชีตแล้ว ✓' + (+m.added ? ' · เรื่องใหม่ ' + m.added + ' เรื่อง' : '') +
+          ' — ถ้าใช้แอปบน Dock กลับไปที่แอปได้เลย รายการจะโหลดใหม่เอง (ปิดแท็บนี้ได้)', 9000);
       } else if (m.type === 'nv-abort') {
         clearTimeout(safety);
         setBusy(false);
