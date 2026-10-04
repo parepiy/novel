@@ -1063,7 +1063,7 @@ function renderStats() {
    dropped at the next refresh, unmarked ones stay until marked, and new
    novels fill the free slots up to 20 per list. */
 const SG_TABS = [
-  { key: 't1', label: '① แก้แค้น', desc: '🔎 ชื่อเรื่องมีคำว่า "แก้แค้น"' },
+  { key: 't1', label: '① แก้แค้น', desc: '🏷️ แท็ก แก้แค้น' },
   { key: 't2', label: '② จีนโบราณ + เกิดใหม่', desc: '🏷️ แท็ก จีนโบราณ + เกิดใหม่' },
   { key: 't3', label: '③ ไทยย้อนยุค', desc: '🏷️ แท็ก พีเรียดไทย / ไทยย้อนยุค' }
 ];
@@ -1145,7 +1145,9 @@ function sgMerge(current, pools, marks) {
     const byGuid = new Map(pool.map(x => [x.guid, x]));
     const keep = [];
     const have = new Set();
-    current.filter(x => x.tab === key && !sgMarkIn(mk, x)).forEach(x => {
+    // list ① used to match titles: old title-only entries (no แก้แค้น tag) don't carry over
+    const fits = x => key !== 't1' || byGuid.has(x.guid) || (x.hl || []).some(t => t.indexOf('แก้แค้น') >= 0);
+    current.filter(x => x.tab === key && !sgMarkIn(mk, x) && fits(x)).forEach(x => {
       if (have.has(x.guid)) return;
       const fresh = byGuid.get(x.guid);
       keep.push(fresh ? Object.assign({}, fresh, { tab: key, syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 }));
