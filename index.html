@@ -435,8 +435,9 @@ body.editor .m-edit{display:inline-block;}
 .btn-ghost{background:none;border:1px solid var(--bd2);color:var(--dim);}
 .btn-danger{background:none;border:1px solid #e0a0a0;color:#b85c5c;margin-left:auto;}
 /* SAVING OVERLAY — shown inside the form card while add/edit/delete runs */
-.f-card.saving{pointer-events:none;}
-.f-loader{position:absolute;inset:0;border-radius:14px;z-index:5;
+.f-card.saving{pointer-events:none;overflow:hidden;}
+/* top/height are set from JS to the visible part of the (scrollable) card */
+.f-loader{position:absolute;left:0;right:0;top:0;height:100%;border-radius:14px;z-index:5;
   display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
   background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   pointer-events:auto;animation:loaderIn .2s ease;}
@@ -1886,6 +1887,7 @@ function fileToUpload(file) {
    actually happened before sending it again, so nothing gets duplicated. */
 const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
+const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -1916,7 +1918,8 @@ async function gasPostWith(c, payload) {
     }
     const safe = repeatable || ran === false;
     if (safe && attempt < GAS_RETRY_WAITS.length) {
-      gasRetryNotice('Google ขัดข้องชั่วคราว — กำลังลองใหม่ (' + (attempt + 1) + '/' + GAS_RETRY_WAITS.length + ')…');
+      // background reads retry silently so they don't relabel a save that's in progress
+      if (!GAS_QUIET.has(payload.action)) gasRetryNotice('Google ขัดข้องชั่วคราว — กำลังลองใหม่ (' + (attempt + 1) + '/' + GAS_RETRY_WAITS.length + ')…');
       await gasSleep(GAS_RETRY_WAITS[attempt]);
       continue;
     }
@@ -1974,7 +1977,14 @@ function gasErrorText(html) {
 function gasPost(payload) { return gasPostWith(cfg(), payload); }
 
 function setSaving(on, msg, emoji) {
-  document.getElementById('form-card').classList.toggle('saving', on);
+  const card = document.getElementById('form-card');
+  if (on && !card.classList.contains('saving')) {
+    // The card scrolls when the form is tall, so cover exactly what's visible right now.
+    const ld = document.getElementById('f-loader');
+    ld.style.top = card.scrollTop + 'px';
+    ld.style.height = card.clientHeight + 'px';
+  }
+  card.classList.toggle('saving', on);
   document.getElementById('f-save').textContent = on ? 'กำลังบันทึก...' : 'บันทึก';
   if (on) {
     if (msg)   document.getElementById('f-loader-text').textContent = msg;
