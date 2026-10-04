@@ -54,7 +54,7 @@
   }
 
   /* ---- ReadAWrite API (same-origin, jQuery-style key[] arrays, empty arrays omitted) ---- */
-  async function api(data) {
+  async function api(data, field) {
     var body = new URLSearchParams();
     Object.keys(data).forEach(function (k) {
       var v = data[k];
@@ -76,7 +76,7 @@
       throw err;
     }
     if (!j || !j.status || !j.status.success) throw new Error((j && j.status && j.status.message) || 'API ไม่สำเร็จ');
-    return (j.data && j.data.article_list) || [];
+    return (j.data && j.data[field || 'article_list']) || [];
   }
 
   /* ---- text helpers ---- */
@@ -118,7 +118,7 @@
     return !!it.guid && CATS.indexOf(it.catId) >= 0 && !it.allTags.some(function (t) { return DRAMA.test(t); });
   }
   var RULES = {
-    t1: function (it) { return okBase(it) && it.name.indexOf('แก้แค้น') >= 0; },
+    t1: function (it) { return okBase(it) && it.allTags.some(function (t) { return t.indexOf('แก้แค้น') >= 0; }); },
     t2: function (it) {
       return okBase(it) &&
         it.allTags.some(function (t) { return t.indexOf('จีนโบราณ') >= 0; }) &&
@@ -130,7 +130,10 @@
   function pickTags(it, tab) {
     var all = it.allTags;
     var hl = [];
-    if (tab === 't2') {
+    if (tab === 't1') {
+      var r = all.find(function (t) { return t.indexOf('แก้แค้น') >= 0; });
+      if (r) hl.push(r);
+    } else if (tab === 't2') {
       var a = all.find(function (t) { return t.indexOf('จีนโบราณ') >= 0; });
       var b = all.find(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
       if (a) hl.push(a);
@@ -140,7 +143,7 @@
       if (c) hl.push(c);
       if (all.indexOf('ย้อนยุค') >= 0 && hl.indexOf('ย้อนยุค') < 0) hl.push('ย้อนยุค');
     }
-    var skip = tab === 't2' ? /จีนโบราณ|เกิดใหม่/ : (tab === 't3' ? /พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค|ย้อนยุค/ : null);
+    var skip = tab === 't1' ? /แก้แค้น/ : (tab === 't2' ? /จีนโบราณ|เกิดใหม่/ : (tab === 't3' ? /พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค|ย้อนยุค/ : null));
     var seen = {};
     hl.forEach(function (t) { seen[t] = 1; });
     var other = [];
@@ -175,8 +178,8 @@
   }
 
   /* ---- fetching ---- */
-  async function safeApi(label, data) {
-    try { return await api(data); }
+  async function safeApi(label, data, field) {
+    try { return await api(data, field); }
     catch (e) {
       if (e.fatal) throw e;
       log('⚠️ ' + label + ': ' + e.message, '#f0a94d');
@@ -184,14 +187,34 @@
     }
   }
 
+  /* List ①: novels TAGGED แก้แค้น. Look up every tag whose name contains
+     แก้แค้น (tag search), list each one per BL category, and add a search by
+     tag name for extra coverage. The strict tag rule is applied afterwards. */
   async function fetchT1() {
-    var out = [];
+    progress('① ค้นหาแท็ก "แก้แค้น"');
+    var found = await safeApi('ค้นหาแท็ก แก้แค้น', {
+      api_call: 'Search', method_call: 'userSearchTagNameAutoCompleteBySearchService',
+      app_id: 'RAW', app_platform: 'WEB', tag_name: 'แก้แค้น',
+      sort_by: 'article_count', sort_type: 'desc', result_per_page: 20, page_no: 1
+    }, 'tag_list') || [];
+    var specs = [];
+    var seen = {};
+    found.forEach(function (t) {
+      if (clean(t && t.tag_name).indexOf('แก้แค้น') < 0) return;
+      var id = String(t.tag_id || '');
+      var g = String(t.tag_group_id || '');
+      if (id && !seen['t' + id]) { seen['t' + id] = 1; specs.push({ t: [id] }); }
+      if (g && g !== '0' && !seen['g' + g]) { seen['g' + g] = 1; specs.push({ g: [g] }); }
+    });
+    specs = specs.slice(0, 10);
+    log('① พบแท็กที่มีคำว่า "แก้แค้น" ' + found.filter(function (t) { return clean(t && t.tag_name).indexOf('แก้แค้น') >= 0; }).length + ' แท็ก');
+    var out = specs.length ? await fetchTagLists('① แท็ก แก้แค้น', specs) : [];
     for (var p = 1; p <= 12; p++) {
-      progress('① ค้นหา "แก้แค้น" หน้า ' + p);
-      var list = await safeApi('ค้นหาหน้า ' + p, {
+      progress('① ค้นหาด้วยแท็ก "แก้แค้น" หน้า ' + p);
+      var list = await safeApi('ค้นหาด้วยแท็ก หน้า ' + p, {
         api_call: 'Search', method_call: 'userSearchArticlesBySearchService', token: '',
-        article_name: 'แก้แค้น', author_name: '', article_synopsis: '', publisher_name: '', category_name: '',
-        article_species: 'ALL', article_type: 'ALL', category_id_2: '', tag_name: '',
+        article_name: '', author_name: '', article_synopsis: '', publisher_name: '', category_name: '',
+        article_species: 'ALL', article_type: 'ALL', category_id_2: '', tag_name: 'แก้แค้น',
         is_end: '', is_yourname: '', is_fanfiction: 0,
         excluded_article_species: ['CARTOON', 'TOPIC', 'CHAT'],
         sort_by: 'view_count', sort_type: 'DESC', app_id: 'RAW', app_platform: 'WEB',
@@ -279,6 +302,10 @@
   function markOf(m, x) {
     return m[String(x.guid)] || (x.uid && m[String(x.uid)]) || m['n:' + normName(x.name)] || '';
   }
+  /* List ① used to match titles; old title-only entries (no แก้แค้น tag) don't carry over. */
+  function stillFits(tab, x) {
+    return tab !== 't1' || (x.hl || []).some(function (t) { return t.indexOf('แก้แค้น') >= 0; });
+  }
   function merge(current, pools, marks) {
     var mk = markMap(marks);
     var hadPrev = current.length > 0;
@@ -290,7 +317,7 @@
       pool.forEach(function (x) { byGuid[x.guid] = x; });
       var keep = [];
       var have = {};
-      current.filter(function (x) { return x.tab === tab && !markOf(mk, x); }).forEach(function (x) {
+      current.filter(function (x) { return x.tab === tab && !markOf(mk, x) && (byGuid[x.guid] || stillFits(tab, x)); }).forEach(function (x) {
         if (have[x.guid]) return;
         var fresh = byGuid[x.guid];
         var item = fresh ? Object.assign({}, fresh, { syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 });
