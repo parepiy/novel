@@ -455,6 +455,25 @@ body.editor .m-edit{display:inline-block;}
 @keyframes loaderPulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.08);opacity:1}}
 @keyframes loaderDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 
+/* ▶️ CONTINUE-READING SHELF */
+.shelf{padding:12px 12px 10px;border-bottom:1px solid var(--bd);}
+.shelf-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
+.shelf-t{font-weight:700;font-size:.92rem;color:var(--mint2);}
+.shelf-n{font-size:.74rem;color:var(--mute);}
+.shelf-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;scroll-snap-type:x proximity;}
+.shelf-row::-webkit-scrollbar{display:none;}
+.sh-card{flex:none;width:96px;cursor:pointer;scroll-snap-align:start;}
+.sh-cover{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--s3);}
+.sh-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.sh-nc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--mute);}
+.sh-play{position:absolute;right:6px;bottom:6px;z-index:1;width:30px;height:30px;border-radius:50%;border:none;background:var(--mint);color:#fff;font-size:.78rem;display:flex;align-items:center;justify-content:center;padding-left:2px;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s;}
+.sh-play:hover{transform:scale(1.1);}
+.sh-title{margin-top:5px;font-size:.74rem;font-weight:600;line-height:1.35;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+@media(min-width:700px){.shelf{padding:16px 20px 12px;}.sh-card{width:118px;}}
+/* reminder field highlighted when pre-filled from a novel */
+.nf-flash{animation:nfFlash 1.6s ease 2;}
+@keyframes nfFlash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 3px var(--mint)}}
+
 /* Pieces that only exist in the space theme (hidden in light mode) */
 .space-sky,.space-stars,.space-shoot,.planet,.ic-svg{display:none;}
 .tabs-seg{display:contents;}
@@ -574,6 +593,16 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme="dark"] .st-pill.st-reading{color:#67e8f9;background:rgba(34,211,238,.1);border:1px solid rgba(103,232,249,.3);}
 :root[data-theme="dark"] .st-pill.st-finished{color:#93c5fd;background:rgba(96,165,250,.1);border:1px solid rgba(147,197,253,.3);}
 :root[data-theme="dark"] .st-pill.st-dropped{color:var(--mute);background:rgba(255,255,255,.04);border:1px solid var(--line);}
+
+/* continue-reading shelf */
+:root[data-theme="dark"] .shelf{border-bottom:none;padding:14px 14px 4px;}
+:root[data-theme="dark"] .shelf-t{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;}
+:root[data-theme="dark"] .shelf-tx{background:linear-gradient(90deg,#a5f3fc,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent;}
+:root[data-theme="dark"] .sh-cover{border-radius:12px;border:1px solid var(--line);box-shadow:0 8px 20px rgba(0,0,0,.35);}
+:root[data-theme="dark"] .sh-play{color:#06101c;background:linear-gradient(135deg,#67e8f9,#a78bfa);box-shadow:0 0 14px rgba(103,232,249,.5);}
+:root[data-theme="dark"] .sh-title{font-family:'Kanit','Sarabun',sans-serif;font-weight:400;}
+@media(max-width:479px){:root[data-theme="dark"] .shelf{padding:12px 10px 2px;}}
+@media(min-width:700px){:root[data-theme="dark"] .shelf{padding:18px 24px 4px;}}
 
 /* floating buttons */
 :root[data-theme="dark"] .scroll-btn{width:48px;height:48px;font-size:0;background:radial-gradient(circle at 35% 30%,#67e8f9,#6366f1 60%,#3b0764);box-shadow:0 0 22px rgba(99,102,241,.6),0 8px 18px rgba(0,0,0,.45);}
@@ -704,8 +733,9 @@ body.editor .m-edit{display:inline-block;}
     <div id="m-quick"></div>
     <div class="mq-msg" id="m-quick-msg"></div>
     <div class="m-actions">
-      <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener">อ่านนิยาย →</a>
+      <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener" onclick="markRead(window._mIdx)">อ่านนิยาย →</a>
       <button class="m-edit" id="m-edit" onclick="openEdit(window._mIdx)">✎ แก้ไข</button>
+      <button class="m-edit" id="m-remind" onclick="remindFromNovel(window._mIdx)" title="ตั้งเตือนให้อ่านเรื่องนี้">🔔 เตือน</button>
     </div>
   </div>
 </div>
@@ -1076,9 +1106,43 @@ function renderGrid() {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน</div>';
     return;
   }
-  document.getElementById('main-content').innerHTML =
+  const noFilter = !activeSource && !activeStatus && activeStar === null && !activeTags.size && !searchQ.trim();
+  document.getElementById('main-content').innerHTML = (noFilter ? shelfHtml() : '') +
     `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
   updateScrollBtns();
+}
+
+/* ▶️ Continue-reading shelf: your Reading novels, the ones you opened most
+   recently on this device first (then newest added). Shown when no filter is on. */
+function readLog() {
+  try { return JSON.parse(localStorage.getItem('lastRead') || '{}') || {}; } catch (e) { return {}; }
+}
+function markRead(idx) {
+  const b = allBooks[idx];
+  if (!b) return;
+  const log = readLog();
+  log[b.title] = Date.now();
+  try { localStorage.setItem('lastRead', JSON.stringify(log)); } catch (e) {}
+}
+function continueRead(idx) {
+  const b = allBooks[idx];
+  if (!b || !b.url) return;
+  markRead(idx);
+  window.open(b.url, '_blank', 'noopener');
+  setTimeout(() => { if (!notifyView && !statsView && !suggestView) renderGrid(); }, 400);
+}
+function shelfHtml() {
+  const reading = allBooks.filter(b => b.status === 'reading');
+  if (!reading.length) return '';
+  const log = readLog();
+  reading.sort((a, b) => (log[b.title] || 0) - (log[a.title] || 0) || (b.row || 0) - (a.row || 0));
+  const cards = reading.map(b => {
+    const idx = allBooks.indexOf(b);
+    const img = b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const play = b.url ? `<button class="sh-play" onclick="continueRead(${idx});event.stopPropagation()" title="อ่านต่อ">▶</button>` : '';
+    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${play}</div><div class="sh-title">${esc(b.title)}</div></div>`;
+  }).join('');
+  return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${reading.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
 }
 
 function buildCard(b, idx) {
@@ -1123,6 +1187,7 @@ function switchTab(tab) {
   document.querySelector('.search-box').style.display = hideFilters ? 'none' : '';
   if (hideFilters) document.getElementById('active-filters').style.display = 'none';
   notifyView = notify; statsView = stats; suggestView = suggest;
+  if (!notify) nfDraft = null;   // leaving the tab drops a reminder pre-filled from a novel
   if (notify) {
     nfEditId = null;
     renderNotify();
@@ -2328,8 +2393,10 @@ async function saveReminder() {
     // then, if editing, remove the old row
     if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
     nfEditId = null;
+    nfDraft = null;
     await loadReminders();
     renderNotify();
+    toast('ตั้งการแจ้งเตือนแล้ว 🔔');
   } catch(e) { alert('บันทึกไม่ได้: ' + e.message); }
   finally { setBusy(false); }
 }
@@ -2514,10 +2581,37 @@ function renderNotify() {
       if (t) t.value = editing.title || '';
       if (u) u.value = editing.url || '';
       if (w) w.value = msToWhenValue(editing.remind_at);
-    } else if (w) { w.value = defaultWhenValue(); }
+    } else {
+      if (w) w.value = (nfDraft && nfDraft.when) || defaultWhenValue();
+      if (nfDraft) { if (t) t.value = nfDraft.title; if (u) u.value = nfDraft.url; }
+    }
   }
   renderNotifyStatus();
 }
+
+/* 🔔 from the novel popup: open the reminder form pre-filled with that novel.
+   The draft survives the tab re-rendering (e.g. when the list finishes loading). */
+let nfDraft = null;
+function remindFromNovel(idx) {
+  const b = allBooks[idx];
+  if (!b || !isEditor()) return;
+  nfDraft = { title: b.title, url: b.url || '', when: '' };
+  closeModalBtn();
+  nfView = 'list';
+  switchTab('notify');
+  setTimeout(() => {
+    const w = document.getElementById('nf-when');
+    if (w) { w.scrollIntoView({ behavior: 'smooth', block: 'center' }); w.classList.add('nf-flash'); }
+    toast('เลือกวันเวลา แล้วกด ＋ เพิ่มการแจ้งเตือน');
+  }, 80);
+}
+document.addEventListener('input', e => {
+  if (!nfDraft) return;
+  const id = e.target && e.target.id;
+  if (id === 'nf-title') nfDraft.title = e.target.value;
+  else if (id === 'nf-url') nfDraft.url = e.target.value;
+  else if (id === 'nf-when') nfDraft.when = e.target.value;
+});
 
 /* ===== CALENDAR DAY POPUP ===== */
 function openDayPopup(key) {
