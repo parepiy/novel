@@ -899,12 +899,39 @@ function cfg() {
   catch(e) { return { url:'', token:'' }; }
 }
 function isEditor() { const c = cfg(); return !!(c.url && c.token); }
-function applyEditorUI() {
-  document.body.classList.toggle('editor', isEditor());
-  document.getElementById('add-btn').style.display = isEditor() ? 'flex' : 'none';
-  document.getElementById('key-btn').classList.toggle('on', isEditor());
-  if (isEditor()) loadReminders();
+function refreshEditorUI() {   // show/hide the editor-only parts (🔔 / 💡 tabs, ＋, 🔑) — no network
+  const ed = isEditor();
+  document.body.classList.toggle('editor', ed);
+  document.getElementById('add-btn').style.display = ed ? 'flex' : 'none';
+  document.getElementById('key-btn').classList.toggle('on', ed);
+  return ed;
 }
+function applyEditorUI() {
+  if (refreshEditorUI()) loadReminders();
+}
+
+/* Coming back to the app (reopened from the Dock / home screen, switched back to
+   the tab): re-check the unlock state and re-load whatever is missing or failed,
+   so a request that died while the app was in the background doesn't leave a
+   tab empty until the app is restarted. */
+let lastResume = Date.now();   // start-up already loads everything; only react to later returns
+function onResume() {
+  if (document.visibilityState === 'hidden') return;
+  const wasEditor = document.body.classList.contains('editor');
+  const ed = refreshEditorUI();
+  if (Date.now() - lastResume < 15000 && wasEditor === ed) return;
+  lastResume = Date.now();
+  if (!allBooks.length) loadData();
+  if (!ed) return;
+  const before = JSON.stringify(reminders);
+  loadReminders().then(() => {
+    if (notifyView && JSON.stringify(reminders) !== before) renderNotify();
+  });
+  if (suggestView && (!sgLoaded || sgError)) loadSuggest();
+}
+document.addEventListener('visibilitychange', onResume);
+window.addEventListener('focus', onResume);
+window.addEventListener('pageshow', onResume);
 
 /* ===== CSV PARSER (public read path) =====
    Full-text tokenizer: correctly handles quoted fields that contain
@@ -976,13 +1003,14 @@ function fromGas(b) {
 /* ===== LOAD ===== */
 async function loadData() {
   try {
-    const res = await fetch(SHEET_CSV);
+    const { res, text } = await fetchT(SHEET_CSV, {}, 20000);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
     allBooks = parseCSV(text);
     renderAll();
     if (isEditor()) refreshFromGas();
   } catch(e) {
+    if (allBooks.length) return;   // a newer load already succeeded — don't cover it with this error
+    if (notifyView || statsView || suggestView) return;
     document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${e.message}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
   }
 }
@@ -1443,9 +1471,12 @@ function sgAgo(iso) {
 }
 
 let sgLoading = null;
+let sgLoadingAt = 0;
 async function loadSuggest() {
   if (!isEditor()) return;
-  if (sgLoading) return sgLoading;          // don't fire overlapping loads
+  // don't fire overlapping loads — but never wait on one that's been stuck for 2+ minutes
+  if (sgLoading && Date.now() - sgLoadingAt < 120000) return sgLoading;
+  sgLoadingAt = Date.now();
   sgLoading = (async () => {
     let lastErr = null;
     try {   // gasPost already retries temporary Google errors
@@ -1460,7 +1491,8 @@ async function loadSuggest() {
     sgLoaded = true;
     if (suggestView) renderSuggest();
   })();
-  try { await sgLoading; } finally { sgLoading = null; }
+  const mine = sgLoading;
+  try { await mine; } finally { if (sgLoading === mine) sgLoading = null; }
 }
 /* Re-load when you come back to the app (e.g. after the bookmarklet saved a new
    list from another tab/window), at most every 15 s. */
@@ -2136,6 +2168,24 @@ function fileToUpload(file) {
    delete something are only retried when the script clearly never ran;
    otherwise the error is marked `uncertain` and gasWrite() checks whether it
    actually happened before sending it again, so nothing gets duplicated. */
+/* fetch with a time limit (covers reading the body too). Right after the app is
+   reopened on iPhone/Mac a request can hang forever without an answer; it used to
+   leave the 🔔 / 💡 tabs stuck until the app was restarted. Now it's cancelled
+   after `ms` and the normal retry logic takes over. */
+async function fetchT(url, opts, ms) {
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), ms || 25000) : null;
+  try {
+    const res = await fetch(url, Object.assign({}, opts || {}, ctl ? { signal: ctl.signal } : {}));
+    const text = await res.text();
+    return { res, text };
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('Google ไม่ตอบกลับภายในเวลา');
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
 const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull']);
@@ -2153,9 +2203,8 @@ async function gasPostWith(c, payload) {
     let ran = 'unknown';   // did the script run? (Google redirects to the result page only after it has)
     let problem;
     try {
-      const res = await fetch(c.url, { method: 'POST', body: JSON.stringify(payload) });
+      const { res, text } = await fetchT(c.url, { method: 'POST', body: JSON.stringify(payload) }, payload.imageB64 ? 60000 : 25000);
       ran = res.redirected || /googleusercontent\.com/.test(res.url || '');
-      const text = await res.text();
       let data = null;
       try { data = JSON.parse(text); } catch (e) { /* HTML error page */ }
       if (data) {
@@ -2199,8 +2248,8 @@ async function gasGetBooks() {
   const c = cfg();
   for (let attempt = 0; ; attempt++) {
     try {
-      const res = await fetch(c.url, { method: 'GET' });
-      const data = JSON.parse(await res.text());
+      const { text } = await fetchT(c.url, { method: 'GET' }, 25000);
+      const data = JSON.parse(text);
       if (data && data.ok && Array.isArray(data.books)) return data.books;
       throw new Error((data && data.error) || 'bad response');
     } catch (e) {
@@ -2365,9 +2414,11 @@ async function loadReminders() {
     const d = await gasPost({ action: 'remind_list' });
     reminders = (d.reminders || []).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
     reminderError = '';
-  } catch(e) { reminders = []; reminderError = e.message || 'error'; }
+    remindersLoaded = true;
+  } catch(e) { reminderError = e.message || 'error'; }   // keep the list we already had
   updateNotifyBadge();
 }
+let remindersLoaded = false;
 
 function updateNotifyBadge() {
   const now = Date.now();
