@@ -539,6 +539,31 @@ body.editor .m-edit{display:inline-block;}
 @keyframes loaderPulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.08);opacity:1}}
 @keyframes loaderDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 
+/* 📅 ADDED-PER-MONTH CHART */
+.mc-readout{font-size:.82rem;color:var(--dim);margin:-4px 0 12px;min-height:1.3em;}
+.mc-readout b{color:var(--text);font-weight:600;}
+.mc-chart{display:grid;grid-template-columns:26px 1fr;column-gap:6px;}
+.mc-axis{position:relative;height:150px;font-size:.64rem;color:var(--mute);font-variant-numeric:tabular-nums;}
+.mc-axis span{position:absolute;right:0;transform:translateY(-50%);line-height:1;}
+.mc-plot{position:relative;height:150px;padding-top:16px;display:grid;grid-template-columns:repeat(12,1fr);gap:2px;align-items:end;
+  border-bottom:1px solid var(--line2);
+  background-image:linear-gradient(var(--line),var(--line)),linear-gradient(var(--line),var(--line));
+  background-size:100% 1px;background-repeat:no-repeat;background-position:0 16px,0 calc(16px + (100% - 16px) / 2);}
+.mc-col{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;}
+.mc-bar{display:block;width:min(24px,72%);border-radius:4px 4px 0 0;background:var(--mint);transition:height .4s ease,filter .15s,box-shadow .15s;}
+.mc-col:hover .mc-bar,.mc-col.sel .mc-bar{filter:brightness(1.12);box-shadow:0 0 10px var(--mdim);}
+.mc-col.sel::after{content:'';position:absolute;inset:16px 1px 0;border-radius:6px;background:var(--mdim);opacity:.6;z-index:-1;}
+.mc-val{font-size:.68rem;font-weight:600;color:var(--text);margin-bottom:3px;font-variant-numeric:tabular-nums;line-height:1;}
+.mc-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-top:5px;font-size:.6rem;color:var(--mute);text-align:center;line-height:1.25;}
+.mc-labels .yr{display:block;font-size:.54rem;color:var(--dim);}
+.mc-note{font-size:.72rem;color:var(--mute);margin-top:10px;}
+.mc-table summary{font-size:.76rem;color:var(--dim);cursor:pointer;margin-top:8px;}
+.mc-table table{width:100%;border-collapse:collapse;margin-top:6px;font-size:.8rem;color:var(--text);}
+.mc-table td{padding:4px 6px;border-bottom:1px solid var(--line);}
+.mc-table td:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+.m-added{font-size:.74rem;color:var(--mute);}
+.m-added:empty{display:none;}
+
 /* ▶️ CONTINUE-READING SHELF */
 .shelf{padding:12px 12px 10px;border-bottom:1px solid var(--bd);}
 .shelf-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
@@ -811,6 +836,7 @@ body.editor .m-edit{display:inline-block;}
           <span class="m-stars" id="m-stars"></span>
         </div>
         <div class="m-tags" id="m-tags"></div>
+        <div class="m-added" id="m-added"></div>
       </div>
     </div>
     <div class="m-summary" id="m-summary"></div>
@@ -969,6 +995,18 @@ const STATUS_ALIAS = {
   drop: 'dropped', abandoned: 'dropped',
   'กำลังอ่าน': 'reading', 'อ่านจบ': 'finished', 'จบ': 'finished', 'เลิกอ่าน': 'dropped', 'ดรอป': 'dropped'
 };
+/* Sheet column I "date added" → 'YYYY-MM-DD' ('' if unknown).
+   Accepts yyyy-mm-dd and d/m/yyyy, including Buddhist-era years. */
+function normAdded(v) {
+  const s = (v == null ? '' : String(v)).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/), y, mo, d;
+  if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else return '';
+  if (y > 2400) y -= 543;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return '';
+  return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
 function normStatus(v) {
   const s = (v == null ? '' : String(v)).trim();
   if (!s) return '';
@@ -1040,6 +1078,7 @@ function parseCSV(text) {
       cover:   (cols[5] || '').trim(),
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
       status:  normStatus(cols[7]),
+      added:   normAdded(cols[8]),
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1081,6 +1120,7 @@ function fromGas(b) {
     cover:   (b.cover || '').trim(),
     star:    parseInt(b.star, 10) || 0,
     status:  normStatus(b.status),
+    added:   normAdded(b.added),
     row:     b.row,
   };
 }
@@ -1404,6 +1444,74 @@ function openSheet() {
   window.open(SHEET_EDIT_URL, '_blank', 'noopener');
 }
 
+/* ===== 📅 NOVELS ADDED PER MONTH (Sheet column I) =====
+   One series → one colour, slim columns on one baseline, value labels only on
+   the busiest month and this month; tap / hover any column for its number;
+   the same numbers are available as a table. */
+let mcData = [];
+function mcNiceMax(n) {
+  if (n <= 4) return 4;
+  const step = n <= 10 ? 2 : n <= 50 ? 10 : n <= 100 ? 20 : 50;
+  return Math.ceil(n / step) * step;
+}
+function mcLabel(x) { return TH_MON[x.m] + ' ' + x.y; }
+function mcShow(i) {
+  const x = mcData[i];
+  if (!x) return;
+  document.querySelectorAll('.mc-col').forEach((c, j) => c.classList.toggle('sel', j === i));
+  const el = document.getElementById('mc-readout');
+  if (el) el.innerHTML = '<b>' + mcLabel(x) + '</b> · เพิ่ม <b>' + x.n + '</b> เรื่อง';
+}
+function monthlySection(books) {
+  const now = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), y: d.getFullYear(), m: d.getMonth(), n: 0 });
+  }
+  const byKey = {};
+  months.forEach(x => { byKey[x.key] = x; });
+  let dated = 0, unknown = 0, older = 0;
+  books.forEach(b => {
+    if (!b.added) { unknown++; return; }
+    dated++;
+    const k = b.added.slice(0, 7);
+    if (byKey[k]) byKey[k].n++; else if (k < months[0].key) older++;
+  });
+  mcData = months;
+  const head = '<h3>📅 เพิ่มใหม่รายเดือน</h3>';
+  if (!dated) {
+    return '<div class="stat-sec">' + head + '<div class="stat-empty">ยังไม่มีวันที่เพิ่มนิยาย — ติดตั้งสคริปต์ added-date.gs แล้วรัน backfillAddedDates หนึ่งครั้ง</div></div>';
+  }
+  const top = mcNiceMax(Math.max(...months.map(x => x.n), 1));
+  const cur = months.length - 1;
+  const busiest = months.reduce((bi, x, i) => (x.n > months[bi].n ? i : bi), 0);
+  const in12 = months.reduce((s, x) => s + x.n, 0);
+  const cols = months.map((x, i) => {
+    const h = Math.round(x.n / top * 100);
+    const showVal = x.n > 0 && (i === busiest || i === cur);
+    return '<button class="mc-col' + (x.n ? '' : ' zero') + '" onmouseenter="mcShow(' + i + ')" onclick="mcShow(' + i + ')" aria-label="' + mcLabel(x) + ': ' + x.n + ' เรื่อง">' +
+      (showVal ? '<span class="mc-val">' + x.n + '</span>' : '') +
+      '<span class="mc-bar" style="height:' + h + '%"></span></button>';
+  }).join('');
+  const labels = months.map((x, i) => '<span>' + TH_MON[x.m] +
+    ((i === 0 || x.m === 0) ? '<span class="yr">' + x.y + '</span>' : '') + '</span>').join('');
+  const rows = months.slice().reverse().map(x => '<tr><td>' + mcLabel(x) + '</td><td>' + x.n + '</td></tr>').join('');
+  const notes = [];
+  if (older) notes.push('ก่อนหน้านั้น ' + older + ' เรื่อง');
+  if (unknown) notes.push('ไม่ทราบวันที่ ' + unknown + ' เรื่อง');
+  return '<div class="stat-sec mc-sec">' + head +
+    '<div class="mc-readout" id="mc-readout">เดือนนี้ <b>+' + months[cur].n + '</b> · เดือนที่แล้ว <b>+' + months[cur - 1].n + '</b> · 12 เดือน <b>' + in12 + '</b> เรื่อง</div>' +
+    '<div class="mc-chart">' +
+      '<div class="mc-axis"><span style="top:16px">' + top + '</span><span style="top:calc(16px + (100% - 16px) / 2)">' + (top / 2) + '</span><span style="top:100%">0</span></div>' +
+      '<div class="mc-plot">' + cols + '</div>' +
+      '<div></div><div class="mc-labels">' + labels + '</div>' +
+    '</div>' +
+    (notes.length ? '<div class="mc-note">' + notes.join(' · ') + '</div>' : '') +
+    '<details class="mc-table"><summary>ดูเป็นตาราง</summary><table>' + rows + '</table></details>' +
+  '</div>';
+}
+
 /* ===== STATS OVERVIEW ===== */
 function renderStats() {
   const books = allBooks;
@@ -1470,7 +1578,7 @@ function renderStats() {
     '</div>';
 
   document.getElementById('main-content').innerHTML =
-    '<div class="stats-view">' + tiles + srcSec + statusSec + starSec + tagSec + '</div>';
+    '<div class="stats-view">' + tiles + monthlySection(books) + srcSec + statusSec + starSec + tagSec + '</div>';
 }
 
 /* ===== 💡 SUGGESTIONS (ReadAWrite, refreshed weekly by the rw-collect.js bookmarklet) =====
@@ -2078,6 +2186,7 @@ function openModal(idx) {
   srcEl.className = 'm-src ' + b.source;
   document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
   document.getElementById('m-tags').innerHTML = b.tags.map(t => `<span class="m-tag">${esc(t)}</span>`).join('');
+  document.getElementById('m-added').textContent = b.added ? '📅 เพิ่มเมื่อ ' + sgThaiDate(b.added) : '';
   document.getElementById('m-summary').textContent = b.summary;
   const link = document.getElementById('m-link');
   link.href = b.url || '#';
