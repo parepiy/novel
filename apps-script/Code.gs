@@ -15,7 +15,9 @@ const SECRET = 'PASTE_YOUR_SECRET_HERE';   // must be the same secret as in the 
 const SHEET_GID = 1147646991;              // the tab the app reads / writes
 const IMG_FOLDER = 'novel-covers';         // Google Drive folder for uploaded covers
 // Optional: store covers on GitHub instead of Google Drive (avoids Drive permission errors).
-// Leave GITHUB_TOKEN empty to keep using Drive.
+// Put a GitHub token here once; it's then remembered in the script's own settings
+// (Script Properties), so later copies of this file with an empty token keep using it.
+// No token anywhere → covers go to Google Drive.
 const GITHUB_TOKEN = '';
 const GH_REPO = 'parepiy/novel';
 const GH_BRANCH = 'main';
@@ -75,8 +77,17 @@ function readAll_() {
 }
 
 // ---------------- cover upload (GitHub if a token is set, otherwise Google Drive) ----------------
+function ghToken_() {
+  const props = PropertiesService.getScriptProperties();
+  if (GITHUB_TOKEN) {
+    if (props.getProperty('GITHUB_TOKEN') !== GITHUB_TOKEN) props.setProperty('GITHUB_TOKEN', GITHUB_TOKEN);
+    return GITHUB_TOKEN;
+  }
+  return props.getProperty('GITHUB_TOKEN') || '';
+}
+
 function saveImage_(b64, type, name) {
-  return GITHUB_TOKEN ? saveImageGitHub_(b64, type, name) : saveImageDrive_(b64, type, name);
+  return ghToken_() ? saveImageGitHub_(b64, type, name) : saveImageDrive_(b64, type, name);
 }
 
 function saveImageDrive_(b64, type, name) {
@@ -96,7 +107,7 @@ function saveImageGitHub_(b64, type, name) {
   const res = UrlFetchApp.fetch('https://api.github.com/repos/' + GH_REPO + '/contents/' + path, {
     method: 'put',
     contentType: 'application/json',
-    headers: { Authorization: 'Bearer ' + GITHUB_TOKEN, Accept: 'application/vnd.github+json', 'User-Agent': 'novel-app' },
+    headers: { Authorization: 'Bearer ' + ghToken_(), Accept: 'application/vnd.github+json', 'User-Agent': 'novel-app' },
     payload: JSON.stringify({ message: 'Add cover ' + path, content: b64, branch: GH_BRANCH }),
     muteHttpExceptions: true
   });
@@ -122,6 +133,8 @@ function doPost(e) {
     if (SECRET === 'PASTE_YOUR_SECRET_HERE') return json_({ ok: false, error: 'ยังไม่ได้ใส่รหัสลับ (SECRET) ในสคริปต์' });
     // everything below requires the secret
     if (d.token !== SECRET) return json_({ ok: false, error: 'unauthorized' });
+
+    ghToken_();   // remember the GitHub token (if this file has one) for future copies of the script
 
     const rr = reminderRouter_(action, d);
     if (rr) return rr;
@@ -359,10 +372,10 @@ function authorizeDrive() {
   Logger.log('Drive authorized OK');
 }
 
-// Only if you set GITHUB_TOKEN: run once to allow the script to reach GitHub (log should show 200).
+// Only if you use a GitHub token: run once to allow the script to reach GitHub (log should show 200).
 function authorizeGitHub() {
   const res = UrlFetchApp.fetch('https://api.github.com/repos/' + GH_REPO, {
-    headers: { Authorization: 'Bearer ' + GITHUB_TOKEN, Accept: 'application/vnd.github+json', 'User-Agent': 'novel-app' },
+    headers: { Authorization: 'Bearer ' + ghToken_(), Accept: 'application/vnd.github+json', 'User-Agent': 'novel-app' },
     muteHttpExceptions: true
   });
   Logger.log('GitHub auth: ' + res.getResponseCode() + ' (200 = OK)');
