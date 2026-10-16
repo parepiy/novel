@@ -539,6 +539,12 @@ body.editor .m-edit{display:inline-block;}
 @keyframes loaderPulse{0%,100%{transform:scale(.9);opacity:.6}50%{transform:scale(1.08);opacity:1}}
 @keyframes loaderDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 
+/* 🔑 settings: full script copy */
+.s-script{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+.s-script label{font-size:.78rem;color:var(--dim);}
+.s-script .btn{align-self:flex-start;}
+.s-code{width:100%;height:140px;font-family:ui-monospace,Menlo,monospace;font-size:.7rem;border:1px solid var(--line2);border-radius:8px;background:var(--input-bg);color:var(--text);padding:8px;resize:vertical;}
+
 /* 📅 ADDED-PER-MONTH CHART */
 .mc-readout{font-size:.82rem;color:var(--dim);margin:-4px 0 12px;min-height:1.3em;}
 .mc-readout b{color:var(--text);font-weight:600;}
@@ -930,6 +936,12 @@ body.editor .m-edit{display:inline-block;}
       <button class="btn btn-ghost" onclick="clearSettings()">ล็อก / ล้าง</button>
     </div>
     <p class="f-note" id="s-status" style="margin-top:10px;"></p>
+    <div class="s-script">
+      <label>สคริปต์ Apps Script ฉบับเต็ม (Code.gs)</label>
+      <button class="btn btn-ghost" onclick="copyCodeGs()">📋 คัดลอก Code.gs (ใส่รหัสลับให้แล้ว)</button>
+      <p class="f-note">เปิด Apps Script › คลิกในไฟล์สคริปต์ › เลือกทั้งหมด (⌘A) › วางทับ (⌘V) › Save › Deploy ▾ › Manage deployments › ✏️ › New version › Deploy</p>
+      <textarea id="s-code" class="s-code" readonly style="display:none"></textarea>
+    </div>
   </div>
 </div>
 
@@ -2289,8 +2301,44 @@ function openSettings() {
   document.getElementById('s-url').value = c.url;
   document.getElementById('s-token').value = c.token;
   document.getElementById('s-status').textContent = isEditor() ? '✓ ปลดล็อกแล้ว' : 'ยังไม่ได้ตั้งค่า (โหมดอ่านอย่างเดียว)';
+  document.getElementById('s-code').style.display = 'none';
   document.getElementById('settings-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
+  loadCodeGs();   // fetch now, so the copy button can copy straight away (Safari needs that)
+}
+
+/* 📋 The complete Apps Script (apps-script/Code.gs in this repo) with this device's
+   secret filled in, so it can be pasted over the old script without editing. */
+let codeGsSrc = null;
+async function loadCodeGs() {
+  if (codeGsSrc) return codeGsSrc;
+  try {
+    const { res, text } = await fetchT('apps-script/Code.gs?v=' + Date.now(), { cache: 'no-store' }, 15000);
+    if (res.ok && text.indexOf('function doPost') >= 0) codeGsSrc = text;
+  } catch (e) {}
+  return codeGsSrc;
+}
+function codeGsWithSecret(src, token) {
+  return src.replace("const SECRET = 'PASTE_YOUR_SECRET_HERE';", 'const SECRET = ' + JSON.stringify(token) + ';');
+}
+async function copyCodeGs() {
+  const token = (document.getElementById('s-token').value || cfg().token || '').trim();
+  if (!token) { alert('ใส่รหัสลับ (SECRET) ในช่องด้านบนก่อน'); return; }
+  const src = codeGsSrc || await loadCodeGs();
+  if (!src) { alert('โหลดสคริปต์ไม่ได้ — ลองใหม่อีกครั้ง'); return; }
+  const code = codeGsWithSecret(src, token);
+  try {
+    await navigator.clipboard.writeText(code);
+    toast('คัดลอก Code.gs แล้ว ✓ — ไปวางทับในไฟล์สคริปต์ แล้ว Deploy เวอร์ชันใหม่', 6000);
+  } catch (e) {
+    // clipboard blocked → show it so it can be selected and copied by hand
+    const ta = document.getElementById('s-code');
+    ta.value = code;
+    ta.style.display = 'block';
+    ta.focus();
+    ta.select();
+    toast('กด ⌘C เพื่อคัดลอกข้อความที่เลือกไว้', 6000);
+  }
 }
 function closeSettings() {
   document.getElementById('settings-bg').classList.remove('open');
