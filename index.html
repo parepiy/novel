@@ -216,6 +216,43 @@ body.editor .suggest-tab{display:inline-block;}
 .sg-mk.active.mk-not{background:rgba(224,137,43,.14);border-color:var(--overdue);color:var(--overdue);font-weight:600;}
 :root[data-theme="dark"] .sg-mk.active.mk-finished{color:#8fbdf0;}
 .sg-empty{text-align:center;color:var(--mute);padding:28px 12px;font-size:.9rem;line-height:1.7;}
+.sg-reason{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px;background:none;border:none;padding:0;font-family:inherit;font-size:.74rem;color:var(--overdue);cursor:pointer;text-align:left;}
+.sg-reason span{background:rgba(224,137,43,.12);border:1px solid rgba(224,137,43,.35);border-radius:999px;padding:1px 8px;}
+.sg-reason.none{color:var(--mute);text-decoration:underline;}
+.sgs-sec{padding:4px 16px 24px;max-width:900px;margin:0 auto;}
+.sgs-h{font-weight:700;font-size:.92rem;color:var(--text);margin:8px 0 10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.sgs-h span{font-weight:400;font-size:.76rem;color:var(--dim);}
+.sgs-list{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:700px){.sgs-list{grid-template-columns:repeat(2,1fr);}}
+.sgs-row{display:flex;gap:12px;padding:10px 12px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;}
+.sgs-cover{position:relative;flex:none;width:58px;height:78px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
+.sgs-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.sgs-row.marked .sgs-cover{opacity:.6;}
+.sgs-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px;}
+.sgs-sub{font-size:.74rem;color:var(--dim);}
+.sgs-st{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.sgs-pill{font-size:.7rem;font-weight:700;padding:1px 9px;border-radius:999px;border:1px solid var(--bd2);background:var(--s2);color:var(--dim);}
+.sgs-pill.mk-reading{background:var(--mdim);border-color:var(--mint);color:var(--mint2);}
+.sgs-pill.mk-finished{background:rgba(74,144,217,.15);border-color:#4a90d9;color:#356fb0;}
+.sgs-pill.mk-not{background:rgba(224,137,43,.14);border-color:var(--overdue);color:var(--overdue);}
+:root[data-theme="dark"] .sgs-pill.mk-finished{color:#8fbdf0;}
+.sgs-lib{border:none;font-family:inherit;cursor:pointer;}
+.sgs-marks{margin:3px 0 0;}
+.sg-view .sgs-h{margin-top:4px;}
+.rs-novel{font-weight:700;font-size:.95rem;margin:-4px 0 4px;overflow-wrap:anywhere;}
+.rs-hint{font-size:.78rem;color:var(--dim);margin-bottom:10px;}
+.rs-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.rs-chip{background:var(--s2);border:1px solid var(--bd2);color:var(--text);border-radius:999px;padding:6px 13px;font-family:inherit;font-size:.86rem;cursor:pointer;transition:all .12s;}
+.rs-chip:hover{border-color:var(--overdue);}
+.rs-chip.on{background:rgba(224,137,43,.16);border-color:var(--overdue);color:var(--overdue);font-weight:600;}
+.rs-chip.rs-new{border-style:dashed;color:var(--raw2);background:none;}
+.rs-chip.del{border-color:#c46a6a;color:#c46a6a;}
+.rs-chip.del b{margin-left:3px;}
+.rs-add{display:flex;gap:6px;margin:-4px 0 12px;}
+.rs-add input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:8px;padding:8px 11px;font-family:'Sarabun','Cordia New',sans-serif;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
+.rs-add input:focus{border-color:var(--overdue);}
+:root[data-theme] .rs-add input{background:var(--input-bg);border-color:var(--line2);}
+.rs-manage{margin-left:auto;font-size:.8rem;}
 .sg-err{color:#b85c5c;}
 .sg-warnbar{background:rgba(224,137,43,.1);border:1px solid var(--overdue);color:var(--overdue);border-radius:12px;padding:9px 14px;font-size:.82rem;}
 .sg-warnbar .sg-sub{margin-top:3px;overflow-wrap:anywhere;}
@@ -918,6 +955,11 @@ body.editor .m-edit{display:inline-block;}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!-- 💡 NOT-INTERESTED REASONS -->
+<div class="overlay" id="reason-bg" onclick="if(event.target===this)sgCloseReasons()">
+  <div class="f-card" id="reason-card" style="max-width:420px;"></div>
+</div>
+
 <!-- CALENDAR DAY POPUP -->
 <div class="overlay" id="day-bg" onclick="if(event.target===this)closeDayPopup()">
   <div class="f-card" id="day-card" style="max-width:460px;"></div>
@@ -1238,7 +1280,7 @@ function clearSearch() {
   const inp = document.getElementById('search-input');
   if (inp) inp.value = '';
   updateClearBtn();
-  renderGrid();
+  refreshSearchView();
 }
 
 function getFilteredBooks() {
@@ -1267,13 +1309,14 @@ function renderGrid() {
   const filtered = getFilteredBooks();
   const scope = activeSource ? (activeSource === 'meb' ? ' · MEB' : ' · RAW') : '';
   document.getElementById('header-count').textContent = `แสดง ${filtered.length} จาก ${allBooks.length} เรื่อง${scope}`;
+  const sgSec = sgLibrarySearchHtml(searchQ.trim());   // 💡 matching suggested novels + their marks
   if (!filtered.length) {
-    document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน</div>';
+    document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน' + (sgSec ? 'ในคลัง' : '') + '</div>' + sgSec;
     return;
   }
   const noFilter = !activeSource && !activeStatus && activeStar === null && !activeTags.size && !searchQ.trim();
   document.getElementById('main-content').innerHTML = (noFilter ? shelfHtml() : '') +
-    `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>`;
+    `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>` + sgSec;
   updateScrollBtns();
 }
 
@@ -1349,9 +1392,10 @@ function switchTab(tab) {
   const suggest = tab === 'suggest';
   const hideFilters = notify || stats || suggest;
   document.getElementById('filter-strip').style.display = hideFilters ? 'none' : '';
-  document.querySelector('.search-box').style.display = hideFilters ? 'none' : '';
+  document.querySelector('.search-box').style.display = (notify || stats) ? 'none' : '';   // 💡 searches every suggested novel
   if (hideFilters) document.getElementById('active-filters').style.display = 'none';
   notifyView = notify; statsView = stats; suggestView = suggest;
+  applyScopeUI();
   if (!notify) nfDraft = null;   // leaving the tab drops a reminder pre-filled from a novel
   if (notify) {
     nfEditId = null;
@@ -1609,6 +1653,7 @@ const SG_MARKS = {
   not_interested: { label: 'Not interested', cls: 'mk-not' }
 };
 const SG_MARK_ORDER = ['reading', 'finished', 'not_interested'];
+const SG_DEFAULT_REASONS = ['เกี่ยวกับเด็ก', 'แต่งไม่จบ', 'รีวิวไม่ดี', 'ไม่ชอบพล็อต', 'ไม่ชอบสำนวน'];
 const SG_LIMIT = 20;
 const SG_REMIND_MARK = '#suggest';   // reminders whose URL contains this repeat weekly
 const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -1618,7 +1663,7 @@ function sgSetPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
 let sgList = [];          // current suggestions (all 3 lists)
 let sgMarks = [];         // [{guid, uid, name, mark}]
-let sgMarkMap = {};       // guid / uid / 'n:'+name → mark
+let sgMarkMap = {};       // guid / uid / 'n:'+name → mark record
 let sgUpdated = '';
 let sgLoaded = false;
 let sgError = '';
@@ -1626,6 +1671,11 @@ let sgPanelOpen = false;
 let sgCollectorSrc = null;
 let sgTab = sgPref('sgTab', 't1');
 let sgHideMarked = sgPref('sgHideMarked', '0') === '1';
+let sgReasons = (function () {   // "not interested" reasons; the Sheet copy wins once loaded
+  try { const v = JSON.parse(localStorage.getItem('sgReasons') || 'null'); if (Array.isArray(v)) return v; } catch (e) {}
+  return SG_DEFAULT_REASONS.slice();
+})();
+let sgReasonsServer = false;   // true when Code.gs can store the reason list
 
 let toastTimer = null;
 function toast(msg, ms) {
@@ -1659,15 +1709,21 @@ function sgMakeMarkMap(marks) {
   const m = {};
   (marks || []).forEach(r => {
     if (!r || !r.mark) return;
-    if (r.guid) m[String(r.guid)] = r.mark;
-    if (r.uid) m[String(r.uid)] = r.mark;
+    if (r.guid) m[String(r.guid)] = r;
+    if (r.uid) m[String(r.uid)] = r;
     const n = sgNormName(r.name);
-    if (n) m['n:' + n] = r.mark;
+    if (n) m['n:' + n] = r;
   });
   return m;
 }
-function sgMarkIn(m, x) { return m[String(x.guid)] || (x.uid && m[String(x.uid)]) || m['n:' + sgNormName(x.name)] || ''; }
+function sgMarkRecIn(m, x) { return m[String(x.guid)] || (x.uid && m[String(x.uid)]) || m['n:' + sgNormName(x.name)] || null; }
+function sgMarkIn(m, x) { const r = sgMarkRecIn(m, x); return r ? r.mark : ''; }
 function sgMarkOf(x) { return sgMarkIn(sgMarkMap, x); }
+function sgMarkRec(x) { return sgMarkRecIn(sgMarkMap, x); }
+function sgReasonsOf(x) {
+  const r = sgMarkRec(x);
+  return r && r.mark === 'not_interested' ? String(r.reason || '').split('|').map(t => t.trim()).filter(Boolean) : [];
+}
 function sgUrl(x) { return 'https://www.readawrite.com/a/' + encodeURIComponent(x.uid || x.guid); }
 
 /* Same merge rules as rw-collect.js (used when a downloaded file is uploaded). */
@@ -1743,10 +1799,12 @@ async function loadSuggest() {
       sgMarks = Array.isArray(d.marks) ? d.marks : [];
       sgMarkMap = sgMakeMarkMap(sgMarks);
       sgUpdated = String(d.updated_at || '');
+      sgReasonsServer = 'reasons' in d;
+      if (Array.isArray(d.reasons)) sgSetReasonList(d.reasons, true);
     } catch (e) { lastErr = e; }
     sgError = lastErr ? (lastErr.message || 'error') : '';   // on failure the previous list stays
     sgLoaded = true;
-    if (suggestView) renderSuggest();
+    sgRerender();
   })();
   const mine = sgLoading;
   try { await mine; } finally { if (sgLoading === mine) sgLoading = null; }
@@ -1811,6 +1869,10 @@ function renderSuggest() {
   if (sgError && !sgList.length) {
     body = '<div class="sg-empty sg-err">โหลดนิยายแนะนำไม่ได้: ' + esc(sgError) +
       '<br><button class="sg-link" onclick="sgReload()">ลองใหม่</button></div>';
+  } else if (searchQ.trim()) {
+    const hits = sgSearch(searchQ.trim());
+    body = '<div class="sgs-h">🔍 “' + esc(searchQ.trim()) + '” ในนิยายที่เคยแนะนำทั้งหมด <span>' + hits.length + ' เรื่อง · ทุกลิสต์ รวมที่มาร์กแล้ว</span></div>' +
+      (hits.length ? sgHitsHtml(hits) : '<div class="sg-empty">ไม่พบในนิยายที่เคยแนะนำ</div>');
   } else if (!sgList.length) {
     body = '<div class="sg-empty">ยังไม่มีรายการแนะนำ — ทำตามขั้นตอนด้านบนเพื่ออัปเดตครั้งแรก</div>';
   } else if (!shown.length) {
@@ -1856,8 +1918,106 @@ function sgCardHtml(x, rank) {
     '<div class="sg-foot">' +
       '<div class="sg-stats"><span>👁️ <b>' + x.views.toLocaleString('en-US') + '</b></span><span>❤️ <b>' + x.hearts.toLocaleString('en-US') + '</b></span></div>' +
       '<div class="sg-marks">' + marks + '</div>' +
+      (mark === 'not_interested' ? sgReasonLine(x, 'sgEditReason(' + i + ')') : '') +
     '</div>' +
   '</div>';
+}
+
+/* 🚫 the reasons under a "Not interested" novel (tap to change them) */
+function sgReasonLine(x, onclick) {
+  const rs = sgReasonsOf(x);
+  return '<button class="sg-reason' + (rs.length ? '' : ' none') + '" onclick="' + onclick + '" title="แก้ไขเหตุผล">🚫 ' +
+    (rs.length ? rs.map(t => '<span>' + esc(t) + '</span>').join('') : 'ไม่ได้ระบุเหตุผล · ＋ ใส่เหตุผล') + '</button>';
+}
+function sgEditReason(i) { if (sgList[i]) sgOpenReasons(sgList[i]); }
+
+/* ---- 🔍 search every novel ever suggested: the current lists + everything you marked ---- */
+let sgHits = [];   // what the last search shows (buttons refer to it by index)
+function sgAllSuggested() {
+  const out = [];
+  const byId = new Map();
+  const tabOf = k => (SG_TABS.find(t => t.key === k) || {}).label || '';
+  sgList.forEach(x => {
+    const prev = byId.get(String(x.guid));
+    if (prev) { if (prev.tabs.indexOf(tabOf(x.tab)) < 0) prev.tabs.push(tabOf(x.tab)); return; }
+    const h = { x: x, tabs: [tabOf(x.tab)].filter(Boolean), inList: true };
+    out.push(h);
+    byId.set(String(x.guid), h);
+    if (x.uid) byId.set(String(x.uid), h);
+  });
+  // marked novels that already left the lists (only what was saved with the mark)
+  const seenName = new Set(out.map(h => sgNormName(h.x.name)).filter(Boolean));
+  sgMarks.slice().sort((a, b) => String(b.marked_at || '').localeCompare(String(a.marked_at || ''))).forEach(r => {
+    if (!r || !r.mark) return;
+    if (byId.has(String(r.guid)) || (r.uid && byId.has(String(r.uid)))) return;
+    const n = sgNormName(r.name);
+    if (n && seenName.has(n)) return;
+    const x = sgFromRow({ guid: r.guid, uid: r.uid, name: r.name, author: r.author, thumb: r.thumb, tab: r.tab });
+    const h = { x: x, tabs: [tabOf(x.tab)].filter(Boolean), inList: false };
+    out.push(h);
+    byId.set(String(x.guid), h);
+    if (x.uid) byId.set(String(x.uid), h);
+    if (n) seenName.add(n);
+  });
+  return out;
+}
+function sgSearch(q) {
+  const ql = q.toLowerCase(), qn = sgNormName(q);
+  return sgAllSuggested().filter(h => {
+    const x = h.x;
+    const hay = [x.name, x.author, sgReasonsOf(x).join(' ')];
+    if (searchScope === 'summary') hay.push(x.syn, (x.hl || []).join(' '), (x.tags || []).join(' '));
+    if (hay.some(t => t && String(t).toLowerCase().indexOf(ql) >= 0)) return true;
+    return qn.length >= 2 && sgNormName(x.name).indexOf(qn) >= 0;
+  });
+}
+function sgHitsHtml(hits) {
+  sgHits = hits;
+  return '<div class="sgs-list">' + hits.map((h, i) => {
+    const x = h.x;
+    const mark = sgMarkOf(x);
+    const lib = sgFindInLibrary(x);
+    const url = esc(sgUrl(x));
+    const st = mark
+      ? '<span class="sgs-pill ' + SG_MARKS[mark].cls + '">' + SG_MARKS[mark].label + '</span>'
+      : '<span class="sgs-pill none">ยังไม่มาร์ก</span>';
+    const where = h.inList ? (h.tabs.join(' · ') || 'อยู่ในลิสต์') : 'ออกจากลิสต์แล้ว' + (h.tabs.length ? ' (เคยอยู่ ' + h.tabs.join(' · ') + ')' : '');
+    const libBtn = lib ? '<button class="sg-badge lib sgs-lib" onclick="openModal(' + allBooks.indexOf(lib) + ')">📚 มีในคลัง</button>' : '';
+    const btns = SG_MARK_ORDER.map(k =>
+      '<button class="sg-mk ' + SG_MARKS[k].cls + (mark === k ? ' active' : '') + '" onclick="sgMarkHit(' + i + ',\'' + k + '\')">' + SG_MARKS[k].label + '</button>'
+    ).join('');
+    return '<div class="sgs-row' + (mark ? ' marked' : '') + '">' +
+      '<a class="sgs-cover" href="' + url + '" target="_blank" rel="noopener">📖' +
+        (x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</a>' +
+      '<div class="sgs-info">' +
+        '<div class="sg-title"><a href="' + url + '" target="_blank" rel="noopener">' + esc(x.name || x.guid) + '</a></div>' +
+        '<div class="sgs-sub">' + (x.author ? 'โดย ' + esc(x.author) + ' · ' : '') + esc(where) + '</div>' +
+        '<div class="sgs-st">' + st + libBtn + '</div>' +
+        (mark === 'not_interested' ? sgReasonLine(x, 'sgEditReasonHit(' + i + ')') : '') +
+        '<div class="sg-marks sgs-marks">' + btns + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+function sgMarkHit(i, k) { if (sgHits[i]) sgMarkItem(sgHits[i].x, k); }
+function sgEditReasonHit(i) { if (sgHits[i]) sgOpenReasons(sgHits[i].x); }
+
+/* the 💡 block under library search results */
+function sgLibrarySearchHtml(q) {
+  if (!isEditor() || !q) return '';
+  if (!sgLoaded) {
+    loadSuggest().then(() => { if (!notifyView && !statsView && !suggestView && searchQ.trim()) renderGrid(); });
+    return '<div class="sgs-sec"><div class="sgs-h">💡 กำลังค้นในนิยายที่เคยแนะนำ…</div></div>';
+  }
+  const hits = sgSearch(q);
+  if (!hits.length) return '';
+  return '<section class="sgs-sec"><div class="sgs-h">💡 นิยายที่เคยแนะนำ <span>' + hits.length + ' เรื่อง</span></div>' + sgHitsHtml(hits) + '</section>';
+}
+
+/* redraw whichever view shows suggestions */
+function sgRerender() {
+  if (suggestView) renderSuggest();
+  else if (!notifyView && !statsView && searchQ.trim() && isEditor()) renderGrid();
 }
 
 function sgPanelHtml() {
@@ -1944,29 +2104,124 @@ function sgUploadFile(input) {
 }
 
 /* ---- marking ---- */
-function sgApplyLocalMark(x, mark) {
+function sgApplyLocalMark(x, rec) {
   const ids = [String(x.guid), String(x.uid || '')].filter(Boolean);
-  sgMarks = sgMarks.filter(r => ids.indexOf(String(r.guid)) < 0 && !(r.uid && ids.indexOf(String(r.uid)) >= 0));
-  if (mark) sgMarks.push({ guid: x.guid, uid: x.uid, name: x.name, mark: mark });
+  const n = sgNormName(x.name);
+  sgMarks = sgMarks.filter(r => ids.indexOf(String(r.guid)) < 0 && !(r.uid && ids.indexOf(String(r.uid)) >= 0) && !(n && sgNormName(r.name) === n));
+  if (rec) sgMarks.push(rec);
   sgMarkMap = sgMakeMarkMap(sgMarks);
 }
-async function sgMark(i, k) {
-  const x = sgList[i];
+function sgMark(i, k) { return sgMarkItem(sgList[i], k); }
+/* k = the chip tapped. "Not interested" first asks why (reasons = the picked list). */
+async function sgMarkItem(x, k, reasons) {
   if (!x || !isEditor()) return;
-  const prev = sgMarkOf(x);
-  const next = prev === k ? '' : k;   // tap the active chip again → back to empty
-  sgApplyLocalMark(x, next);
-  renderSuggest();
+  const prevRec = sgMarkRec(x);
+  const prev = prevRec ? prevRec.mark : '';
+  const next = reasons !== undefined ? k : (prev === k ? '' : k);   // tap the active chip again → back to empty
+  if (next === 'not_interested' && reasons === undefined) { sgOpenReasons(x); return; }
+  const rs = next === 'not_interested' ? (reasons || []) : [];
+  const rec = next ? {
+    guid: x.guid, uid: x.uid, name: x.name, mark: next, marked_at: new Date().toISOString(),
+    reason: rs.join('|'), author: x.author || '', thumb: x.thumb || '', tab: x.tab || ''
+  } : null;
+  sgApplyLocalMark(x, rec);
+  sgRerender();
+  let res;
   try {
-    await gasPost({ action: 'sg_mark', guid: x.guid, uid: x.uid, name: x.name, mark: next });
+    res = await gasPost({
+      action: 'sg_mark', guid: x.guid, uid: x.uid, name: x.name, mark: next,
+      reason: rec ? rec.reason : '', author: x.author || '', thumb: x.thumb || '', tab: x.tab || ''
+    });
   } catch (e) {
-    sgApplyLocalMark(x, prev);
-    renderSuggest();
+    sgApplyLocalMark(x, prevRec);
+    sgRerender();
     alert('บันทึกไม่ได้: ' + e.message);
     return;
   }
+  const oldScript = res && !res.reason_saved;
   if (next === 'reading' || next === 'finished') await sgSyncLibrary(x, next);
-  else if (next) toast('มาร์ก ' + SG_MARKS[next].label + ' แล้ว — จะออกจากลิสต์ตอนอัปเดตรอบหน้า');
+  else if (next === 'not_interested' && rs.length && oldScript) alert('มาร์ก Not interested แล้ว แต่เหตุผลยังไม่ถูกบันทึกลงชีต\nให้อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)');
+  else if (next === 'not_interested') toast('มาร์ก Not interested' + (rs.length ? ' (' + rs.join(', ') + ')' : '') + ' แล้ว — จะออกจากลิสต์ตอนอัปเดตรอบหน้า');
+  else if (!next && !sgList.some(y => y.guid === x.guid)) toast('ล้างการมาร์กแล้ว — เรื่องนี้อาจกลับมาในลิสต์ตอนอัปเดตรอบหน้า');
+}
+
+/* ---- 🚫 "why not interested?" popup ---- */
+let sgRs = null;   // { x, sel:Set, adding, editing }
+function sgOpenReasons(x) {
+  if (!x || !isEditor()) return;
+  sgRs = { x: x, sel: new Set(sgReasonsOf(x)), adding: false, editing: false };
+  sgRs.sel.forEach(t => { if (sgReasons.indexOf(t) < 0) sgReasons.push(t); });   // a reason saved on another device
+  renderReasons();
+  document.getElementById('reason-bg').classList.add('open');
+}
+function sgCloseReasons() {
+  const bg = document.getElementById('reason-bg');
+  if (bg) bg.classList.remove('open');
+  sgRs = null;
+}
+function renderReasons() {
+  if (!sgRs) return;
+  const card = document.getElementById('reason-card');
+  const marked = sgMarkOf(sgRs.x) === 'not_interested';
+  const chips = sgReasons.map((t, i) => sgRs.editing
+    ? '<button class="rs-chip del" onclick="sgDeleteReason(' + i + ')" title="ลบเหตุผลนี้">' + esc(t) + ' <b>✕</b></button>'
+    : '<button class="rs-chip' + (sgRs.sel.has(t) ? ' on' : '') + '" onclick="sgToggleReason(' + i + ')">' + (sgRs.sel.has(t) ? '✓ ' : '') + esc(t) + '</button>'
+  ).join('');
+  const add = sgRs.adding
+    ? '<div class="rs-add"><input type="text" id="rs-new" maxlength="40" placeholder="พิมพ์เหตุผลใหม่…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sgAddReason();}">' +
+        '<button class="btn btn-primary btn-sm" onclick="sgAddReason()">เพิ่ม</button><button class="btn btn-ghost btn-sm" onclick="sgRs.adding=false;renderReasons()">ยกเลิก</button></div>'
+    : (sgRs.editing ? '' : '<button class="rs-chip rs-new" onclick="sgRs.adding=true;renderReasons();document.getElementById(\'rs-new\').focus()">＋ เพิ่มเหตุผลใหม่</button>');
+  card.innerHTML = '<button class="ov-close" onclick="sgCloseReasons()">✕</button>' +
+    '<h3>🚫 ไม่สนใจเพราะ…</h3>' +
+    '<div class="rs-novel">' + esc(sgRs.x.name) + '</div>' +
+    '<div class="rs-hint">' + (sgRs.editing ? 'แตะเหตุผลที่ต้องการลบออกจากรายการ (เรื่องที่มาร์กไว้แล้วยังเก็บเหตุผลเดิม)' : 'เลือกได้หลายข้อ หรือไม่เลือกก็ได้') + '</div>' +
+    '<div class="rs-chips">' + (chips || '<span class="rs-hint">ยังไม่มีเหตุผล — กด ＋ เพิ่มเหตุผลใหม่</span>') + (sgRs.adding ? '' : add) + '</div>' +
+    (sgRs.adding ? add : '') +
+    '<div class="f-actions">' +
+      (sgRs.editing
+        ? '<button class="btn btn-primary" onclick="sgRs.editing=false;renderReasons()">เสร็จ</button>'
+        : '<button class="btn btn-primary" onclick="sgSaveReasons()">' + (marked ? 'บันทึกเหตุผล' : 'บันทึก') + '</button>' +
+          '<button class="btn btn-ghost" onclick="sgCloseReasons()">ยกเลิก</button>') +
+      (sgRs.editing || !sgReasons.length ? '' : '<button class="sg-link rs-manage" onclick="sgRs.editing=true;sgRs.adding=false;renderReasons()">✎ จัดการรายการ</button>') +
+    '</div>';
+}
+function sgToggleReason(i) {
+  const t = sgReasons[i];
+  if (!sgRs || t == null) return;
+  if (sgRs.sel.has(t)) sgRs.sel.delete(t); else sgRs.sel.add(t);
+  renderReasons();
+}
+function sgAddReason() {
+  const inp = document.getElementById('rs-new');
+  const t = (inp && inp.value || '').replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) { if (inp) inp.focus(); return; }
+  if (sgReasons.indexOf(t) < 0) sgSetReasonList(sgReasons.concat([t]));
+  sgRs.sel.add(t);
+  sgRs.adding = false;
+  renderReasons();
+}
+function sgDeleteReason(i) {
+  const t = sgReasons[i];
+  if (t == null) return;
+  sgRs.sel.delete(t);
+  sgSetReasonList(sgReasons.filter((_, j) => j !== i));
+  if (!sgReasons.length) sgRs.editing = false;
+  renderReasons();
+}
+/* fromServer = just loaded from the Sheet (don't send it back) */
+function sgSetReasonList(list, fromServer) {
+  const seen = new Set();
+  sgReasons = (list || []).map(t => String(t || '').trim()).filter(t => t && !seen.has(t) && seen.add(t));
+  try { localStorage.setItem('sgReasons', JSON.stringify(sgReasons)); } catch (e) {}
+  if (fromServer || !sgReasonsServer) return;
+  gasPost({ action: 'sg_reasons', list: sgReasons }).catch(e => toast('บันทึกรายการเหตุผลไม่ได้: ' + e.message));
+}
+function sgSaveReasons() {
+  if (!sgRs) return;
+  const x = sgRs.x;
+  const picked = sgReasons.filter(t => sgRs.sel.has(t)).concat([...sgRs.sel].filter(t => sgReasons.indexOf(t) < 0));
+  sgCloseReasons();
+  sgMarkItem(x, 'not_interested', picked);
 }
 
 /* Reading / Finished → add to the main library, or alert if it's already there */
@@ -1997,7 +2252,7 @@ async function sgSyncLibrary(x, status) {
     await refreshFromGas();
     toast('เพิ่ม “' + x.name + '” เข้าคลังแล้ว (' + label + ') ✓');
   } catch (e) { alert('เพิ่มเข้าคลังไม่ได้: ' + e.message); }
-  finally { setBusy(false); if (suggestView) renderSuggest(); }
+  finally { setBusy(false); sgRerender(); }
 }
 
 /* ---- weekly Friday 21:00 reminder (re-scheduled each week by the GitHub Action) ---- */
@@ -2159,33 +2414,39 @@ function clearAll() {
   activeStatus = null;
   document.getElementById('search-input').value = '';
   renderFilterStrip();
+  if (suggestView) { renderSuggest(); return; }
   renderGrid();
 }
 
 function filterBooks() {
   searchQ = document.getElementById('search-input').value;
   updateClearBtn();
-  renderGrid();
+  refreshSearchView();
+}
+function refreshSearchView() {
+  if (suggestView) renderSuggest();
+  else if (!notifyView && !statsView) renderGrid();
 }
 
 function applyScopeUI() {
   const btn = document.getElementById('scope-btn');
   const inp = document.getElementById('search-input');
-  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = 'ค้นหาเนื้อเรื่อง...'; }
-  else { btn.textContent = '🔍'; inp.placeholder = 'ค้นหาชื่อ...'; }
+  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = suggestView ? 'ค้นหาเนื้อเรื่อง/แท็ก นิยายแนะนำ...' : 'ค้นหาเนื้อเรื่อง...'; }
+  else { btn.textContent = '🔍'; inp.placeholder = suggestView ? 'ค้นหานิยายแนะนำ...' : 'ค้นหาชื่อ...'; }
 }
 
 function toggleScope() {
   searchScope = searchScope === 'title' ? 'summary' : 'title';
   applyScopeUI();
-  renderGrid();
+  refreshSearchView();
 }
 
 function focusSearch(scope) {
+  if (notifyView || statsView) switchTab('all');
   searchScope = scope;
   applyScopeUI();
   document.getElementById('search-input').focus();
-  renderGrid();
+  refreshSearchView();
 }
 
 /* ===== VIEW MODAL ===== */
@@ -2480,7 +2741,7 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
 const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
@@ -3056,7 +3317,7 @@ function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    closeModalBtn(); closeForm(); closeSettings(); closeDayPopup();
+    closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
     if (document.activeElement) document.activeElement.blur();

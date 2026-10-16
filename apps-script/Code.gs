@@ -257,7 +257,7 @@ function reminderRouter_(action, d) {
 
 // ---------------- 💡 suggestions (ReadAWrite) ----------------
 const SG_COLS = ['tab', 'guid', 'uid', 'name', 'author', 'cat', 'ch', 'views', 'hearts', 'end', 'thumb', 'tags', 'hl', 'syn', 'is_new'];
-const SG_MARK_COLS = ['guid', 'uid', 'name', 'mark', 'marked_at'];
+const SG_MARK_COLS = ['guid', 'uid', 'name', 'mark', 'marked_at', 'reason', 'author', 'thumb', 'tab'];
 
 function sgSheet_(name, header) {
   const ss = SpreadsheetApp.getActive();
@@ -284,12 +284,20 @@ function sgRead_(name, header) {
   return out;
 }
 
+function sgReasons_() {
+  try {
+    const v = JSON.parse(PropertiesService.getScriptProperties().getProperty('sg_reasons') || 'null');
+    return Array.isArray(v) ? v : null;   // null = never saved → the app uses its defaults
+  } catch (e) { return null; }
+}
+
 function suggestRouter_(action, d) {
   if (action === 'sg_state') {
     return json_({
       ok: true,
       list: sgRead_('suggest_list', SG_COLS),
       marks: sgRead_('suggest_marks', SG_MARK_COLS),
+      reasons: sgReasons_(),
       updated_at: PropertiesService.getScriptProperties().getProperty('sg_updated_at') || ''
     });
   }
@@ -309,10 +317,21 @@ function suggestRouter_(action, d) {
       if (found > 0) sh.deleteRow(found);
       return json_({ ok: true, cleared: true });
     }
-    const row = [guid, uid, d.name || '', d.mark, new Date().toISOString()].map(sgText_);
+    sh.getRange(1, 1, 1, SG_MARK_COLS.length).setValues([SG_MARK_COLS]);   // adds new columns to an old sheet
+    const reason = Array.isArray(d.reason) ? d.reason.join('|') : (d.reason || '');
+    const row = [guid, uid, d.name || '', d.mark, new Date().toISOString(),
+      d.mark === 'not_interested' ? reason : '', d.author || '', d.thumb || '', d.tab || ''].map(sgText_);
     const r = found > 0 ? found : sh.getLastRow() + 1;
     sh.getRange(r, 1, 1, SG_MARK_COLS.length).setNumberFormat('@').setValues([row]);
-    return json_({ ok: true });
+    return json_({ ok: true, reason_saved: true });
+  }
+
+  // your list of "not interested" reasons (shared by all your devices)
+  if (action === 'sg_reasons') {
+    const list = (Array.isArray(d.list) ? d.list : [])
+      .map(x => String(x || '').trim()).filter(Boolean).slice(0, 60);
+    PropertiesService.getScriptProperties().setProperty('sg_reasons', JSON.stringify(list));
+    return json_({ ok: true, reasons: list });
   }
 
   if (action === 'sg_save') {
