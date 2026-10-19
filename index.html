@@ -308,6 +308,11 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
 .nf-item-title{font-weight:600;font-size:.92rem;color:var(--text);line-height:1.45;}
 .nf-item-when{font-size:.77rem;color:var(--dim);}
+.nf-chap{font-size:.82rem;color:var(--raw2);line-height:1.45;overflow-wrap:anywhere;}
+.nf-chap:empty{display:none;}
+.nf-chap-form{margin:-2px 2px 0;font-size:.8rem;}
+.nf-dup{font-size:.8rem;color:var(--overdue);font-weight:600;margin:-2px 2px 0;}
+.nf-dup:empty{display:none;}
 .nf-item-url{font-size:.75rem;color:var(--mint2);word-break:break-all;}
 .nf-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
 .nf-done-btn{background:var(--mint);border:1px solid var(--mint);color:#fff;border-radius:8px;padding:5px 10px;font-size:.8rem;font-weight:600;cursor:pointer;}
@@ -2577,6 +2582,7 @@ async function pasteRemindUrl(p) {
     else if (name) { sel.value = NF_NEW; inp.value = name; nfShowPick(p); }
   }
   if (p === 'nf' && nfDraft) { nfDraft.url = u.value; if (inp) nfDraft.title = inp.value; }
+  nfFormChanged(p);
 }
 
 function closeModal(e) { if (e.target === document.getElementById('modal-bg')) closeModalBtn(); }
@@ -2777,9 +2783,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull']);
+const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -3006,6 +3012,7 @@ async function loadReminders() {
     reminders = (d.reminders || []).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
     reminderError = '';
     remindersLoaded = true;
+    fetchLinkTitles(reminders.map(r => r.url));   // 📖 chapter titles, in the background
   } catch(e) { reminderError = e.message || 'error'; }   // keep the list we already had
   updateNotifyBadge();
 }
@@ -3028,6 +3035,7 @@ async function saveReminder() {
   const ms = new Date(when).getTime();
   if (isNaN(ms)) { alert('วันเวลาไม่ถูกต้อง'); return; }
   const editingId = nfEditId;
+  if (!nfConfirmDup(title, ms, editingId)) return;
   setBusy(true, editingId ? 'กำลังบันทึกการแก้ไข' : 'กำลังบันทึก');
   try {
     // add the new/updated reminder first (so nothing is lost on failure)
@@ -3093,6 +3101,113 @@ function defaultWhenValue() {
   return msToWhenValue(d.getTime());
 }
 
+/* ⚠️ Same novel already has a reminder on that day? */
+function nfDupsOn(title, ms, exceptId) {
+  const t = String(title || '').trim().toLowerCase();
+  if (!t || isNaN(ms)) return [];
+  const k = dkey(ms);
+  return reminders.filter(r => String(r.id) !== String(exceptId || '') &&
+    String(r.title || '').trim().toLowerCase() === t && dkey(r.remind_at) === k);
+}
+function nfDupText(dups) {
+  return dups.map(r => new Date(Number(r.remind_at)).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.').join(', ');
+}
+function nfConfirmDup(title, ms, exceptId) {
+  const dups = nfDupsOn(title, ms, exceptId);
+  if (!dups.length) return true;
+  const day = new Date(ms).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  return confirm('⚠️ “' + title + '” มีแจ้งเตือนวันที่ ' + day + ' อยู่แล้ว (' + nfDupText(dups) + ')\n\nเพิ่มซ้ำอีกไหม?');
+}
+/* the form's title/date changed → live duplicate warning + chapter-title preview */
+function nfFormChanged(p) { nfDupHint(p); nfChapPreview(p); }
+function nfDupHint(p) {
+  const el = document.getElementById(p + '-dup');
+  const t = document.getElementById(p + '-title');
+  if (!el || !t) return;
+  let ms = NaN;
+  if (p === 'nf') { const w = document.getElementById('nf-when'); ms = w && w.value ? new Date(w.value).getTime() : NaN; }
+  else if (dayPopupKey) { const a = dayPopupKey.split('-').map(Number); ms = new Date(a[0], a[1] - 1, a[2], 12).getTime(); }
+  const dups = nfDupsOn(t.value, ms, p === 'nf' ? nfEditId : dayEditId);
+  el.textContent = dups.length ? '⚠️ เรื่องนี้มีแจ้งเตือนวันนี้อยู่แล้ว (' + nfDupText(dups) + ')' : '';
+}
+
+/* 📖 Chapter titles: Google (Code.gs → link_titles) opens each link once and
+   reads the page title; this device keeps a copy. */
+const LT_RETRY = 6 * 3600e3;
+let linkTitles = (function () { try { return JSON.parse(localStorage.getItem('linkTitles') || '{}') || {}; } catch (e) { return {}; } })();
+let ltUnsupported = false;
+let ltPending = new Set();
+function ltSave() { try { localStorage.setItem('linkTitles', JSON.stringify(linkTitles)); } catch (e) {} }
+async function fetchLinkTitles(urls) {
+  if (!isEditor() || ltUnsupported) return;
+  const want = [...new Set((urls || []).map(u => String(u || '').trim()))].filter(u => {
+    if (!/^https?:\/\//i.test(u) || u.indexOf(SG_REMIND_MARK) >= 0 || ltPending.has(u)) return false;
+    const c = linkTitles[u];
+    return !c || (c.status !== 'ok' && Date.now() - (c.at || 0) > LT_RETRY);
+  }).slice(0, 30);
+  if (!want.length) return;
+  want.forEach(u => ltPending.add(u));
+  fillChapEls();
+  try {
+    const d = await gasPost({ action: 'link_titles', urls: want });
+    if (!d || !d.titles) { ltUnsupported = true; return; }   // Code.gs not updated yet
+    Object.keys(d.titles).forEach(u => { linkTitles[u] = { title: d.titles[u].title || '', status: d.titles[u].status || '', at: Date.now() }; });
+    ltSave();
+  } catch (e) {
+    if (/unknown action/i.test(e.message || '')) ltUnsupported = true;
+  } finally {
+    want.forEach(u => ltPending.delete(u));
+    fillChapEls();
+  }
+}
+/* page title → just the chapter: drop the site name and the novel's own name */
+function chapterTitle(raw, novel) {
+  let t = String(raw || '').trim();
+  if (!t) return '';
+  t = t.replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite|meb|mebmarket|dek-d|fictionlog|joylada|tunwalai|kawebook)[^|\-–—]*$/i, '');
+  const n = String(novel || '').trim();
+  if (n && n.length >= 2) {
+    const i = t.toLowerCase().indexOf(n.toLowerCase());
+    if (i >= 0) t = (t.slice(0, i) + ' ' + t.slice(i + n.length)).replace(/^[\s|\-–—:•,]+|[\s|\-–—:•,]+$/g, '').replace(/\s+[|\-–—:•]\s+[|\-–—:•]\s+/g, ' - ');
+  }
+  return t.trim();
+}
+function chapHtml(url, novel) {
+  if (!url || String(url).indexOf(SG_REMIND_MARK) >= 0) return '';
+  return '<div class="nf-chap" data-url="' + esc(url) + '" data-novel="' + esc(novel || '') + '"></div>';
+}
+function fillChapEls() {
+  document.querySelectorAll('.nf-chap[data-url]').forEach(el => {
+    const u = el.getAttribute('data-url');
+    const c = linkTitles[u];
+    const form = el.classList.contains('nf-chap-form');
+    let txt = '';
+    if (c && c.status === 'ok') {
+      const ch = chapterTitle(c.title, el.getAttribute('data-novel'));
+      txt = ch ? '📖 ' + ch : '';
+      el.title = c.title;
+    } else if (form && ltPending.has(u)) txt = '📖 กำลังดึงชื่อตอน…';
+    else if (form && c) txt = '📖 ดึงชื่อตอนจากลิงก์นี้ไม่ได้';
+    el.textContent = txt;
+  });
+}
+let ltPreviewTimer = null;
+function nfChapPreview(p) {
+  const el = document.getElementById(p + '-chap');
+  const u = document.getElementById(p + '-url');
+  const t = document.getElementById(p + '-title');
+  if (!el || !u) return;
+  const url = u.value.trim();
+  if (/^https?:\/\/\S+\.\S+/i.test(url) && url.indexOf(SG_REMIND_MARK) < 0) {
+    el.setAttribute('data-url', url);
+    el.setAttribute('data-novel', t ? t.value : '');
+    clearTimeout(ltPreviewTimer);
+    ltPreviewTimer = setTimeout(() => fetchLinkTitles([url]), 700);
+  } else el.removeAttribute('data-url');
+  el.textContent = '';
+  fillChapEls();
+}
+
 /* ⏰ Time is picked by the hour (00:00 … 23:00) — iPhone's own time wheel
    can't be limited to whole hours. A reminder saved earlier at e.g. 09:41
    keeps that time as an extra choice until you change it. */
@@ -3125,6 +3240,7 @@ function nfWhenChanged() {
   if (!w || !dt || !hr) return;
   w.value = dt.value ? dt.value + 'T' + hr.value : '';
   if (nfDraft) nfDraft.when = w.value;
+  nfDupHint('nf');
 }
 
 /* epoch ms -> "YYYY-MM-DDTHH:MM" in local time, for <input type="datetime-local"> */
@@ -3180,6 +3296,7 @@ function listBodyHtml() {
     return '<div class="nf-item' + cls + '">' +
         '<div class="nf-item-main">' +
           '<div class="nf-item-title">' + esc(r.title) + '</div>' +
+          chapHtml(r.url, r.title) +
           '<div class="nf-item-when">' + label + ' · ' + fmtWhen(r.remind_at) + '</div>' +
           urlHtml +
         '</div>' +
@@ -3200,11 +3317,13 @@ function listBodyHtml() {
       nfTitlePickHtml('nf') +
       '<div class="f-url-line"><input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'nf\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
+      '<div class="nf-chap nf-chap-form" id="nf-chap"></div>' +
       '<input id="nf-when" type="hidden">' +
       '<div class="nf-when-line">' +
         '<input id="nf-date" type="date" onchange="nfWhenChanged()" oninput="nfWhenChanged()">' +
         '<select id="nf-hour" class="nf-pick nf-hour" onchange="nfWhenChanged()"></select>' +
       '</div>' +
+      '<div class="nf-dup" id="nf-dup"></div>' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' + cancelBtn +
       '</div>' +
@@ -3271,7 +3390,9 @@ function renderNotify() {
     }
     nfSyncPick('nf');
     nfSplitWhen();
+    nfFormChanged('nf');
   }
+  fillChapEls();
   renderNotifyStatus();
 }
 
@@ -3332,6 +3453,7 @@ function nfPickTitle(p) {
     nfShowPick(p);
   }
   if (p === 'nf' && nfDraft) { nfDraft.title = inp.value; if (url) nfDraft.url = url.value; }
+  nfFormChanged(p);
 }
 
 /* 🔔 from the novel popup: open the reminder form pre-filled with that novel.
@@ -3353,6 +3475,8 @@ function remindFromNovel(idx) {
   }, 80);
 }
 document.addEventListener('input', e => {
+  const tid = e.target && e.target.id;
+  if (/^(nf|day)-(title|url)$/.test(tid || '')) nfFormChanged(tid.split('-')[0]);
   if (!nfDraft) return;
   const id = e.target && e.target.id;
   if (id === 'nf-title') nfDraft.title = e.target.value;
@@ -3395,6 +3519,7 @@ function renderDayPopup() {
     return '<div class="nf-item' + (overdue ? ' overdue' : '') + (String(r.id) === String(dayEditId) ? ' editing' : '') + '">' +
         '<div class="nf-item-main">' +
           '<div class="nf-item-title">' + esc(r.title) + '</div>' +
+          chapHtml(r.url, r.title) +
           '<div class="nf-item-when">' + (overdue ? '⏰ ' : '🕒 ') + timeStr + ' น.</div>' +
           urlHtml +
         '</div>' +
@@ -3418,8 +3543,10 @@ function renderDayPopup() {
       nfTitlePickHtml('day') +
       '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'day\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
+      '<div class="nf-chap nf-chap-form" id="day-chap"></div>' +
       '<input id="day-time" type="hidden">' +
       '<select id="day-hour" class="nf-pick nf-hour" onchange="document.getElementById(\'day-time\').value=this.value"></select>' +
+      '<div class="nf-dup" id="day-dup"></div>' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
       '</div>' +
@@ -3432,6 +3559,8 @@ function renderDayPopup() {
   document.getElementById('day-time').value = p(tv.getHours()) + ':' + p(tv.getMinutes());
   fillHourSelect(document.getElementById('day-hour'), document.getElementById('day-time').value);
   nfSyncPick('day');
+  nfFormChanged('day');
+  fillChapEls();
 }
 
 async function saveFromDay() {
@@ -3444,6 +3573,7 @@ async function saveFromDay() {
   const tp = time.split(':').map(Number);
   const ms = new Date(parts[0], parts[1] - 1, parts[2], tp[0] || 0, tp[1] || 0).getTime();
   const editingId = dayEditId;
+  if (!nfConfirmDup(title, ms, editingId)) return;
   setBusy(true, editingId ? 'กำลังบันทึกการแก้ไข' : 'กำลังบันทึก');
   try {
     await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
