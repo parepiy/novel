@@ -297,6 +297,10 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-form{display:flex;flex-direction:column;gap:8px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:14px;}
 .nf-form input{border:1px solid var(--bd2);border-radius:8px;padding:9px 11px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);width:100%;}
 .nf-form input:focus{outline:none;border-color:var(--mint);}
+.nf-form select.nf-pick{border:1px solid var(--bd2);border-radius:8px;padding:9px 34px 9px 11px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.9rem;background:var(--bg);color:var(--text);width:100%;min-height:40px;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;text-align:left;text-align-last:left;cursor:pointer;}
+.nf-form select.nf-pick:focus{outline:none;border-color:var(--mint);}
+.nf-form select.nf-pick.empty{color:var(--mute);}
+.nf-form .nf-hidden{display:none;}
 .nf-list{display:flex;flex-direction:column;gap:8px;}
 .nf-item{display:flex;align-items:flex-start;gap:10px;background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;transition:border-color .15s;}
 .nf-item.done{opacity:.6;}
@@ -777,6 +781,7 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .f-card,:root[data-theme] .help-card{border-radius:20px;background:var(--panel-bg);border:1px solid var(--panel-bd);box-shadow:var(--panel-shadow);}
 :root[data-theme] .help-card h3,:root[data-theme] .f-card h3{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;}
 :root[data-theme] .f-row input,:root[data-theme] .f-row textarea,:root[data-theme] .f-row select,:root[data-theme] .nf-form input{background:var(--input-bg);border-color:var(--line2);}
+:root[data-theme] .nf-form select.nf-pick{background-color:var(--input-bg);border-color:var(--line2);}
 :root[data-theme] .btn-primary{color:var(--on-grad);font-weight:600;background:var(--grad);box-shadow:var(--grad-glow);}
 :root[data-theme] .cal-badge,:root[data-theme] .nf-done-btn{color:var(--on-grad);}
 :root[data-theme] .stpick{border-radius:999px;background:var(--glass);border-color:var(--line2);}
@@ -2987,7 +2992,7 @@ async function saveReminder() {
   const title = document.getElementById('nf-title').value.trim();
   const url = document.getElementById('nf-url').value.trim();
   const when = document.getElementById('nf-when').value;
-  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  if (!title) { alert('กรุณาเลือกเรื่อง หรือเลือก ＋ เพิ่มเรื่องใหม่'); return; }
   if (!when) { alert('กรุณาเลือกวันและเวลา'); return; }
   const ms = new Date(when).getTime();
   if (isNaN(ms)) { alert('วันเวลาไม่ถูกต้อง'); return; }
@@ -3124,7 +3129,7 @@ function listBodyHtml() {
     ? '<div class="nf-empty" style="color:#b85c5c;">โหลดรายการแจ้งเตือนไม่ได้: ' + esc(reminderError) + '<br><br>ตรวจสอบ: 1) รหัสลับใน 🔑 ตรงกับสคริปต์  2) Deploy › Manage deployments › Who has access = Anyone  3) อัปเดต remind_list ในสคริปต์แล้ว</div>'
     : '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>';
   return '<div class="nf-form">' + editHint +
-      '<input id="nf-title" placeholder="ชื่อเรื่อง">' +
+      nfTitlePickHtml('nf') +
       '<input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
       '<input id="nf-when" type="datetime-local">' +
       '<div class="nf-form-actions">' +
@@ -3191,8 +3196,68 @@ function renderNotify() {
       if (w) w.value = (nfDraft && nfDraft.when) || defaultWhenValue();
       if (nfDraft) { if (t) t.value = nfDraft.title; if (u) u.value = nfDraft.url; }
     }
+    nfSyncPick('nf');
   }
   renderNotifyStatus();
+}
+
+/* Novel name = a dropdown of the novels already in your calendar; typing a
+   name is only for "＋ เพิ่มเรื่องใหม่". Picking a novel also fills its link. */
+const NF_NEW = '__new';
+function nfKnownTitles() {
+  const seen = new Map();
+  reminders.slice().sort((a, b) => Number(b.remind_at) - Number(a.remind_at)).forEach(r => {
+    const t = String(r.title || '').trim();
+    if (!t || String(r.url || '').indexOf(SG_REMIND_MARK) >= 0) return;   // skip the weekly 💡 reminder
+    const k = t.toLowerCase();
+    const had = seen.get(k);
+    if (!had) seen.set(k, { title: t, url: String(r.url || '') });
+    else if (!had.url && r.url) had.url = String(r.url);
+  });
+  return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title, 'th'));
+}
+function nfTitlePickHtml(p) {
+  const opts = nfKnownTitles().map((o, i) => '<option value="' + i + '">' + esc(o.title) + '</option>').join('');
+  return '<select id="' + p + '-pick" class="nf-pick" onchange="nfPickTitle(\'' + p + '\')">' +
+      '<option value="">— เลือกเรื่องในปฏิทิน —</option>' + opts +
+      '<option value="' + NF_NEW + '">＋ เพิ่มเรื่องใหม่…</option>' +
+    '</select>' +
+    '<input id="' + p + '-title" class="nf-hidden" placeholder="ชื่อเรื่องใหม่">';
+}
+/* make the dropdown match whatever title the form holds */
+function nfSyncPick(p) {
+  const sel = document.getElementById(p + '-pick');
+  const inp = document.getElementById(p + '-title');
+  if (!sel || !inp) return;
+  const known = nfKnownTitles();
+  const v = inp.value.trim().toLowerCase();
+  const i = v ? known.findIndex(o => o.title.toLowerCase() === v) : -1;
+  sel.value = i >= 0 ? String(i) : (v || !known.length) ? NF_NEW : '';
+  nfShowPick(p);
+}
+function nfShowPick(p) {
+  const sel = document.getElementById(p + '-pick');
+  const inp = document.getElementById(p + '-title');
+  inp.classList.toggle('nf-hidden', sel.value !== NF_NEW);
+  sel.classList.toggle('empty', sel.value === '');
+}
+function nfPickTitle(p) {
+  const sel = document.getElementById(p + '-pick');
+  const inp = document.getElementById(p + '-title');
+  const url = document.getElementById(p + '-url');
+  const known = nfKnownTitles();
+  const prevPicked = known.find(o => o.title === inp.value);
+  if (sel.value === NF_NEW) {
+    if (prevPicked) { inp.value = ''; if (url && url.value === prevPicked.url) url.value = ''; }
+    nfShowPick(p);
+    inp.focus();
+  } else {
+    const o = known[Number(sel.value)];
+    inp.value = o ? o.title : '';
+    if (url && o && o.url && (!url.value || (prevPicked && url.value === prevPicked.url))) url.value = o.url;
+    nfShowPick(p);
+  }
+  if (p === 'nf' && nfDraft) { nfDraft.title = inp.value; if (url) nfDraft.url = url.value; }
 }
 
 /* 🔔 from the novel popup: open the reminder form pre-filled with that novel.
@@ -3274,7 +3339,7 @@ function renderDayPopup() {
     '<h3>' + dateLabel + '</h3>' +
     '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
     '<div class="nf-form">' + editHint +
-      '<input id="day-title" placeholder="ชื่อเรื่อง">' +
+      nfTitlePickHtml('day') +
       '<input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
       '<input id="day-time" type="time">' +
       '<div class="nf-form-actions">' +
@@ -3287,13 +3352,14 @@ function renderDayPopup() {
   document.getElementById('day-title').value = editing ? (editing.title || '') : '';
   document.getElementById('day-url').value = editing ? (editing.url || '') : '';
   document.getElementById('day-time').value = p(tv.getHours()) + ':' + p(tv.getMinutes());
+  nfSyncPick('day');
 }
 
 async function saveFromDay() {
   const title = document.getElementById('day-title').value.trim();
   const url = document.getElementById('day-url').value.trim();
   const time = document.getElementById('day-time').value;
-  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  if (!title) { alert('กรุณาเลือกเรื่อง หรือเลือก ＋ เพิ่มเรื่องใหม่'); return; }
   if (!time) { alert('กรุณาเลือกเวลา'); return; }
   const parts = dayPopupKey.split('-').map(Number);
   const tp = time.split(':').map(Number);
