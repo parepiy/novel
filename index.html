@@ -365,7 +365,10 @@ body.editor .suggest-tab{display:inline-block;}
 }
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
-.nf-form input[type="datetime-local"],.nf-form input[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
+.nf-when-line{display:flex;gap:8px;}
+.nf-when-line input{flex:1.4;min-width:0;}
+.nf-when-line select{flex:1;min-width:0;}
+.nf-form input[type="date"],.nf-form input[type="datetime-local"],.nf-form input[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;width:100%;max-width:100%;min-height:40px;text-align:left;color:var(--text);}
 
 /* GLOBAL BUSY OVERLAY (reminder add/delete/enable) */
 .busy-overlay{position:fixed;inset:0;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:loaderIn .2s ease;}
@@ -3084,7 +3087,44 @@ function fmtWhen(ms) {
 
 /* value string for <input type="datetime-local"> in LOCAL time, default = now + 1h */
 function defaultWhenValue() {
-  return msToWhenValue(Date.now() + 60 * 60000);
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);   // the next whole hour
+  return msToWhenValue(d.getTime());
+}
+
+/* ⏰ Time is picked by the hour (00:00 … 23:00) — iPhone's own time wheel
+   can't be limited to whole hours. A reminder saved earlier at e.g. 09:41
+   keeps that time as an extra choice until you change it. */
+function fillHourSelect(sel, hhmm) {
+  if (!sel) return;
+  const p = n => String(n).padStart(2, '0');
+  const cur = /^\d{2}:\d{2}$/.test(hhmm || '') ? hhmm : '';
+  let html = '';
+  for (let h = 0; h < 24; h++) {
+    const v = p(h) + ':00';
+    html += '<option value="' + v + '">' + v + ' น.</option>';
+    if (cur && cur !== v && cur.slice(0, 2) === p(h)) html += '<option value="' + cur + '">' + cur + ' น. (เดิม)</option>';
+  }
+  sel.innerHTML = html;
+  sel.value = cur || '09:00';
+}
+/* nf-when (hidden, "YYYY-MM-DDTHH:MM") ⇄ the date box + hour dropdown */
+function nfSplitWhen() {
+  const w = document.getElementById('nf-when');
+  const dt = document.getElementById('nf-date');
+  if (!w || !dt) return;
+  const m = String(w.value || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  dt.value = m ? m[1] : '';
+  fillHourSelect(document.getElementById('nf-hour'), m ? m[2] : '');
+}
+function nfWhenChanged() {
+  const w = document.getElementById('nf-when');
+  const dt = document.getElementById('nf-date');
+  const hr = document.getElementById('nf-hour');
+  if (!w || !dt || !hr) return;
+  w.value = dt.value ? dt.value + 'T' + hr.value : '';
+  if (nfDraft) nfDraft.when = w.value;
 }
 
 /* epoch ms -> "YYYY-MM-DDTHH:MM" in local time, for <input type="datetime-local"> */
@@ -3160,7 +3200,11 @@ function listBodyHtml() {
       nfTitlePickHtml('nf') +
       '<div class="f-url-line"><input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'nf\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
-      '<input id="nf-when" type="datetime-local">' +
+      '<input id="nf-when" type="hidden">' +
+      '<div class="nf-when-line">' +
+        '<input id="nf-date" type="date" onchange="nfWhenChanged()" oninput="nfWhenChanged()">' +
+        '<select id="nf-hour" class="nf-pick nf-hour" onchange="nfWhenChanged()"></select>' +
+      '</div>' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' + cancelBtn +
       '</div>' +
@@ -3226,6 +3270,7 @@ function renderNotify() {
       if (nfDraft) { if (t) t.value = nfDraft.title; if (u) u.value = nfDraft.url; }
     }
     nfSyncPick('nf');
+    nfSplitWhen();
   }
   renderNotifyStatus();
 }
@@ -3300,8 +3345,10 @@ function remindFromNovel(idx) {
   nfView = 'list';
   switchTab('notify');
   setTimeout(() => {
-    const w = document.getElementById('nf-when');
+    const w = document.getElementById('nf-date');
+    const h = document.getElementById('nf-hour');
     if (w) { w.scrollIntoView({ behavior: 'smooth', block: 'center' }); w.classList.add('nf-flash'); }
+    if (h) h.classList.add('nf-flash');
     toast('เลือกวันเวลา แล้วกด ＋ เพิ่มการแจ้งเตือน');
   }, 80);
 }
@@ -3371,7 +3418,8 @@ function renderDayPopup() {
       nfTitlePickHtml('day') +
       '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'day\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
-      '<input id="day-time" type="time">' +
+      '<input id="day-time" type="hidden">' +
+      '<select id="day-hour" class="nf-pick nf-hour" onchange="document.getElementById(\'day-time\').value=this.value"></select>' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
       '</div>' +
@@ -3382,6 +3430,7 @@ function renderDayPopup() {
   document.getElementById('day-title').value = editing ? (editing.title || '') : '';
   document.getElementById('day-url').value = editing ? (editing.url || '') : '';
   document.getElementById('day-time').value = p(tv.getHours()) + ':' + p(tv.getMinutes());
+  fillHourSelect(document.getElementById('day-hour'), document.getElementById('day-time').value);
   nfSyncPick('day');
 }
 
