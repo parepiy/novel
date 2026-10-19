@@ -140,6 +140,8 @@ function doPost(e) {
     if (rr) return rr;
     const sr = suggestRouter_(action, d);
     if (sr) return sr;
+    const lr = linkTitlesRouter_(action, d);
+    if (lr) return lr;
 
     const sh = getSheet_();
 
@@ -348,6 +350,91 @@ function suggestRouter_(action, d) {
   }
 
   return null;
+}
+
+// ---------------- 🔔 chapter titles for reminder links ----------------
+// The app sends the reminder links; Google fetches each page once and reads its
+// title. Results are kept in the "link_titles" sheet so each link is fetched
+// only once (failed ones are retried after 6 hours).
+const LT_COLS = ['url', 'title', 'status', 'fetched_at'];
+const LT_RETRY_MS = 6 * 3600 * 1000;
+
+function ltDecode_(s) {
+  return String(s || '')
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)))
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// og:title first (usually the cleanest), then <title>
+function ltExtract_(html) {
+  const og = html.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) ||
+             html.match(/<meta[^>]+content=["']([^"']*)["'][^>]*property=["']og:title["']/i);
+  if (og && ltDecode_(og[1])) return ltDecode_(og[1]);
+  const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return t ? ltDecode_(t[1]) : '';
+}
+
+// an anti-bot / error page instead of the real chapter
+function ltBlocked_(title) {
+  return /just a moment|attention required|access denied|security check|captcha|cloudflare|ยืนยันตัวตน|forbidden|not found|404/i.test(title);
+}
+
+function ltFetch_(urls) {
+  const req = u => ({
+    url: u, muteHttpExceptions: true, followRedirects: true,
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36', 'Accept-Language': 'th,en;q=0.8' }
+  });
+  try { return UrlFetchApp.fetchAll(urls.map(req)); }
+  catch (e) {   // one bad link fails the whole batch → fetch one by one
+    return urls.map(u => { try { return UrlFetchApp.fetch(u, req(u)); } catch (err) { return null; } });
+  }
+}
+
+function linkTitlesRouter_(action, d) {
+  if (action !== 'link_titles') return null;
+  const urls = [];
+  (Array.isArray(d.urls) ? d.urls : []).forEach(u => {
+    u = String(u || '').trim();
+    if (/^https?:\/\//i.test(u) && urls.indexOf(u) < 0 && urls.length < 30) urls.push(u);
+  });
+  const sh = sgSheet_('link_titles', LT_COLS);
+  const vals = sh.getDataRange().getValues();
+  const rowOf = {};
+  for (let i = 1; i < vals.length; i++) if (vals[i][0]) rowOf[String(vals[i][0])] = i + 1;
+  const out = {};
+  const todo = [];
+  urls.forEach(u => {
+    const r = rowOf[u];
+    if (r) {
+      const v = vals[r - 1];
+      const fresh = Date.now() - new Date(v[3]).getTime() < LT_RETRY_MS;
+      if (String(v[2]) === 'ok' || fresh) { out[u] = { title: String(v[1] || ''), status: String(v[2] || '') }; return; }
+    }
+    todo.push(u);
+  });
+  if (todo.length) {
+    const resps = ltFetch_(todo);
+    todo.forEach((u, i) => {
+      const res = resps[i];
+      let title = '', status = 'error';
+      if (res) {
+        const code = res.getResponseCode();
+        if (code === 200) {
+          title = ltExtract_(res.getContentText('UTF-8').slice(0, 300000));
+          status = !title ? 'no_title' : ltBlocked_(title) ? 'blocked' : 'ok';
+          if (status !== 'ok') title = '';
+        } else status = 'http_' + code;
+      }
+      out[u] = { title: title, status: status };
+      const r = rowOf[u] || sh.getLastRow() + 1;
+      rowOf[u] = r;
+      sh.getRange(r, 1, 1, LT_COLS.length).setNumberFormat('@').setValues([[u, title, status, new Date().toISOString()].map(sgText_)]);
+    });
+  }
+  return json_({ ok: true, titles: out });
 }
 
 // ---------------- run these by hand from the editor ----------------
