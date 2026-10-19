@@ -510,7 +510,7 @@ body.editor #m-quick{display:flex;}
 .mq-msg{font-size:.74rem;color:var(--mint2);min-height:1em;transition:opacity .3s;}
 /* URL field with a paste button */
 .f-url-line{display:flex;gap:8px;}
-.f-url-line input{flex:1;}
+.f-url-line input{flex:1;min-width:0;}
 .f-url-line .btn-sm{flex-shrink:0;}
 .m-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .m-link{display:inline-block;margin-top:10px;font-size:.84rem;color:var(--mint2);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;}
@@ -2534,11 +2534,16 @@ async function quickSave(field, value) {
 }
 
 /* Paste a copied link (e.g. from readawrite) into the URL field */
-async function pasteUrl() {
+async function readClipboard() {
   let txt = '';
   try { txt = (await navigator.clipboard.readText() || '').trim(); }
-  catch (e) { alert('อ่านคลิปบอร์ดไม่ได้ — แตะช่องลิงก์แล้ววางเองได้เลย'); return; }
-  if (!txt) { alert('คลิปบอร์ดว่างเปล่า'); return; }
+  catch (e) { alert('อ่านคลิปบอร์ดไม่ได้ — แตะช่องลิงก์แล้ววางเองได้เลย'); return null; }
+  if (!txt) { alert('คลิปบอร์ดว่างเปล่า'); return null; }
+  return txt;
+}
+async function pasteUrl() {
+  const txt = await readClipboard();
+  if (txt == null) return;
   const m = txt.match(/https?:\/\/\S+/);
   document.getElementById('f-url').value = m ? m[0] : txt;
   const ti = document.getElementById('f-title');
@@ -2546,6 +2551,29 @@ async function pasteUrl() {
     const name = txt.replace(/https?:\/\/\S+/g, '').trim();
     if (name) ti.value = name;
   }
+}
+
+/* 📋 in the 🔔 forms (p = 'nf' list form, 'day' calendar popup). If no novel is
+   chosen yet, a link you already have a reminder for picks that novel;
+   otherwise a name shared along with the link becomes the new novel's name. */
+async function pasteRemindUrl(p) {
+  const txt = await readClipboard();
+  if (txt == null) return;
+  const m = txt.match(/https?:\/\/\S+/);
+  const url = m ? m[0] : txt;
+  const u = document.getElementById(p + '-url');
+  const sel = document.getElementById(p + '-pick');
+  const inp = document.getElementById(p + '-title');
+  if (!u) return;
+  u.value = url;
+  if (sel && inp && !inp.value.trim()) {
+    const known = nfKnownTitles();
+    const i = known.findIndex(o => o.url && o.url === url);
+    const name = txt.replace(/https?:\/\/\S+/g, '').trim();
+    if (i >= 0) { sel.value = String(i); inp.value = known[i].title; nfShowPick(p); }
+    else if (name) { sel.value = NF_NEW; inp.value = name; nfShowPick(p); }
+  }
+  if (p === 'nf' && nfDraft) { nfDraft.url = u.value; if (inp) nfDraft.title = inp.value; }
 }
 
 function closeModal(e) { if (e.target === document.getElementById('modal-bg')) closeModalBtn(); }
@@ -3130,7 +3158,8 @@ function listBodyHtml() {
     : '<div class="nf-empty">ยังไม่มีการแจ้งเตือน — เพิ่มเรื่องที่กำลังอ่านและตั้งเวลาเตือนได้เลย</div>';
   return '<div class="nf-form">' + editHint +
       nfTitlePickHtml('nf') +
-      '<input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+      '<div class="f-url-line"><input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+        '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'nf\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
       '<input id="nf-when" type="datetime-local">' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' + cancelBtn +
@@ -3340,7 +3369,8 @@ function renderDayPopup() {
     '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
     '<div class="nf-form">' + editHint +
       nfTitlePickHtml('day') +
-      '<input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+      '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
+        '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'day\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
       '<input id="day-time" type="time">' +
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
