@@ -222,11 +222,14 @@ function reminderRouter_(action, d) {
     return json_({ ok: true, id: id });
   }
 
+  // one reminder (id) or several at once (ids — e.g. "delete all of this novel")
   if (action === 'remind_delete') {
     const sh = remindersSheet_();
+    const ids = (Array.isArray(d.ids) ? d.ids : [d.id]).map(String);
     const vals = sh.getDataRange().getValues();
-    for (let i = vals.length - 1; i >= 1; i--) if (String(vals[i][0]) === String(d.id)) { sh.deleteRow(i + 1); break; }
-    return json_({ ok: true });
+    let deleted = 0;
+    for (let i = vals.length - 1; i >= 1; i--) if (ids.indexOf(String(vals[i][0])) >= 0) { sh.deleteRow(i + 1); deleted++; }
+    return json_({ ok: true, deleted: deleted });
   }
 
   if (action === 'remind_mark') {   // used by the GitHub Action after sending

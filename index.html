@@ -313,6 +313,8 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-chap-form{margin:-2px 2px 0;font-size:.8rem;}
 .nf-dup{font-size:.8rem;color:var(--overdue);font-weight:600;margin:-2px 2px 0;}
 .nf-dup:empty{display:none;}
+.nfdel-btns{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.nfdel-btns .btn{width:100%;justify-content:center;margin-left:0;}
 .nf-item-url{font-size:.75rem;color:var(--mint2);word-break:break-all;}
 .nf-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
 .nf-done-btn{background:var(--mint);border:1px solid var(--mint);color:#fff;border-radius:8px;padding:5px 10px;font-size:.8rem;font-weight:600;cursor:pointer;}
@@ -976,6 +978,11 @@ body.editor .m-edit{display:inline-block;}
 <!-- CALENDAR DAY POPUP -->
 <div class="overlay" id="day-bg" onclick="if(event.target===this)closeDayPopup()">
   <div class="f-card" id="day-card" style="max-width:460px;"></div>
+</div>
+
+<!-- 🔔 DELETE: this one or the whole novel -->
+<div class="overlay" id="nfdel-bg" style="z-index:230" onclick="if(event.target===this)closeNfDel()">
+  <div class="f-card" id="nfdel-card" style="max-width:400px;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -3063,8 +3070,65 @@ function cancelEdit() {
   renderNotify();
 }
 
-async function deleteReminder(id) {
-  if (!confirm('ลบการแจ้งเตือนนี้?')) return;
+/* ลบ: if the novel has other reminders too, ask "just this one, or all of
+   this novel?" (e.g. you bought the e-book and don't need any of them). */
+function nfSameNovel(r) {
+  const t = String(r.title || '').trim().toLowerCase();
+  return reminders.filter(x => String(x.title || '').trim().toLowerCase() === t && String(x.url || '').indexOf(SG_REMIND_MARK) < 0);
+}
+let nfDelId = null;
+function deleteReminder(id) {
+  const r = reminders.find(x => String(x.id) === String(id));
+  const all = r ? nfSameNovel(r) : [];
+  if (!r || all.length < 2) { deleteOneReminder(id); return; }
+  nfDelId = id;
+  const next = all.filter(x => Number(x.remind_at) > Date.now()).length;
+  document.getElementById('nfdel-card').innerHTML =
+    '<button class="ov-close" onclick="closeNfDel()">✕</button>' +
+    '<h3>🗑 ลบการแจ้งเตือน</h3>' +
+    '<div class="rs-novel">' + esc(r.title) + '</div>' +
+    '<div class="rs-hint">เรื่องนี้มีการแจ้งเตือนทั้งหมด ' + all.length + ' รายการ' + (next ? ' (ยังไม่ถึงเวลา ' + next + ')' : '') + '</div>' +
+    '<div class="nfdel-btns">' +
+      '<button class="btn btn-ghost" onclick="nfDelPick(false)">ลบเฉพาะอันนี้ · ' + esc(fmtWhen(r.remind_at)) + '</button>' +
+      '<button class="btn btn-danger" onclick="nfDelPick(true)">🗑 ลบทั้งเรื่อง (' + all.length + ' รายการ)</button>' +
+      '<button class="btn btn-ghost" onclick="closeNfDel()">ยกเลิก</button>' +
+    '</div>';
+  document.getElementById('nfdel-bg').classList.add('open');
+}
+function closeNfDel() { nfDelId = null; const bg = document.getElementById('nfdel-bg'); if (bg) bg.classList.remove('open'); }
+function nfDelPick(all) {
+  const id = nfDelId;
+  closeNfDel();
+  if (id == null) return;
+  if (all) deleteNovelReminders(id); else deleteOneReminder(id, true);
+}
+async function deleteNovelReminders(id) {
+  const r = reminders.find(x => String(x.id) === String(id));
+  if (!r) return;
+  const ids = nfSameNovel(r).map(x => String(x.id));
+  setBusy(true, 'กำลังลบ ' + ids.length + ' รายการ');
+  try {
+    const res = await gasPost({ action: 'remind_delete', ids: ids, id: ids[0] });
+    if (!res || typeof res.deleted !== 'number') {   // older Code.gs: one at a time
+      for (let i = 1; i < ids.length; i++) {
+        setBusy(true, 'กำลังลบ ' + (i + 1) + '/' + ids.length);
+        await gasPost({ action: 'remind_delete', id: ids[i] });
+      }
+    }
+    if (nfEditId && ids.indexOf(String(nfEditId)) >= 0) nfEditId = null;
+    if (dayEditId && ids.indexOf(String(dayEditId)) >= 0) dayEditId = null;
+    await loadReminders();
+    renderNotify();
+    if (dayPopupKey) renderDayPopup();
+    toast('ลบการแจ้งเตือนของ “' + r.title + '” ทั้งหมด ' + ids.length + ' รายการแล้ว');
+  } catch (e) {
+    alert('ลบไม่ครบ: ' + e.message);
+    await loadReminders(); renderNotify(); if (dayPopupKey) renderDayPopup();
+  } finally { setBusy(false); }
+}
+
+async function deleteOneReminder(id, confirmed) {
+  if (!confirmed && !confirm('ลบการแจ้งเตือนนี้?')) return;
   setBusy(true, 'กำลังลบ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
@@ -3592,6 +3656,7 @@ function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    if (nfDelId != null) { closeNfDel(); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
