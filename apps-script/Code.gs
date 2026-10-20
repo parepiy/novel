@@ -359,7 +359,7 @@ function suggestRouter_(action, d) {
 // The app sends the reminder links; Google fetches each page once and reads its
 // title. Results are kept in the "link_titles" sheet so each link is fetched
 // only once (failed ones are retried after 6 hours).
-const LT_COLS = ['url', 'title', 'status', 'fetched_at'];
+const LT_COLS = ['url', 'title', 'status', 'fetched_at', 'page_title', 'og_title', 'parent'];
 const LT_RETRY_MS = 6 * 3600 * 1000;
 
 function ltDecode_(s) {
@@ -371,13 +371,22 @@ function ltDecode_(s) {
     .replace(/\s+/g, ' ').trim();
 }
 
-// og:title first (usually the cleanest), then <title>
+function ltMeta_(html, prop) {
+  const p = prop.replace(/[.:]/g, '\\$&');
+  const m = html.match(new RegExp('<meta[^>]+(?:property|name)=["\']' + p + '["\'][^>]*content=["\']([^"\']*)["\']', 'i')) ||
+            html.match(new RegExp('<meta[^>]+content=["\']([^"\']*)["\'][^>]*(?:property|name)=["\']' + p + '["\']', 'i'));
+  return m ? ltDecode_(m[1]) : '';
+}
+
+// title = og:title (usually the cleanest) or <title>; the rest helps the app
+// work out the novel's name: the page <title>, og:title, and the novel's own
+// page (the first readawrite.com/a/… link on a chapter page)
 function ltExtract_(html) {
-  const og = html.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) ||
-             html.match(/<meta[^>]+content=["']([^"']*)["'][^>]*property=["']og:title["']/i);
-  if (og && ltDecode_(og[1])) return ltDecode_(og[1]);
+  const og = ltMeta_(html, 'og:title');
   const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return t ? ltDecode_(t[1]) : '';
+  const page = t ? ltDecode_(t[1]) : '';
+  const a = html.match(/href=["'](?:https?:\/\/(?:www\.)?readawrite\.com)?\/a\/([0-9a-z]{6,})["'?#]/i);
+  return { title: og || page, page: page, og: og, parent: a ? 'https://www.readawrite.com/a/' + a[1] : '' };
 }
 
 // an anti-bot / error page instead of the real chapter
@@ -414,7 +423,12 @@ function linkTitlesRouter_(action, d) {
     if (r) {
       const v = vals[r - 1];
       const fresh = Date.now() - new Date(v[3]).getTime() < LT_RETRY_MS;
-      if (String(v[2]) === 'ok' || fresh) { out[u] = { title: String(v[1] || ''), status: String(v[2] || '') }; return; }
+      const ok = String(v[2]) === 'ok';
+      const old = ok && !v[4] && !v[5];   // saved before page_title/og_title existed → read it once more
+      if (!old && (ok || fresh)) {
+        out[u] = { title: String(v[1] || ''), status: String(v[2] || ''), page: String(v[4] || ''), og: String(v[5] || ''), parent: String(v[6] || '') };
+        return;
+      }
     }
     todo.push(u);
   });
@@ -422,19 +436,21 @@ function linkTitlesRouter_(action, d) {
     const resps = ltFetch_(todo);
     todo.forEach((u, i) => {
       const res = resps[i];
-      let title = '', status = 'error';
+      let info = { title: '', page: '', og: '', parent: '' }, status = 'error';
       if (res) {
         const code = res.getResponseCode();
         if (code === 200) {
-          title = ltExtract_(res.getContentText('UTF-8').slice(0, 300000));
-          status = !title ? 'no_title' : ltBlocked_(title) ? 'blocked' : 'ok';
-          if (status !== 'ok') title = '';
+          info = ltExtract_(res.getContentText('UTF-8').slice(0, 300000));
+          status = !info.title ? 'no_title' : ltBlocked_(info.title) ? 'blocked' : 'ok';
+          if (status !== 'ok') info = { title: '', page: '', og: '', parent: '' };
         } else status = 'http_' + code;
       }
-      out[u] = { title: title, status: status };
+      out[u] = { title: info.title, status: status, page: info.page, og: info.og, parent: info.parent };
       const r = rowOf[u] || sh.getLastRow() + 1;
       rowOf[u] = r;
-      sh.getRange(r, 1, 1, LT_COLS.length).setNumberFormat('@').setValues([[u, title, status, new Date().toISOString()].map(sgText_)]);
+      sh.getRange(1, 1, 1, LT_COLS.length).setValues([LT_COLS]);
+      sh.getRange(r, 1, 1, LT_COLS.length).setNumberFormat('@')
+        .setValues([[u, info.title, status, new Date().toISOString(), info.page, info.og, info.parent].map(sgText_)]);
     });
   }
   return json_({ ok: true, titles: out });
