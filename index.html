@@ -314,6 +314,7 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-dup{font-size:.8rem;color:var(--overdue);font-weight:600;margin:-2px 2px 0;}
 .nf-dup:empty{display:none;}
 .nfdel-btns{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.nfdone-q{font-size:.88rem;color:var(--text);line-height:1.6;margin:10px 0 8px;}
 .nfdel-btns .btn{width:100%;justify-content:center;margin-left:0;}
 .nf-item-url{font-size:.75rem;color:var(--mint2);word-break:break-all;}
 .nf-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
@@ -3095,7 +3096,7 @@ function deleteReminder(id) {
     '</div>';
   document.getElementById('nfdel-bg').classList.add('open');
 }
-function closeNfDel() { nfDelId = null; const bg = document.getElementById('nfdel-bg'); if (bg) bg.classList.remove('open'); }
+function closeNfDel() { nfDelId = null; nfDoneId = null; const bg = document.getElementById('nfdel-bg'); if (bg) bg.classList.remove('open'); }
 function nfDelPick(all) {
   const id = nfDelId;
   closeNfDel();
@@ -3139,15 +3140,65 @@ async function deleteOneReminder(id, confirmed) {
   finally { setBusy(false); }
 }
 
-async function completeReminder(id) {
-  if (!confirm('ทำเครื่องหมายว่าอ่านแล้ว และลบการแจ้งเตือนนี้?')) return;
+/* ✓ เสร็จ. If it was the novel's LAST reminder, ask: really the last chapter,
+   or did you just forget to set one for the next chapter? */
+let nfDoneId = null;
+function completeReminder(id) {
+  const r = reminders.find(x => String(x.id) === String(id));
+  const weekly = r && String(r.url || '').indexOf(SG_REMIND_MARK) >= 0;
+  const others = r ? nfSameNovel(r).filter(x => String(x.id) !== String(id)) : [];
+  if (!r || weekly || others.length) {
+    if (confirm('ทำเครื่องหมายว่าอ่านแล้ว และลบการแจ้งเตือนนี้?')) finishReminder(id);
+    return;
+  }
+  nfDoneId = id;
+  const c = linkTitles[r.url];
+  const ch = c && c.status === 'ok' ? chapterTitle(c.title, r.title) : '';
+  document.getElementById('nfdel-card').innerHTML =
+    '<button class="ov-close" onclick="closeNfDel()">✕</button>' +
+    '<h3>✓ อ่านเสร็จแล้ว</h3>' +
+    '<div class="rs-novel">' + esc(r.title) + '</div>' +
+    (ch ? '<div class="nf-chap">📖 ' + esc(ch) + '</div>' : '') +
+    '<div class="nfdone-q">นี่คือการแจ้งเตือน<b>อันสุดท้าย</b>ของเรื่องนี้<br>เป็นตอนสุดท้ายจริงไหม หรือยังมีตอนต่อไปแต่ลืมตั้งเตือน?</div>' +
+    '<div class="nfdel-btns">' +
+      '<button class="btn btn-primary" onclick="nfDonePick(true)">➕ ยังมีตอนต่อไป · ตั้งเตือนตอนถัดไป</button>' +
+      '<button class="btn btn-ghost" onclick="nfDonePick(false)">🏁 ใช่ ตอนสุดท้ายแล้ว</button>' +
+      '<button class="btn btn-ghost" onclick="closeNfDel()">ยกเลิก</button>' +
+    '</div>';
+  document.getElementById('nfdel-bg').classList.add('open');
+}
+async function nfDonePick(next) {
+  const id = nfDoneId;
+  const r = reminders.find(x => String(x.id) === String(id));
+  closeNfDel();
+  if (!r) return;
+  const ok = await finishReminder(id);
+  if (!ok) return;
+  if (!next) { toast('🏁 อ่าน “' + r.title + '” ครบทุกตอนที่ตั้งไว้แล้ว'); return; }
+  // same time tomorrow (rounded to the hour); the link is left empty for the next chapter
+  const t = new Date(Number(r.remind_at) + 86400e3);
+  t.setMinutes(0, 0, 0);
+  const when = t.getTime() > Date.now() ? msToWhenValue(t.getTime()) : defaultWhenValue();
+  nfDraft = { title: r.title, url: '', when: when };
+  nfEditId = null;
+  closeDayPopup();
+  nfView = 'list';
+  if (!notifyView) switchTab('notify'); else renderNotify();
+  setTimeout(() => {
+    const u = document.getElementById('nf-url');
+    if (u) { u.scrollIntoView({ behavior: 'smooth', block: 'center' }); u.classList.add('nf-flash'); }
+    toast('วางลิงก์ตอนถัดไป (📋 วาง) แล้วกด ＋ เพิ่มการแจ้งเตือน', 4000);
+  }, 80);
+}
+async function finishReminder(id) {
   setBusy(true, 'กำลังทำเครื่องหมายเสร็จ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
     await loadReminders();
     renderNotify();
     if (dayPopupKey) renderDayPopup();
-  } catch(e) { alert('ทำเครื่องหมายไม่ได้: ' + e.message); }
+    return true;
+  } catch(e) { alert('ทำเครื่องหมายไม่ได้: ' + e.message); return false; }
   finally { setBusy(false); }
 }
 
@@ -3656,7 +3707,7 @@ function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (nfDelId != null) { closeNfDel(); return; }
+    if (nfDelId != null || nfDoneId != null) { closeNfDel(); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
