@@ -313,6 +313,8 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-chap-form{margin:-2px 2px 0;font-size:.8rem;}
 .nf-dup{font-size:.8rem;color:var(--overdue);font-weight:600;margin:-2px 2px 0;}
 .nf-dup:empty{display:none;}
+.nf-auto{font-size:.78rem;color:var(--mint2);margin:-4px 2px 0;}
+.nf-auto:empty{display:none;}
 .nfdel-btns{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
 .nfdone-q{font-size:.88rem;color:var(--text);line-height:1.6;margin:10px 0 8px;}
 .nfdel-btns .btn{width:100%;justify-content:center;margin-left:0;}
@@ -3266,20 +3268,26 @@ async function fetchLinkTitles(urls) {
   try {
     const d = await gasPost({ action: 'link_titles', urls: want });
     if (!d || !d.titles) { ltUnsupported = true; return; }   // Code.gs not updated yet
-    Object.keys(d.titles).forEach(u => { linkTitles[u] = { title: d.titles[u].title || '', status: d.titles[u].status || '', at: Date.now() }; });
+    Object.keys(d.titles).forEach(u => {
+      const t = d.titles[u] || {};
+      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', at: Date.now() };
+    });
     ltSave();
   } catch (e) {
     if (/unknown action/i.test(e.message || '')) ltUnsupported = true;
   } finally {
     want.forEach(u => ltPending.delete(u));
     fillChapEls();
+    nfAutoName('nf'); nfAutoName('day');
   }
+}
+function ltStripSite(t) {
+  return String(t || '').trim().replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite|meb|mebmarket|dek-d|fictionlog|joylada|tunwalai|kawebook)[^|\-–—]*$/i, '').trim();
 }
 /* page title → just the chapter: drop the site name and the novel's own name */
 function chapterTitle(raw, novel) {
-  let t = String(raw || '').trim();
+  let t = ltStripSite(raw);
   if (!t) return '';
-  t = t.replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite|meb|mebmarket|dek-d|fictionlog|joylada|tunwalai|kawebook)[^|\-–—]*$/i, '');
   const n = String(novel || '').trim();
   if (n && n.length >= 2) {
     const i = t.toLowerCase().indexOf(n.toLowerCase());
@@ -3306,6 +3314,68 @@ function fillChapEls() {
     el.textContent = txt;
   });
 }
+/* ✨ Work out the novel's name from what Google read on the link's page:
+   1) the novel's own page (readawrite.com/a/…) is in your library / 💡 list,
+   2) a novel name you already have appears in the page title,
+   3) otherwise split "ตอนที่ 25 … - ชื่อเรื่อง | ReadAWrite" and take the non-chapter part. */
+function guessNovelName(info) {
+  if (!info || info.status !== 'ok') return '';
+  const g = (String(info.parent || '').match(/\/a\/([0-9a-z]+)/i) || [])[1];
+  if (g) {
+    const gl = '/a/' + g.toLowerCase();
+    const b = allBooks.find(b => String(b.url || '').toLowerCase().indexOf(gl) >= 0);
+    if (b) return b.title;
+    const x = sgList.find(x => x.guid === g || x.uid === g) || sgMarks.find(r => r.guid === g || r.uid === g);
+    if (x && x.name) return x.name;
+  }
+  const texts = [info.page, info.og, info.title].filter(Boolean).join(' \n ').toLowerCase();
+  let best = '';
+  [...nfKnownTitles().map(o => o.title), ...allBooks.map(b => b.title), ...sgList.map(x => x.name)].forEach(t => {
+    t = String(t || '').trim();
+    if (t.length >= 3 && t.length > best.length && texts.indexOf(t.toLowerCase()) >= 0) best = t;
+  });
+  if (best) return best;
+  const parts = ltStripSite(info.page || info.title).split(/\s+[|\-–—•»]+\s+|\s*::\s*|\s+:\s+/).map(x => x.trim()).filter(Boolean);
+  if (parts.length < 2) return '';
+  const chap = String(info.og || '').trim();
+  const isChap = x => /^(ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode|#)\s*\d/i.test(x) || /^\d+\s*[.:)]/.test(x) || (chap && chap !== (info.page || '').trim() && x === chap);
+  const cand = parts.filter(x => !isChap(x) && !/read\s*a\s*write/i.test(x));
+  return cand.length && cand.length < parts.length ? cand[cand.length - 1] : (cand.length === parts.length ? parts[parts.length - 1] : '');
+}
+const nfAutoDone = new Set();   // "form|url" already named (or you typed the name yourself)
+function nfAutoReset(p) {   // a freshly drawn form starts over (a name it already holds is kept)
+  [...nfAutoDone].forEach(k => { if (k.indexOf(p + '|') === 0) nfAutoDone.delete(k); });
+  const inp = document.getElementById(p + '-title'), u = document.getElementById(p + '-url');
+  if (inp && u && inp.value.trim()) nfAutoDone.add(p + '|' + u.value.trim());
+}
+function nfAutoName(p) {
+  const sel = document.getElementById(p + '-pick');
+  const inp = document.getElementById(p + '-title');
+  const u = document.getElementById(p + '-url');
+  if (!sel || !inp || !u) return;
+  const url = u.value.trim();
+  const key = p + '|' + url;
+  if (!url || nfAutoDone.has(key)) return;
+  const free = sel.value === '' || (sel.value === NF_NEW && (!inp.value.trim() || inp.dataset.auto === inp.value));
+  if (!free) return;
+  const name = guessNovelName(linkTitles[url]);
+  if (!name) return;
+  nfAutoDone.add(key);
+  const known = nfKnownTitles();
+  const i = known.findIndex(o => o.title.toLowerCase() === name.toLowerCase());
+  if (i >= 0) { sel.value = String(i); inp.value = known[i].title; }
+  else { sel.value = NF_NEW; inp.value = name; }
+  inp.dataset.auto = inp.value;
+  nfShowPick(p);
+  const chapEl = document.getElementById(p + '-chap');
+  if (chapEl) chapEl.setAttribute('data-novel', inp.value);
+  const hint = document.getElementById(p + '-auto');
+  if (hint) hint.textContent = '✨ ใส่ชื่อเรื่องจากลิงก์ให้แล้ว' + (i >= 0 ? ' (มีในปฏิทินอยู่แล้ว)' : ' — ถ้าไม่ถูกแก้ได้');
+  if (p === 'nf' && nfDraft) nfDraft.title = inp.value;
+  nfDupHint(p);
+  fillChapEls();
+}
+
 let ltPreviewTimer = null;
 function nfChapPreview(p) {
   const el = document.getElementById(p + '-chap');
@@ -3321,6 +3391,7 @@ function nfChapPreview(p) {
   } else el.removeAttribute('data-url');
   el.textContent = '';
   fillChapEls();
+  nfAutoName(p);
 }
 
 /* ⏰ Time is picked by the hour (00:00 … 23:00) — iPhone's own time wheel
@@ -3433,6 +3504,7 @@ function listBodyHtml() {
       '<div class="f-url-line"><input id="nf-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'nf\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
       '<div class="nf-chap nf-chap-form" id="nf-chap"></div>' +
+      '<div class="nf-auto" id="nf-auto"></div>' +
       '<input id="nf-when" type="hidden">' +
       '<div class="nf-when-line">' +
         '<input id="nf-date" type="date" onchange="nfWhenChanged()" oninput="nfWhenChanged()">' +
@@ -3505,6 +3577,7 @@ function renderNotify() {
     }
     nfSyncPick('nf');
     nfSplitWhen();
+    nfAutoReset('nf');
     nfFormChanged('nf');
   }
   fillChapEls();
@@ -3568,6 +3641,8 @@ function nfPickTitle(p) {
     nfShowPick(p);
   }
   if (p === 'nf' && nfDraft) { nfDraft.title = inp.value; if (url) nfDraft.url = url.value; }
+  inp.dataset.auto = '';
+  const h = document.getElementById(p + '-auto'); if (h) h.textContent = '';
   nfFormChanged(p);
 }
 
@@ -3591,7 +3666,16 @@ function remindFromNovel(idx) {
 }
 document.addEventListener('input', e => {
   const tid = e.target && e.target.id;
-  if (/^(nf|day)-(title|url)$/.test(tid || '')) nfFormChanged(tid.split('-')[0]);
+  if (/^(nf|day)-(title|url)$/.test(tid || '')) {
+    const fp = tid.split('-')[0];
+    if (/-title$/.test(tid)) {   // you're typing the name yourself → don't replace it
+      const u = document.getElementById(fp + '-url');
+      if (u) nfAutoDone.add(fp + '|' + u.value.trim());
+      e.target.dataset.auto = '';
+      const h = document.getElementById(fp + '-auto'); if (h) h.textContent = '';
+    }
+    nfFormChanged(fp);
+  }
   if (!nfDraft) return;
   const id = e.target && e.target.id;
   if (id === 'nf-title') nfDraft.title = e.target.value;
@@ -3659,6 +3743,7 @@ function renderDayPopup() {
       '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'day\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
       '<div class="nf-chap nf-chap-form" id="day-chap"></div>' +
+      '<div class="nf-auto" id="day-auto"></div>' +
       '<input id="day-time" type="hidden">' +
       '<select id="day-hour" class="nf-pick nf-hour" onchange="document.getElementById(\'day-time\').value=this.value"></select>' +
       '<div class="nf-dup" id="day-dup"></div>' +
@@ -3674,6 +3759,7 @@ function renderDayPopup() {
   document.getElementById('day-time').value = p(tv.getHours()) + ':' + p(tv.getMinutes());
   fillHourSelect(document.getElementById('day-hour'), document.getElementById('day-time').value);
   nfSyncPick('day');
+  nfAutoReset('day');
   nfFormChanged('day');
   fillChapEls();
 }
