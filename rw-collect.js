@@ -4,11 +4,14 @@
    bookmarklet (or pasted into DevTools › Console). The app wraps this file
    with window.__NV = { u: <Apps Script URL>, t: <secret> }.
 
+   Lists: ① แก้แค้น · ② จีนโบราณ + เกิดใหม่ · ③ ไทยย้อนยุค ·
+          ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list.
+
    It calls ReadAWrite's own list API from your verified browser session (it
    never bypasses or automates the "ยืนยันตัวตน" check), builds the 3 BL
    lists, merges them with the list + marks saved in your Google Sheet
-   (marked novels are dropped, unmarked ones stay, new ones fill the empty
-   slots up to 20), fetches synopses for the newly added novels, and saves
+   (marked novels are dropped, unmarked ones stay — the most-viewed 10 —
+   and new ones fill the empty slots up to 10), fetches synopses for the newly added novels, and saves
    the result back to the Sheet. ReadAWrite blocks connections to Google
    from its pages, so normally it hands the data to the app in a new tab
    (postMessage) and the app saves it; downloading a JSON file to upload
@@ -18,13 +21,16 @@
    runs if a browser strips newlines from the bookmarklet. */
 (async function () {
   var CFG = window.__NV || {};
-  var LIMIT = 20;
+  var LIMIT = 10;
+  var TABS = ['t1', 't2', 't3', 't4'];
   var CATS = [32, 55, 54];
   var CAT_SHORT = { 32: 'Lovely Room', 55: 'Party Room', 54: 'Secret Room' };
   var DRAMA = /ดราม่า|ดรามา/;
   var RE_THAI = /พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค/;
   var T2_SPECS = [{ g: ['11'] }, { g: ['1158'] }, { t: ['1324084'] }, { g: ['5995'] }, { g: ['11', '5995'] }];
   var T3_SPECS = [{ g: ['6017'] }, { t: ['1324082'] }, { t: ['7690'] }];
+  /* ④ = Thai-period lists (from ③) + reborn lists (from ②) + Thai period AND reborn together */
+  var T4_SPECS = [{ g: ['6017', '5995'] }, { t: ['1324082'], g: ['5995'] }];
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
   /* ---- on-page progress panel ---- */
@@ -124,7 +130,12 @@
         it.allTags.some(function (t) { return t.indexOf('จีนโบราณ') >= 0; }) &&
         it.allTags.some(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
     },
-    t3: function (it) { return okBase(it) && it.allTags.some(function (t) { return RE_THAI.test(t); }); }
+    t3: function (it) { return okBase(it) && it.allTags.some(function (t) { return RE_THAI.test(t); }); },
+    t4: function (it) {
+      return okBase(it) &&
+        it.allTags.some(function (t) { return t.indexOf('เกิดใหม่') >= 0; }) &&
+        it.allTags.some(function (t) { return RE_THAI.test(t); });
+    }
   };
 
   function pickTags(it, tab) {
@@ -142,8 +153,14 @@
       var c = all.find(function (t) { return RE_THAI.test(t); });
       if (c) hl.push(c);
       if (all.indexOf('ย้อนยุค') >= 0 && hl.indexOf('ย้อนยุค') < 0) hl.push('ย้อนยุค');
+    } else if (tab === 't4') {
+      var d = all.find(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
+      var e = all.find(function (t) { return RE_THAI.test(t); });
+      if (d) hl.push(d);
+      if (e && e !== d) hl.push(e);
     }
-    var skip = tab === 't1' ? /แก้แค้น/ : (tab === 't2' ? /จีนโบราณ|เกิดใหม่/ : (tab === 't3' ? /พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค|ย้อนยุค/ : null));
+    var skip = tab === 't1' ? /แก้แค้น/ : (tab === 't2' ? /จีนโบราณ|เกิดใหม่/ :
+      (tab === 't3' ? /พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค|ย้อนยุค/ : (tab === 't4' ? /เกิดใหม่|พีเรียดไทย|ย้อนยุคไทย|ไทยย้อนยุค|ย้อนยุค/ : null)));
     var seen = {};
     hl.forEach(function (t) { seen[t] = 1; });
     var other = [];
@@ -311,7 +328,7 @@
     var hadPrev = current.length > 0;
     var out = [];
     var added = 0;
-    ['t1', 't2', 't3'].forEach(function (tab) {
+    TABS.forEach(function (tab) {
       var pool = pools[tab] || [];
       var byGuid = {};
       pool.forEach(function (x) { byGuid[x.guid] = x; });
@@ -324,6 +341,9 @@
         have[x.guid] = 1;
         keep.push(item);
       });
+      /* lists used to hold 20: keep only the 10 most-viewed unmarked ones */
+      keep.sort(function (a, b) { return (b.views || 0) - (a.views || 0); });
+      keep = keep.slice(0, LIMIT);
       for (var i = 0; i < pool.length && keep.length < LIMIT; i++) {
         var c = pool[i];
         if (have[c.guid] || markOf(mk, c)) continue;
@@ -355,8 +375,10 @@
 
   /* Fallback 1: download the pool as a file to upload in the app. */
   async function downloadPools(pools) {
-    var trimmed = { t1: pools.t1.slice(0, 60), t2: pools.t2.slice(0, 60), t3: pools.t3.slice(0, 60) };
-    await fetchSyn([].concat(trimmed.t1.slice(0, 25), trimmed.t2.slice(0, 25), trimmed.t3.slice(0, 25)));
+    var trimmed = {};
+    var first = [];
+    TABS.forEach(function (k) { trimmed[k] = (pools[k] || []).slice(0, 60); first = first.concat(trimmed[k].slice(0, 15)); });
+    await fetchSyn(first);
     progress('');
     var day = new Date().toISOString().slice(0, 10);
     download({ kind: 'novel-suggest-pool', generated_at: new Date().toISOString(), pools: trimmed }, 'novel-suggest_' + day + '.json');
@@ -443,13 +465,17 @@
     var t1raw = await fetchT1();
     var t2raw = await fetchTagLists('② จีนโบราณ + เกิดใหม่', T2_SPECS);
     var t3raw = await fetchTagLists('③ ไทยย้อนยุค', T3_SPECS);
-    var pools = { t1: buildPool(t1raw, 't1'), t2: buildPool(t2raw, 't2'), t3: buildPool(t3raw, 't3') };
-    log('พบนิยายที่ตรงเงื่อนไข: ① ' + pools.t1.length + ' · ② ' + pools.t2.length + ' · ③ ' + pools.t3.length + ' เรื่อง');
-    ['t1', 't2', 't3'].forEach(function (k) {
+    var t4raw = await fetchTagLists('④ เกิดใหม่ + ไทยย้อนยุค', T4_SPECS);
+    var pools = {
+      t1: buildPool(t1raw, 't1'), t2: buildPool(t2raw, 't2'), t3: buildPool(t3raw, 't3'),
+      t4: buildPool([].concat(t4raw, t3raw, t2raw), 't4')
+    };
+    log('พบนิยายที่ตรงเงื่อนไข: ① ' + pools.t1.length + ' · ② ' + pools.t2.length + ' · ③ ' + pools.t3.length + ' · ④ ' + pools.t4.length + ' เรื่อง');
+    TABS.forEach(function (k) {
       var top = pools[k][0];
       if (top) console.log('[นิยายแนะนำ] ' + k + ' #1: ' + top.name + ' — ' + top.views.toLocaleString('en-US') + ' views');
     });
-    if (!pools.t1.length && !pools.t2.length && !pools.t3.length) throw new Error('ไม่พบข้อมูลเลย — API อาจเปลี่ยน ลองใหม่อีกครั้งหรือแจ้งผู้พัฒนา');
+    if (!pools.t1.length && !pools.t2.length && !pools.t3.length && !pools.t4.length) throw new Error('ไม่พบข้อมูลเลย — API อาจเปลี่ยน ลองใหม่อีกครั้งหรือแจ้งผู้พัฒนา');
 
     var state = null;
     if (CFG.u && CFG.t) {
