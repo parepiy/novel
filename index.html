@@ -1668,7 +1668,8 @@ function renderStats() {
 const SG_TABS = [
   { key: 't1', label: '① แก้แค้น', desc: '🏷️ แท็ก แก้แค้น' },
   { key: 't2', label: '② จีนโบราณ + เกิดใหม่', desc: '🏷️ แท็ก จีนโบราณ + เกิดใหม่' },
-  { key: 't3', label: '③ ไทยย้อนยุค', desc: '🏷️ แท็ก พีเรียดไทย / ไทยย้อนยุค' }
+  { key: 't3', label: '③ ไทยย้อนยุค', desc: '🏷️ แท็ก พีเรียดไทย / ไทยย้อนยุค' },
+  { key: 't4', label: '④ เกิดใหม่ + ไทยย้อนยุค', desc: '🏷️ แท็ก เกิดใหม่ + พีเรียดไทย / ไทยย้อนยุค' }
 ];
 const SG_MARKS = {
   reading:        { label: 'Reading',        cls: 'mk-reading' },
@@ -1677,7 +1678,7 @@ const SG_MARKS = {
 };
 const SG_MARK_ORDER = ['reading', 'finished', 'not_interested'];
 const SG_DEFAULT_REASONS = ['เกี่ยวกับเด็ก', 'แต่งไม่จบ', 'รีวิวไม่ดี', 'ไม่ชอบพล็อต', 'ไม่ชอบสำนวน'];
-const SG_LIMIT = 20;
+const SG_LIMIT = 10;   // novels per list (the collector keeps the same number)
 const SG_REMIND_MARK = '#suggest';   // reminders whose URL contains this repeat weekly
 const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -1768,6 +1769,8 @@ function sgMerge(current, pools, marks) {
       keep.push(fresh ? Object.assign({}, fresh, { tab: key, syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 }));
       have.add(x.guid);
     });
+    keep.sort((a, b) => b.views - a.views);
+    keep.splice(SG_LIMIT);   // lists used to hold 20: keep the 10 most-viewed unmarked ones
     for (const c of pool) {
       if (keep.length >= SG_LIMIT) break;
       if (have.has(c.guid) || sgMarkIn(mk, c)) continue;
@@ -1862,7 +1865,12 @@ function renderSuggest() {
     main.innerHTML = '<div class="loading"><div class="spinner"></div><span>กำลังโหลดนิยายแนะนำ...</span></div>';
     return;
   }
-  const inTab = k => sgList.filter(x => x.tab === k).sort((a, b) => b.views - a.views);
+  // marked novels stay visible until the next update; unmarked ones: the 10 most viewed
+  const inTab = k => {
+    let free = 0;
+    return sgList.filter(x => x.tab === k).sort((a, b) => b.views - a.views)
+      .filter(x => sgMarkOf(x) || free++ < SG_LIMIT);
+  };
   const tabsHtml = SG_TABS.map(t => {
     const n = inTab(t.key).filter(x => !sgMarkOf(x)).length;
     return '<button class="sg-tb' + (sgTab === t.key ? ' active' : '') + '" onclick="sgSetTab(\'' + t.key + '\')">' + t.label + '<span class="n">' + n + '</span></button>';
@@ -1899,7 +1907,9 @@ function renderSuggest() {
   } else if (!sgList.length) {
     body = '<div class="sg-empty">ยังไม่มีรายการแนะนำ — ทำตามขั้นตอนด้านบนเพื่ออัปเดตครั้งแรก</div>';
   } else if (!shown.length) {
-    body = '<div class="sg-empty">' + (items.length ? 'มาร์กครบทุกเรื่องในลิสต์นี้แล้ว 🎉 — อัปเดตรอบหน้าจะมีเรื่องใหม่มาแทน' : 'ลิสต์นี้ยังไม่มีนิยาย') + '</div>';
+    body = '<div class="sg-empty">' + (items.length ? 'มาร์กครบทุกเรื่องในลิสต์นี้แล้ว 🎉 — อัปเดตรอบหน้าจะมีเรื่องใหม่มาแทน'
+      : cur.key === 't4' ? 'ลิสต์ใหม่ ④ ยังว่าง — ต้องใช้บุ๊กมาร์กเวอร์ชันใหม่:<br>กด <b>🔄 อัปเดตรายการ</b> แล้วลากปุ่ม <b>💡 อัปเดตนิยายแนะนำ</b> ไปวางที่แถบบุ๊กมาร์กแทนอันเดิม<br>(Safari: <b>คัดลอกลิงก์บุ๊กมาร์ก</b> แล้ววางแทน URL ของบุ๊กมาร์กเดิม) จากนั้นรันบน readawrite.com อีกครั้ง'
+      : 'ลิสต์นี้ยังไม่มีนิยาย') + '</div>';
   } else {
     body = '<div class="sg-grid">' + shown.map(o => sgCardHtml(o.x, o.rank)).join('') + '</div>';
   }
