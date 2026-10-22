@@ -4,7 +4,7 @@
    bookmarklet (or pasted into DevTools › Console). The app wraps this file
    with window.__NV = { u: <Apps Script URL>, t: <secret> }.
 
-   Lists: ① แก้แค้น · ② จีนโบราณ + เกิดใหม่ · ③ ไทยย้อนยุค ·
+   Lists: ① แก้แค้น · ② จีนโบราณ + เกิดใหม่ · ③ ไทยย้อนยุค (not เกิดใหม่) ·
           ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list.
 
    It calls ReadAWrite's own list API from your verified browser session (it
@@ -130,7 +130,11 @@
         it.allTags.some(function (t) { return t.indexOf('จีนโบราณ') >= 0; }) &&
         it.allTags.some(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
     },
-    t3: function (it) { return okBase(it) && it.allTags.some(function (t) { return RE_THAI.test(t); }); },
+    /* ③ skips reborn novels — those belong to ④ */
+    t3: function (it) {
+      return okBase(it) && it.allTags.some(function (t) { return RE_THAI.test(t); }) &&
+        !it.allTags.some(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
+    },
     t4: function (it) {
       return okBase(it) &&
         it.allTags.some(function (t) { return t.indexOf('เกิดใหม่') >= 0; }) &&
@@ -320,11 +324,15 @@
     return m[String(x.guid)] || (x.uid && m[String(x.uid)]) || m['n:' + normName(x.name)] || '';
   }
   /* List ① used to match titles; old title-only entries (no แก้แค้น tag) don't carry over. */
-  function stillFits(tab, x) {
+  function stillFits(tab, x, inT4) {
+    if (tab === 't3') return !inT4[x.guid] && !(x.tags || []).concat(x.hl || []).some(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
     return tab !== 't1' || (x.hl || []).some(function (t) { return t.indexOf('แก้แค้น') >= 0; });
   }
   function merge(current, pools, marks) {
     var mk = markMap(marks);
+    /* reborn Thai-period novels (④) that were saved in ③ before the split leave ③ */
+    var inT4 = {};
+    (pools.t4 || []).concat(current.filter(function (x) { return x.tab === 't4'; })).forEach(function (x) { inT4[x.guid] = 1; });
     var hadPrev = current.length > 0;
     var out = [];
     var added = 0;
@@ -334,7 +342,7 @@
       pool.forEach(function (x) { byGuid[x.guid] = x; });
       var keep = [];
       var have = {};
-      current.filter(function (x) { return x.tab === tab && !markOf(mk, x) && (byGuid[x.guid] || stillFits(tab, x)); }).forEach(function (x) {
+      current.filter(function (x) { return x.tab === tab && !markOf(mk, x) && (byGuid[x.guid] || stillFits(tab, x, inT4)); }).forEach(function (x) {
         if (have[x.guid]) return;
         var fresh = byGuid[x.guid];
         var item = fresh ? Object.assign({}, fresh, { syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 });
