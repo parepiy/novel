@@ -49,13 +49,24 @@ function stampAdded_(sh, row) {
   sh.getRange(row, 9).setNumberFormat('@').setValue(Utilities.formatDate(new Date(), ADDED_TZ, 'yyyy-MM-dd'));
 }
 
-// Columns A..I = title, summary, url, tags(|-joined), source, cover, star, status, added_at
+// Columns J..L = 📖 progress (chapter you read up to), progress_at (last read, yyyy-MM-dd), 📝 note
+const META_COLS = { progress: 10, progress_at: 11, note: 12 };
+function metaSet_(sh, row, d) {
+  Object.keys(META_COLS).forEach(k => {
+    if (d[k] === undefined || d[k] === null) return;   // not sent → keep what's there
+    const c = META_COLS[k];
+    if (!sh.getRange(1, c).getValue()) sh.getRange(1, c).setValue(k);
+    sh.getRange(row, c).setNumberFormat('@').setValue(sgText_(String(d[k])));
+  });
+}
+
+// Columns A..I = title, summary, url, tags(|-joined), source, cover, star, status, added_at; J..L see above
 function readAll_() {
   const sh = getSheet_();
   const last = sh.getLastRow();
   const books = [];
   if (last >= 2) {
-    const vals = sh.getRange(2, 1, last - 1, 9).getValues();
+    const vals = sh.getRange(2, 1, last - 1, 12).getValues();
     vals.forEach((r, i) => {
       const title = (r[0] || '').toString().trim();
       if (!title) return;
@@ -69,7 +80,10 @@ function readAll_() {
         cover: (r[5] || '').toString(),
         star: parseInt(r[6], 10) || 0,
         status: (r[7] || '').toString().trim(),
-        added: addedText_(r[8])
+        added: addedText_(r[8]),
+        progress: (r[9] || '').toString(),
+        progress_at: addedText_(r[10]),
+        note: (r[11] || '').toString()
       });
     });
   }
@@ -150,7 +164,8 @@ function doPost(e) {
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
       sh.appendRow([d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']);
       stampAdded_(sh, sh.getLastRow());
-      return json_({ ok: true, row: sh.getLastRow(), cover: cover });
+      metaSet_(sh, sh.getLastRow(), d);
+      return json_({ ok: true, row: sh.getLastRow(), cover: cover, meta: true });
     }
 
     if (action === 'edit') {
@@ -160,7 +175,24 @@ function doPost(e) {
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
       // columns A..H only — the date added (column I) is kept as it is
       sh.getRange(row, 1, 1, 8).setValues([[d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']]);
-      return json_({ ok: true, row: row, cover: cover });
+      metaSet_(sh, row, d);   // progress / note, only when sent
+      return json_({ ok: true, row: row, cover: cover, meta: true });
+    }
+
+    // 📖 "read up to": set after ✓ เสร็จ on a reminder. The title must still be on
+    // that row (rows shift when a novel is deleted), otherwise it is found by title.
+    if (action === 'progress') {
+      let row = parseInt(d.row, 10);
+      const want = String(d.title || '').trim();
+      const at = row >= 2 ? String(sh.getRange(row, 1).getValue()).trim() : '';
+      if (!want || at !== want) {
+        const titles = sh.getRange(1, 1, sh.getLastRow(), 1).getValues();
+        row = 0;
+        for (let i = 1; i < titles.length; i++) if (String(titles[i][0]).trim() === want) { row = i + 1; break; }
+      }
+      if (!row) return json_({ ok: false, error: 'not found' });
+      metaSet_(sh, row, { progress: d.progress, progress_at: d.progress_at });
+      return json_({ ok: true, row: row });
     }
 
     if (action === 'delete') {
