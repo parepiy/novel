@@ -1764,7 +1764,7 @@ function sgMerge(current, pools, marks) {
     // list ① used to match titles: old title-only entries (no แก้แค้น tag) don't carry over
     const fits = x => key === 't3' ? !sgReborn3(x, pools)
       : key !== 't1' || byGuid.has(x.guid) || (x.hl || []).some(t => t.indexOf('แก้แค้น') >= 0);
-    current.filter(x => x.tab === key && !sgMarkIn(mk, x) && fits(x)).forEach(x => {
+    current.filter(x => x.tab === key && !sgMarkIn(mk, x) && !sgFindInLibrary(x) && fits(x)).forEach(x => {
       if (have.has(x.guid)) return;
       const fresh = byGuid.get(x.guid);
       keep.push(fresh ? Object.assign({}, fresh, { tab: key, syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 }));
@@ -1774,7 +1774,7 @@ function sgMerge(current, pools, marks) {
     keep.splice(SG_LIMIT);   // lists used to hold 20: keep the 10 most-viewed unmarked ones
     for (const c of pool) {
       if (keep.length >= SG_LIMIT) break;
-      if (have.has(c.guid) || sgMarkIn(mk, c) || (key === 't3' && sgReborn3(c, pools))) continue;
+      if (have.has(c.guid) || sgMarkIn(mk, c) || sgFindInLibrary(c) || (key === 't3' && sgReborn3(c, pools))) continue;
       have.add(c.guid);
       keep.push(Object.assign({}, c, { tab: key, is_new: hadPrev ? 1 : 0 }));
       if (hadPrev) added++;
@@ -1876,8 +1876,9 @@ function renderSuggest() {
   // marked novels stay visible until the next update; unmarked ones: the 10 most viewed
   const inTab = k => {
     let free = 0;
+    // unmarked novels already in your library are skipped (ones you just marked stay until the next update)
     return sgList.filter(x => x.tab === k && !(k === 't3' && sgReborn3(x))).sort((a, b) => b.views - a.views)
-      .filter(x => sgMarkOf(x) || free++ < SG_LIMIT);
+      .filter(x => sgMarkOf(x) || (!sgFindInLibrary(x) && free++ < SG_LIMIT));
   };
   const tabsHtml = SG_TABS.map(t => {
     const n = inTab(t.key).filter(x => !sgMarkOf(x)).length;
@@ -1892,7 +1893,7 @@ function renderSuggest() {
   const panelOpen = sgPanelOpen || !sgList.length;
 
   const meta = '<div class="sg-meta">' +
-      '<span>' + cur.desc + ' · 🚫 ไม่มีดราม่า · เรียงตามยอดวิว</span>' +
+      '<span>' + cur.desc + ' · 🚫 ไม่มีดราม่า · 📚 ไม่รวมเรื่องที่มีในคลัง · เรียงตามยอดวิว</span>' +
       (ago ? '<span' + (ago.stale ? ' class="stale"' : '') + '>' + (ago.stale ? '⚠️ ' : '🕒 ') + ago.text + '</span>' : '') +
       (markedCount ? '<label class="sg-hide"><input type="checkbox"' + (sgHideMarked ? ' checked' : '') + ' onchange="sgToggleHide(this.checked)"> ซ่อนที่มาร์กแล้ว (' + markedCount + ')</label>' : '') +
       '<span class="sg-actions">' +
@@ -2359,8 +2360,11 @@ function sgStartBridge() {
         creds = isEditor() ? cfg() : { url: String(m.u || ''), token: String(m.t || '') };
         if (!creds.url || !creds.token) throw new Error('ยังไม่ได้ตั้งค่า URL/รหัสลับ');
         const st = await gasPostWith(creds, { action: 'sg_state' });
+        // your library, so the collector skips novels you already have
+        let books = allBooks;
+        try { const b = await gasPostWith(creds, { action: 'list' }); if (Array.isArray(b.books)) books = b.books; } catch (e) {}
         setBusy(true, 'กำลังดึงเรื่องย่อเรื่องใหม่ (แท็บ readawrite)');
-        reply({ type: 'nv-state', list: st.list || [], marks: st.marks || [] });
+        reply({ type: 'nv-state', list: st.list || [], marks: st.marks || [], lib: (books || []).map(b => ({ t: b.title || '', u: b.url || '' })) });
       } else if (m.type === 'nv-save' && creds && !saving) {
         saving = true;
         setBusy(true, 'กำลังบันทึกนิยายแนะนำ');
