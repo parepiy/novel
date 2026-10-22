@@ -42,6 +42,8 @@
   --seg-bg:rgba(255,255,255,.55);
   --read:#0e7490;--read-bg:rgba(8,145,178,.08);--read-bd:rgba(8,145,178,.32);
   --fin:#2563eb;--fin-bg:rgba(37,99,235,.08);--fin-bd:rgba(37,99,235,.3);
+  --wish:#b45309;--wish-bg:rgba(217,119,6,.09);--wish-bd:rgba(217,119,6,.36);
+  --bought:#9333ea;--bought-bg:rgba(147,51,234,.08);--bought-bd:rgba(147,51,234,.32);
   --chip-meb-bd:rgba(8,145,178,.35);--chip-raw-bd:rgba(124,58,237,.32);--sfb-bd:rgba(217,119,6,.35);
   --chip-act:linear-gradient(90deg,#06b6d4,#6366f1);--chip-act-fg:#fff;
   --chip-raw-act:linear-gradient(90deg,#8b5cf6,#d946ef);--chip-raw-act-fg:#fff;
@@ -94,6 +96,8 @@
   --seg-bg:rgba(255,255,255,.04);
   --read:#67e8f9;--read-bg:rgba(34,211,238,.1);--read-bd:rgba(103,232,249,.3);
   --fin:#93c5fd;--fin-bg:rgba(96,165,250,.1);--fin-bd:rgba(147,197,253,.3);
+  --wish:#fcd34d;--wish-bg:rgba(252,211,77,.1);--wish-bd:rgba(252,211,77,.34);
+  --bought:#f0abfc;--bought-bg:rgba(240,171,252,.1);--bought-bd:rgba(240,171,252,.34);
   --chip-meb-bd:rgba(103,232,249,.35);--chip-raw-bd:rgba(167,139,250,.38);--sfb-bd:rgba(252,211,77,.35);
   --chip-act:linear-gradient(90deg,#67e8f9,#a5b4fc);--chip-act-fg:#06101c;
   --chip-raw-act:linear-gradient(90deg,#c4b5fd,#f0abfc);--chip-raw-act-fg:#0e0626;
@@ -426,6 +430,8 @@ body.editor .suggest-tab{display:inline-block;}
 .st-pill.st-toread{background:rgba(200,138,0,.16);color:#a06f00;}
 .st-pill.st-finished{background:rgba(46,158,106,.16);color:#25805a;}
 .st-pill.st-dropped{background:rgba(140,140,140,.16);color:var(--dim);}
+.st-pill.st-wish{background:rgba(217,119,6,.14);color:#b45309;}
+.st-pill.st-bought{background:rgba(147,51,234,.12);color:#9333ea;}
 /* form: status pick chips */
 .f-status-pick{display:flex;gap:8px;flex-wrap:wrap;}
 .stpick{background:none;border:1px solid var(--bd2);color:var(--dim);padding:6px 16px;border-radius:18px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.86rem;cursor:pointer;transition:all .12s;}
@@ -530,6 +536,13 @@ body.editor #m-quick{display:flex;}
 .m-link.raw-link{color:var(--raw2);border-color:var(--rbd);}
 .m-edit{display:none;margin-top:10px;font-size:.84rem;color:var(--dim);border:1px solid var(--bd2);padding:6px 14px;border-radius:8px;background:none;cursor:pointer;font-family:inherit;}
 .m-edit:hover{color:var(--mint2);border-color:var(--mint);}
+.m-meb{display:none;margin-top:10px;font-size:.84rem;color:var(--wish,#b45309);border:1px solid var(--wish-bd,rgba(217,119,6,.36));padding:6px 14px;border-radius:8px;text-decoration:none;}
+.f-dup{font-size:.8rem;color:var(--overdue);font-weight:600;margin-top:4px;}
+.f-dup:empty{display:none;}
+.m-prog{font-size:.8rem;color:var(--raw2);margin-top:4px;line-height:1.45;}
+.m-prog:empty,.m-note:empty{display:none;}
+.m-note{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--wish-bg,rgba(217,119,6,.08));border:1px dashed var(--wish-bd,rgba(217,119,6,.36));font-size:.86rem;line-height:1.6;white-space:pre-wrap;color:var(--text);}
+.m-note::before{content:'📝 โน้ตของฉัน';display:block;font-size:.74rem;font-weight:700;color:var(--wish,#b45309);margin-bottom:3px;}
 body.editor .m-edit{display:inline-block;}
 .m-close{position:absolute;top:13px;right:14px;background:transparent;border:none;font-size:1.25rem;color:var(--mute);cursor:pointer;padding:4px;}
 
@@ -637,6 +650,7 @@ body.editor .m-edit{display:inline-block;}
 .sh-nc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--mute);}
 .sh-play{position:absolute;right:6px;bottom:6px;z-index:1;width:30px;height:30px;border-radius:50%;border:none;background:var(--mint);color:#fff;font-size:.78rem;display:flex;align-items:center;justify-content:center;padding-left:2px;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s;}
 .sh-play:hover{transform:scale(1.1);}
+.sh-prog{margin-top:2px;font-size:.66rem;color:var(--raw2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sh-title{margin-top:5px;font-size:.74rem;font-weight:600;line-height:1.35;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 @media(min-width:700px){.shelf{padding:16px 20px 12px;}.sh-card{width:118px;}}
 /* reminder field highlighted when pre-filled from a novel */
@@ -719,6 +733,8 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .fb.st-reading{color:var(--read);}
 :root[data-theme] .fb.st-finished{color:var(--fin);}
 :root[data-theme] .fb.st-dropped{color:var(--mute);}
+:root[data-theme] .fb.st-wish{color:var(--wish);}
+:root[data-theme] .fb.st-bought{color:var(--bought);}
 :root[data-theme] .sfb{border-color:var(--sfb-bd);}
 :root[data-theme] .fb.active{color:var(--chip-act-fg);font-weight:600;background:var(--chip-act);border-color:transparent;box-shadow:var(--grad-glow);}
 :root[data-theme] .fb.raw-fb.active{color:var(--chip-raw-act-fg);background:var(--chip-raw-act);}
@@ -758,6 +774,8 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .st-pill.st-reading{color:var(--read);background:var(--read-bg);border:1px solid var(--read-bd);}
 :root[data-theme] .st-pill.st-finished{color:var(--fin);background:var(--fin-bg);border:1px solid var(--fin-bd);}
 :root[data-theme] .st-pill.st-dropped{color:var(--mute);background:var(--tag-bg);border:1px solid var(--line);}
+:root[data-theme] .st-pill.st-wish{color:var(--wish);background:var(--wish-bg);border:1px solid var(--wish-bd);}
+:root[data-theme] .st-pill.st-bought{color:var(--bought);background:var(--bought-bg);border:1px solid var(--bought-bd);}
 
 /* continue-reading shelf */
 :root[data-theme] .shelf{border-bottom:none;padding:14px 14px 4px;}
@@ -801,6 +819,10 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .stpick.st-reading.active,:root[data-theme] .mq-st.active.st-reading{color:var(--read);background:var(--read-bg);border-color:var(--read-bd);box-shadow:0 0 10px var(--read-bg);}
 :root[data-theme] .stpick.st-finished.active,:root[data-theme] .mq-st.active.st-finished{color:var(--fin);background:var(--fin-bg);border-color:var(--fin-bd);box-shadow:0 0 10px var(--fin-bg);}
 :root[data-theme] .stpick.st-dropped.active{color:var(--dim);background:var(--dim-bg);border-color:var(--line2);}
+:root[data-theme] .stpick.st-wish.active,:root[data-theme] .mq-st.active.st-wish{color:var(--wish);background:var(--wish-bg);border-color:var(--wish-bd);box-shadow:0 0 10px var(--wish-bg);font-weight:600;}
+:root[data-theme] .stpick.st-bought.active,:root[data-theme] .mq-st.active.st-bought{color:var(--bought);background:var(--bought-bg);border-color:var(--bought-bd);box-shadow:0 0 10px var(--bought-bg);font-weight:600;}
+:root[data-theme] .bar-fill.wish{background:linear-gradient(90deg,#f59e0b,#fcd34d);}
+:root[data-theme] .bar-fill.bought{background:linear-gradient(90deg,#c026d3,#f0abfc);}
 
 /* glass panels: stats, notify, calendar, suggestions */
 :root[data-theme] .stat-tile,:root[data-theme] .stat-sec,:root[data-theme] .nf-item,:root[data-theme] .nf-form,:root[data-theme] .nf-status,:root[data-theme] .cal-wrap,:root[data-theme] .sg-card,:root[data-theme] .sg-panel{
@@ -898,15 +920,18 @@ body.editor .m-edit{display:inline-block;}
         </div>
         <div class="m-tags" id="m-tags"></div>
         <div class="m-added" id="m-added"></div>
+        <div class="m-prog" id="m-prog"></div>
       </div>
     </div>
     <div class="m-summary" id="m-summary"></div>
+    <div class="m-note" id="m-note"></div>
     <div id="m-quick"></div>
     <div class="mq-msg" id="m-quick-msg"></div>
     <div class="m-actions">
       <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener" onclick="markRead(window._mIdx)">อ่านนิยาย →</a>
       <button class="m-edit" id="m-edit" onclick="openEdit(window._mIdx)">✎ แก้ไข</button>
       <button class="m-edit" id="m-remind" onclick="remindFromNovel(window._mIdx)" title="ตั้งเตือนให้อ่านเรื่องนี้">🔔 เตือน</button>
+      <a class="m-meb" id="m-meb" href="#" target="_blank" rel="noopener" title="ค้นหาเรื่องนี้ใน MEB">🛒 หาใน MEB</a>
     </div>
   </div>
 </div>
@@ -916,7 +941,8 @@ body.editor .m-edit{display:inline-block;}
   <div class="f-card" id="form-card">
     <button class="ov-close" onclick="closeForm()">✕</button>
     <h3 id="form-title">เพิ่มนิยาย</h3>
-    <div class="f-row"><label>ชื่อเรื่อง *</label><input type="text" id="f-title"></div>
+    <div class="f-row"><label>ชื่อเรื่อง *</label><input type="text" id="f-title" oninput="formDupHint()">
+      <div class="f-dup" id="f-dup"></div></div>
     <div class="f-two">
       <div class="f-row"><label>หมวด</label>
         <select id="f-source"><option value="meb">MEB Market</option><option value="raw">RAW</option></select>
@@ -938,11 +964,13 @@ body.editor .m-edit{display:inline-block;}
     </div>
     <div class="f-row"><label>ลิงก์อ่านนิยาย</label>
       <div class="f-url-line">
-        <input type="text" id="f-url" placeholder="https://...">
+        <input type="text" id="f-url" placeholder="https://..." oninput="formDupHint()">
         <button type="button" class="btn btn-ghost btn-sm" onclick="pasteUrl()" title="วางลิงก์ที่คัดลอก">📋 วาง</button>
       </div>
     </div>
     <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
+    <div class="f-row"><label>📖 อ่านถึง</label><input type="text" id="f-progress" placeholder="เช่น ตอนที่ 25 (เติมให้อัตโนมัติเมื่อกด ✓ เสร็จ ในแจ้งเตือน)"></div>
+    <div class="f-row"><label>📝 โน้ต / รีวิวส่วนตัว</label><textarea id="f-note" placeholder="ทำไมให้กี่ดาว คู่ที่ชอบ ฉากที่ประทับใจ…"></textarea></div>
     <div class="f-row"><label>รูปปก</label>
       <div class="f-cover-line">
         <img class="f-cover-prev" id="f-cover-prev" alt="" style="display:none">
@@ -1061,16 +1089,20 @@ let formTags = new Set();   // tags selected in the add/edit form
 const STATUS_META = {
   reading:  { label: 'Reading',  cls: 'st-reading' },
   finished: { label: 'Finished', cls: 'st-finished' },
-  dropped:  { label: 'Dropped',  cls: 'st-dropped' }
+  dropped:  { label: 'Dropped',  cls: 'st-dropped' },
+  wishlist: { label: '🛒 อยากซื้อ', cls: 'st-wish' },
+  bought:   { label: '✅ ซื้อแล้ว', cls: 'st-bought' }
 };
-const STATUS_ORDER = ['reading', 'finished', 'dropped'];
+const STATUS_ORDER = ['reading', 'finished', 'dropped', 'wishlist', 'bought'];
 /* Normalize a raw status cell to one of the keys above (case-insensitive,
    also accepts the Thai labels), or '' if it isn't a known status. */
 const STATUS_ALIAS = {
   reading: 'reading', finished: 'finished', dropped: 'dropped',
   read: 'finished', done: 'finished', complete: 'finished', completed: 'finished',
   drop: 'dropped', abandoned: 'dropped',
-  'กำลังอ่าน': 'reading', 'อ่านจบ': 'finished', 'จบ': 'finished', 'เลิกอ่าน': 'dropped', 'ดรอป': 'dropped'
+  'กำลังอ่าน': 'reading', 'อ่านจบ': 'finished', 'จบ': 'finished', 'เลิกอ่าน': 'dropped', 'ดรอป': 'dropped',
+  wishlist: 'wishlist', wish: 'wishlist', want: 'wishlist', 'want to buy': 'wishlist', 'อยากซื้อ': 'wishlist',
+  bought: 'bought', owned: 'bought', purchased: 'bought', 'ซื้อแล้ว': 'bought'
 };
 /* Sheet column I "date added" → 'YYYY-MM-DD' ('' if unknown).
    Accepts yyyy-mm-dd and d/m/yyyy, including Buddhist-era years. */
@@ -1156,6 +1188,9 @@ function parseCSV(text) {
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
       status:  normStatus(cols[7]),
       added:   normAdded(cols[8]),
+      progress:   (cols[9] || '').trim(),     // 📖 chapter read up to
+      progressAt: normAdded(cols[10]),        // last read
+      note:       (cols[11] || '').trim(),    // 📝 your note
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1198,6 +1233,9 @@ function fromGas(b) {
     star:    parseInt(b.star, 10) || 0,
     status:  normStatus(b.status),
     added:   normAdded(b.added),
+    progress:   String(b.progress || '').trim(),
+    progressAt: normAdded(b.progress_at),
+    note:       String(b.note || '').trim(),
     row:     b.row,
   };
 }
@@ -1222,7 +1260,13 @@ async function refreshFromGas() {
   if (!c.url) return;
   try {
     const books = await gasGetBooks();
+    const prev = allBooks;
     allBooks = books.map(fromGas);
+    // an older Code.gs doesn't send columns J–L yet: keep what the published sheet had
+    if (books.length && !('progress' in books[0])) allBooks.forEach(b => {
+      const o = prev.find(x => x.row === b.row && x.title === b.title);
+      if (o) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
+    });
     renderAll();
   } catch(e) { /* keep CSV data on failure */ }
 }
@@ -1313,7 +1357,8 @@ function getFilteredBooks() {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
     const starOk = activeStar === null || b.star === activeStar;
     const statusOk = activeStatus === null || b.status === activeStatus;
-    const searchOk = !q || b.title.toLowerCase().includes(q) || (searchScope === 'summary' && b.summary.toLowerCase().includes(q));
+    const searchOk = !q || b.title.toLowerCase().includes(q) ||
+      (searchScope === 'summary' && (b.summary.toLowerCase().includes(q) || (isEditor() && (b.note || '').toLowerCase().includes(q))));
     return tagOk && starOk && statusOk && searchOk;
   });
   return sortBooks(list);
@@ -1371,7 +1416,8 @@ function shelfHtml() {
     const idx = allBooks.indexOf(b);
     const img = b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
     const play = b.url ? `<button class="sh-play" onclick="continueRead(${idx});event.stopPropagation()" title="อ่านต่อ">▶</button>` : '';
-    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${play}</div><div class="sh-title">${esc(b.title)}</div></div>`;
+    const prog = b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
+    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${play}</div><div class="sh-title">${esc(b.title)}</div>${prog}</div>`;
   }).join('');
   return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${reading.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
 }
@@ -1607,6 +1653,7 @@ function renderStats() {
   const avg = rated.length ? (rated.reduce((s, b) => s + b.star, 0) / rated.length) : 0;
   const cnt = k => books.filter(b => b.status === k).length;
   const nReading = cnt('reading'), nFinished = cnt('finished'), nDropped = cnt('dropped');
+  const nWish = cnt('wishlist'), nBought = cnt('bought');
 
   const bar = (label, val, cls) => {
     const pct = max ? Math.round(val / max * 100) : 0;
@@ -1633,12 +1680,14 @@ function renderStats() {
     bar('MEB', nMeb, '') + bar('RAW', nRaw, 'raw') + '</div>';
 
   // ---- by status ----
-  const nNone = total - nReading - nFinished - nDropped;
-  max = Math.max(nReading, nFinished, nDropped, nNone, 1);
+  const nNone = total - nReading - nFinished - nDropped - nWish - nBought;
+  max = Math.max(nReading, nFinished, nDropped, nWish, nBought, nNone, 1);
   const statusSec = '<div class="stat-sec"><h3>📖 สถานะการอ่าน</h3>' +
     bar('Reading', nReading, 'reading') +
     bar('Finished', nFinished, 'finished') +
     bar('Dropped', nDropped, 'dropped') +
+    (nWish ? bar('อยากซื้อ', nWish, 'wish') : '') +
+    (nBought ? bar('ซื้อแล้ว', nBought, 'bought') : '') +
     bar('ยังไม่ระบุ', nNone, 'none') + '</div>';
 
   // ---- star distribution ----
@@ -2506,6 +2555,15 @@ function openModal(idx) {
   document.getElementById('m-tags').innerHTML = b.tags.map(t => `<span class="m-tag">${esc(t)}</span>`).join('');
   document.getElementById('m-added').textContent = b.added ? '📅 เพิ่มเมื่อ ' + sgThaiDate(b.added) : '';
   document.getElementById('m-summary').textContent = b.summary;
+  const pr = document.getElementById('m-prog');
+  pr.textContent = (b.progress || b.progressAt)
+    ? '📖 อ่านถึง ' + (b.progress || '—') + (b.progressAt ? ' · อ่านล่าสุด ' + sgThaiDate(b.progressAt) : '') : '';
+  const nt = document.getElementById('m-note');
+  nt.textContent = isEditor() && b.note ? b.note : '';
+  const meb = document.getElementById('m-meb');
+  const wantMeb = b.status === 'wishlist' || b.status === 'bought';
+  meb.style.display = wantMeb ? 'inline-block' : 'none';
+  meb.href = mebSearchUrl(b);
   const link = document.getElementById('m-link');
   link.href = b.url || '#';
   link.className = 'm-link' + (b.source === 'raw' ? ' raw-link' : '');
@@ -2520,6 +2578,12 @@ function openModal(idx) {
   renderModalQuick(b);
   document.getElementById('modal-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+/* 🛒 the novel on MEB: its own link when it's an MEB link, otherwise a search */
+function mebSearchUrl(b) {
+  if (/mebmarket\.com/i.test(b.url || '')) return b.url;
+  return 'https://www.google.com/search?q=' + encodeURIComponent('site:mebmarket.com ' + b.title);
 }
 
 /* Quick star + status editing straight from the detail popup (editor only) */
@@ -2564,6 +2628,8 @@ async function quickSave(field, value) {
     renderGrid();                       // reflect the change on the card behind
     msg.textContent = 'บันทึกแล้ว ✓';
     setTimeout(() => { msg.style.opacity = '0'; }, 1500);
+    if (field === 'status') { const mb = document.getElementById('m-meb'); if (mb) { mb.style.display = (value === 'wishlist' || value === 'bought') ? 'inline-block' : 'none'; mb.href = mebSearchUrl(b); } }
+    if (field === 'status' && value === 'bought') offerClearReminders(b.title);
   } catch (err) {
     b[field] = prev;                    // rollback
     renderModalQuick(b);
@@ -2591,6 +2657,7 @@ async function pasteUrl() {
     const name = txt.replace(/https?:\/\/\S+/g, '').trim();
     if (name) ti.value = name;
   }
+  formDupHint();
 }
 
 /* 📋 in the 🔔 forms (p = 'nf' list form, 'day' calendar popup). If no novel is
@@ -2723,6 +2790,9 @@ function openAdd() {
   document.getElementById('f-newtag').value = '';
   document.getElementById('f-url').value = '';
   document.getElementById('f-summary').value = '';
+  document.getElementById('f-progress').value = '';
+  document.getElementById('f-note').value = '';
+  document.getElementById('f-dup').textContent = '';
   document.getElementById('f-image').value = '';
   document.getElementById('f-cover-prev').style.display = 'none';
   document.getElementById('f-remove-line').style.display = 'none';
@@ -2748,6 +2818,9 @@ function openEdit(idx) {
   document.getElementById('f-newtag').value = '';
   document.getElementById('f-url').value = b.url || '';
   document.getElementById('f-summary').value = b.summary || '';
+  document.getElementById('f-progress').value = b.progress || '';
+  document.getElementById('f-note').value = b.note || '';
+  document.getElementById('f-dup').textContent = '';
   document.getElementById('f-image').value = '';
   const prev = document.getElementById('f-cover-prev');
   if (b.cover) { prev.src = fixCoverUrl(b.cover); prev.style.display = 'block'; }
@@ -2815,7 +2888,7 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
 const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
@@ -2935,9 +3008,17 @@ async function saveForm() {
     source: fval('f-source'),
     star: parseInt(fval('f-star'), 10) || 0,
     status: fval('f-status'),
-    cover: formCover
+    cover: formCover,
+    progress: fval('f-progress').trim(),
+    note: fval('f-note').trim()
   };
   if (formMode === 'edit') payload.row = formRow;
+  const before = formMode === 'edit' ? allBooks.find(b => b.row === formRow) : null;
+  if (payload.progress && (!before || before.progress !== payload.progress)) payload.progress_at = todayYMD();
+  // ⚠️ already in the library?
+  const dup = libDupOf(title, payload.url, formMode === 'edit' ? formRow : null);
+  if (dup && !confirm('📚 มีเรื่องนี้ในคลังแล้ว: “' + dup.title + '”' + (dup.status && STATUS_META[dup.status] ? ' (' + STATUS_META[dup.status].label + ')' : '') +
+    '\n\n' + (formMode === 'add' ? 'เพิ่มซ้ำอีกเรื่องไหม?' : 'บันทึกชื่อนี้ต่อไหม?'))) return;
   if (document.getElementById('f-removecover').checked) payload.cover = '';
 
   setSaving(true, 'กำลังบันทึก', '💾');
@@ -2949,15 +3030,92 @@ async function saveForm() {
       payload.imageB64 = up.b64; payload.imageType = up.type; payload.imageName = up.name;
     }
     setSaving(true, 'กำลังบันทึก', '💾');
-    if (payload.action === 'add') await gasWrite(payload, () => bookSaved(payload.title, payload.url));
-    else await gasPost(payload);
+    let res;
+    if (payload.action === 'add') res = await gasWrite(payload, () => bookSaved(payload.title, payload.url));
+    else res = await gasPost(payload);
+    const metaChanged = (payload.progress || payload.note) && (!before || before.progress !== payload.progress || before.note !== payload.note);
+    if (metaChanged && res && typeof res === 'object' && !res.meta && !res.verified) alert('บันทึกนิยายแล้ว แต่ “อ่านถึง / โน้ต” ยังไม่ถูกบันทึก\nให้อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)');
     setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
+    if (payload.status === 'bought' && (!before || before.status !== 'bought')) offerClearReminders(payload.title);
   } catch(err) {
     alert('บันทึกไม่ได้: ' + err.message + '\n(ตรวจสอบ URL/รหัสลับ และการ Deploy ของสคริปต์)');
   } finally {
     setSaving(false);
+  }
+}
+
+function todayYMD() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+/* ⚠️ Same novel already in the library? Same link, the same ReadAWrite novel id,
+   or (almost) the same title — the rule used for 💡 suggestions too. */
+function libDupOf(title, url, exceptRow) {
+  const n = sgNormName(title);
+  const u = String(url || '').trim().toLowerCase().replace(/[?#].*$/, '').replace(/\/+$/, '');
+  const id = (u.match(/readawrite\.com\/a\/([0-9a-z]{5,})/) || [])[1];
+  return allBooks.find(b => {
+    if (exceptRow != null && b.row === exceptRow) return false;
+    const bu = String(b.url || '').trim().toLowerCase().replace(/[?#].*$/, '').replace(/\/+$/, '');
+    if (u && bu && bu === u) return true;
+    if (id && bu.indexOf('/a/' + id) >= 0) return true;
+    const bn = sgNormName(b.title);
+    if (!n || !bn) return false;
+    return bn === n || (Math.min(bn.length, n.length) >= 6 && (bn.indexOf(n) >= 0 || n.indexOf(bn) >= 0));
+  }) || null;
+}
+function formDupHint() {
+  const el = document.getElementById('f-dup');
+  if (!el) return;
+  const d = libDupOf(fval('f-title'), fval('f-url'), formMode === 'edit' ? formRow : null);
+  el.textContent = d ? '⚠️ มีในคลังแล้ว: “' + d.title + '”' + (d.status && STATUS_META[d.status] ? ' · ' + STATUS_META[d.status].label : '') : '';
+}
+
+/* ✅ ซื้อแล้ว (bought the e-book): offer to delete that novel's reminders */
+async function offerClearReminders(title) {
+  if (!isEditor()) return;
+  if (!remindersLoaded) await loadReminders();
+  // forgiving name match: "เพนกวินบินก็ได้ [EBOOK]" in the library = "เพนกวินบินก็ได้" in reminders
+  const n = sgNormName(title);
+  const ids = reminders.filter(r => {
+    if (String(r.url || '').indexOf(SG_REMIND_MARK) >= 0) return false;
+    const rn = sgNormName(r.title);
+    return n && rn && (rn === n || (Math.min(rn.length, n.length) >= 6 && (rn.indexOf(n) >= 0 || n.indexOf(rn) >= 0)));
+  }).map(r => String(r.id));
+  if (!ids.length) return;
+  if (!confirm('✅ ซื้อ “' + title + '” แล้ว\nลบการแจ้งเตือนของเรื่องนี้ทั้งหมด ' + ids.length + ' รายการด้วยไหม?')) return;
+  setBusy(true, 'กำลังลบ ' + ids.length + ' รายการ');
+  try {
+    const res = await gasPost({ action: 'remind_delete', ids: ids, id: ids[0] });
+    if (!res || typeof res.deleted !== 'number') for (let i = 1; i < ids.length; i++) await gasPost({ action: 'remind_delete', id: ids[i] });
+    await loadReminders();
+    if (notifyView) renderNotify();
+    toast('ลบการแจ้งเตือนของ “' + title + '” ' + ids.length + ' รายการแล้ว');
+  } catch (e) { alert('ลบการแจ้งเตือนไม่ครบ: ' + e.message); }
+  finally { setBusy(false); }
+}
+
+/* 📖 After ✓ เสร็จ on a reminder: "read up to" that chapter on the library novel */
+async function recordProgress(r) {
+  if (!r || String(r.url || '').indexOf(SG_REMIND_MARK) >= 0) return;
+  const c = linkTitles[r.url];
+  const parent = c && c.parent ? (String(c.parent).match(/\/a\/([0-9a-z]+)/i) || [])[1] : '';
+  const b = sgFindInLibrary({ name: r.title, guid: parent || '', uid: '' });
+  if (!b) return;
+  const chap = c && c.status === 'ok' ? chapterTitle(c.title, r.title) : '';
+  const progress = chap || b.progress || '';
+  const at = todayYMD();
+  const prev = { progress: b.progress, progressAt: b.progressAt };
+  b.progress = progress; b.progressAt = at;   // optimistic
+  try {
+    const res = await gasPost({ action: 'progress', row: b.row, title: b.title, progress: progress, progress_at: at });
+    if (res && res.row && res.row !== b.row) b.row = res.row;
+    if (chap) toast('📖 บันทึกแล้ว: “' + b.title + '” อ่านถึง ' + chap, 3500);
+  } catch (e) {
+    Object.assign(b, prev);
+    if (/unknown action/i.test(e.message || '')) toast('อัปเดต Code.gs เพื่อบันทึก “อ่านถึง” อัตโนมัติ', 4000);
   }
 }
 
@@ -3215,9 +3373,11 @@ async function nfDonePick(next) {
   }, 80);
 }
 async function finishReminder(id) {
+  const done = reminders.find(x => String(x.id) === String(id));
   setBusy(true, 'กำลังทำเครื่องหมายเสร็จ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
+    recordProgress(done);   // 📖 in the background
     await loadReminders();
     renderNotify();
     if (dayPopupKey) renderDayPopup();
@@ -3952,6 +4112,7 @@ function handleShareTarget() {
   openAdd();
   if (url) document.getElementById('f-url').value = url;
   if (name) document.getElementById('f-title').value = name;
+  formDupHint();
 }
 
 /* ===== INIT ===== */
