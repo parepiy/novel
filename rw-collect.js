@@ -5,7 +5,8 @@
    with window.__NV = { u: <Apps Script URL>, t: <secret> }.
 
    Lists: ① แก้แค้น · ② จีนโบราณ + เกิดใหม่ · ③ ไทยย้อนยุค (not เกิดใหม่) ·
-          ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list.
+          ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list,
+          and never a novel that's already in your library.
 
    It calls ReadAWrite's own list API from your verified browser session (it
    never bypasses or automates the "ยืนยันตัวตน" check), builds the 3 BL
@@ -328,8 +329,24 @@
     if (tab === 't3') return !inT4[x.guid] && !(x.tags || []).concat(x.hl || []).some(function (t) { return t.indexOf('เกิดใหม่') >= 0; });
     return tab !== 't1' || (x.hl || []).some(function (t) { return t.indexOf('แก้แค้น') >= 0; });
   }
-  function merge(current, pools, marks) {
+  /* your library (title + link) → is this suggestion already in it?
+     Same rule as the app: the ReadAWrite novel id in the link, or (almost) the same title. */
+  function libIndex(lib) {
+    return (lib || []).map(function (b) { return { n: normName(b.t || b.title), u: String(b.u || b.url || '').toLowerCase() }; });
+  }
+  function inLib(idx, x) {
+    var ids = [x.guid, x.uid].filter(function (id) { return id && String(id).length >= 5; })
+      .map(function (id) { return '/a/' + String(id).toLowerCase(); });
+    var n = normName(x.name);
+    return idx.some(function (b) {
+      if (b.u.indexOf('readawrite') >= 0 && ids.some(function (id) { return b.u.indexOf(id) >= 0; })) return true;
+      if (!n || !b.n) return false;
+      return b.n === n || (Math.min(b.n.length, n.length) >= 6 && (b.n.indexOf(n) >= 0 || n.indexOf(b.n) >= 0));
+    });
+  }
+  function merge(current, pools, marks, lib) {
     var mk = markMap(marks);
+    var li = libIndex(lib);
     /* reborn Thai-period novels (④) that were saved in ③ before the split leave ③ */
     var inT4 = {};
     (pools.t4 || []).concat(current.filter(function (x) { return x.tab === 't4'; })).forEach(function (x) { inT4[x.guid] = 1; });
@@ -342,7 +359,7 @@
       pool.forEach(function (x) { byGuid[x.guid] = x; });
       var keep = [];
       var have = {};
-      current.filter(function (x) { return x.tab === tab && !markOf(mk, x) && (byGuid[x.guid] || stillFits(tab, x, inT4)); }).forEach(function (x) {
+      current.filter(function (x) { return x.tab === tab && !markOf(mk, x) && !inLib(li, x) && (byGuid[x.guid] || stillFits(tab, x, inT4)); }).forEach(function (x) {
         if (have[x.guid]) return;
         var fresh = byGuid[x.guid];
         var item = fresh ? Object.assign({}, fresh, { syn: x.syn || fresh.syn || '', is_new: 0 }) : Object.assign({}, x, { is_new: 0 });
@@ -354,7 +371,7 @@
       keep = keep.slice(0, LIMIT);
       for (var i = 0; i < pool.length && keep.length < LIMIT; i++) {
         var c = pool[i];
-        if (have[c.guid] || markOf(mk, c)) continue;
+        if (have[c.guid] || markOf(mk, c) || inLib(li, c)) continue;
         have[c.guid] = 1;
         keep.push(Object.assign({}, c, { is_new: hadPrev ? 1 : 0 }));
         if (hadPrev) added++;
@@ -423,7 +440,7 @@
           working = true;
           (async function () {
             try {
-              var res = merge((m.list || []).map(fromRow), pools, m.marks || []);
+              var res = merge((m.list || []).map(fromRow), pools, m.marks || [], m.lib || []);
               await fetchSyn(res.list);
               progress('💾 แอปกำลังบันทึก…');
               reply({ type: 'nv-save', list: res.list.map(toRow), added: res.added, updated_at: new Date().toISOString() });
@@ -493,7 +510,9 @@
     }
 
     if (state) {
-      var res = merge((state.list || []).map(fromRow), pools, state.marks || []);
+      var lib = [];
+      try { lib = (await gas({ action: 'list' })).books || []; } catch (e) {}
+      var res = merge((state.list || []).map(fromRow), pools, state.marks || [], lib);
       await fetchSyn(res.list);
       progress('💾 กำลังบันทึกลง Google Sheet…');
       await gas({ action: 'sg_save', list: res.list.map(toRow), updated_at: new Date().toISOString() });
