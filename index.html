@@ -346,6 +346,12 @@ body.editor .suggest-tab{display:inline-block;}
 .cal-wrap{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:12px;}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .cal-title{font-weight:700;color:var(--mint2);font-size:.98rem;}
+.cal-mid{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;}
+.cal-today{background:none;border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:3px 12px;font-family:inherit;font-size:.78rem;cursor:pointer;transition:all .12s;}
+.cal-today:hover{border-color:var(--mint);color:var(--mint2);}
+:root[data-theme] .cal-today{background:var(--glass);border-color:var(--line2);color:var(--text);}
+.cal-flash{animation:calFlash .55s ease 3;}
+@keyframes calFlash{50%{transform:scale(1.12);box-shadow:0 0 0 4px rgba(34,211,238,.35),0 0 18px rgba(34,211,238,.55);}}
 .cal-nav{background:none;border:1px solid var(--bd2);border-radius:8px;width:34px;height:34px;font-size:1.15rem;color:var(--dim);cursor:pointer;line-height:1;}
 .cal-nav:hover{border-color:var(--mint);color:var(--mint2);}
 .cal-nav:disabled,.cal-nav:disabled:hover{opacity:.3;cursor:default;border-color:var(--bd2);color:var(--dim);}
@@ -3795,6 +3801,14 @@ function calAtStart() {
   const now = new Date();
   return calYear * 12 + calMonth <= now.getFullYear() * 12 + now.getMonth();
 }
+/* "วันนี้": back to the current month and make today's date blink */
+function calToday() {
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth();
+  renderNotify();
+  const t = document.querySelector('.cal-cell.today');
+  if (t) { t.classList.remove('cal-flash'); void t.offsetWidth; t.classList.add('cal-flash'); }
+}
 function calShift(delta) {
   if (delta < 0 && calAtStart()) return;
   calMonth += delta;
@@ -3882,7 +3896,8 @@ function calendarHtml() {
   return '<div class="cal-wrap">' +
       '<div class="cal-header">' +
         '<button class="cal-nav" onclick="calShift(-1)"' + (calAtStart() ? ' disabled title="ไม่มีการแจ้งเตือนย้อนหลัง"' : '') + '>‹</button>' +
-        '<span class="cal-title">' + monthLabel + '</span>' +
+        '<div class="cal-mid"><span class="cal-title">' + monthLabel + '</span>' +
+          '<button class="cal-today" onclick="calToday()" title="กลับไปวันนี้">วันนี้</button></div>' +
         '<button class="cal-nav" onclick="calShift(1)">›</button>' +
       '</div>' +
       '<div class="cal-grid cal-wd">' + wd.map(w => '<div class="cal-wdc">' + w + '</div>').join('') + '</div>' +
