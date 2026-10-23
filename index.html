@@ -668,6 +668,9 @@ body.editor .m-edit{display:inline-block;}
 .m-newch .mn-sub{font-size:.78rem;color:var(--dim);}
 .m-newch .mn-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
 .m-newch.end{border-color:var(--line2,var(--bd2));background:none;}
+.sh-rem{margin-top:2px;font-size:.66rem;color:var(--dim);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sh-rem.due{color:var(--overdue);font-weight:700;}
+.sh-remonly .sh-nc{font-size:1.9rem;}
 .sh-prog{margin-top:2px;font-size:.66rem;color:var(--raw2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sh-title{margin-top:5px;font-size:.74rem;font-weight:600;line-height:1.35;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 @media(min-width:700px){.shelf{padding:16px 20px 12px;}.sh-card{width:118px;}}
@@ -1193,6 +1196,9 @@ window.addEventListener('pageshow', onResume);
 function parseCSV(text) {
   const records = parseCSVRecords(text);
   const rows = [];
+  // progress / note columns are found by their header name (they sit after your own columns)
+  const head = (records[0] || []).map(h => String(h || '').trim());
+  const meta = (cols, name) => { const i = head.indexOf(name); return i >= 0 ? String(cols[i] || '').trim() : ''; };
   for (let r = 1; r < records.length; r++) {   // r = 0 is the header row
     const cols = records[r];
     if (cols.length < 5) continue;
@@ -1208,9 +1214,9 @@ function parseCSV(text) {
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
       status:  normStatus(cols[7]),
       added:   normAdded(cols[8]),
-      progress:   (cols[9] || '').trim(),     // 📖 chapter read up to
-      progressAt: normAdded(cols[10]),        // last read
-      note:       (cols[11] || '').trim(),    // 📝 your note
+      progress:   meta(cols, 'nv_progress'),       // 📖 chapter read up to
+      progressAt: normAdded(meta(cols, 'nv_progress_at')),   // last read
+      note:       meta(cols, 'nv_note'),           // 📝 your note
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1432,23 +1438,87 @@ function continueRead(idx) {
   window.open(b.url, '_blank', 'noopener');
   setTimeout(() => { if (!notifyView && !statsView && !suggestView) renderGrid(); }, 400);
 }
-function shelfHtml() {
-  const reading = allBooks.filter(b => b.status === 'reading');
-  if (!reading.length) return '';
-  const log = readLog();
-  // 🆕 new chapters first, then the ones you opened most recently
-  reading.sort((a, b) => (cwNew(b) > 0) - (cwNew(a) > 0) || (log[b.title] || 0) - (log[a.title] || 0) || (b.row || 0) - (a.row || 0));
-  const cards = reading.map(b => {
-    const idx = allBooks.indexOf(b);
-    const img = b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
-    const play = b.url ? `<button class="sh-play" onclick="continueRead(${idx});event.stopPropagation()" title="อ่านต่อ">▶</button>` : '';
-    const prog = b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
-    const nw = cwNew(b);
-    const newB = nw > 0 ? `<span class="new-badge sh-new">🆕 +${nw}</span>` : '';
-    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${newB}${play}</div><div class="sh-title">${esc(b.title)}</div>${prog}</div>`;
-  }).join('');
-  return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${reading.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
+/* ▶️ อ่านต่อ = your Reading novels + every novel that has a 🔔 reminder.
+   A reminder's chapter link is what ▶ opens. Order: 🆕 new chapters, reminders
+   that are due, the next reminders, then the novels you opened most recently. */
+let shelfItems = [];
+function nameMatch(a, b) {
+  const x = sgNormName(a), y = sgNormName(b);
+  return !!x && !!y && (x === y || (Math.min(x.length, y.length) >= 6 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0)));
 }
+function reminderGroups() {
+  const groups = [];
+  (isEditor() ? reminders || [] : []).forEach(r => {
+    if (String(r.url || '').indexOf(SG_REMIND_MARK) >= 0 || !sgNormName(r.title)) return;
+    let g = groups.find(g => nameMatch(g.title, r.title));
+    if (!g) { g = { title: String(r.title).trim(), rems: [] }; groups.push(g); }
+    g.rems.push(r);
+  });
+  groups.forEach(g => g.rems.sort((a, b) => Number(a.remind_at) - Number(b.remind_at)));
+  return groups;
+}
+function shelfWhen(ms) {
+  const d = new Date(Number(ms)), now = new Date();
+  const t = d.toLocaleTimeString(TH_LOCALE, { hour: '2-digit', minute: '2-digit' });
+  if (d.getTime() <= now.getTime()) return { text: '⏰ ถึงเวลาอ่านแล้ว', due: true };
+  const day = n => { const x = new Date(now); x.setDate(x.getDate() + n); return dkey(x.getTime()); };
+  const k = dkey(d.getTime());
+  return { text: '🔔 ' + (k === day(0) ? 'วันนี้ ' + t : k === day(1) ? 'พรุ่งนี้ ' + t : d.toLocaleDateString(TH_LOCALE, { day: 'numeric', month: 'short' }) + ' ' + t), due: false };
+}
+function shelfHtml() {
+  const items = allBooks.filter(b => b.status === 'reading').map(b => ({ b: b, rem: null, title: b.title }));
+  reminderGroups().forEach(g => {
+    const r = g.rems[0];   // the earliest = the one to read next
+    const c = linkTitles[r.url];
+    const parent = c && c.parent ? (String(c.parent).match(/\/a\/([0-9a-z]+)/i) || [])[1] : '';
+    const b = sgFindInLibrary({ name: g.title, guid: parent || '', uid: '' });
+    const have = b && items.find(it => it.b === b);
+    if (have) have.rem = r;
+    else if (b) items.push({ b: b, rem: r, title: b.title });
+    else items.push({ b: null, rem: r, title: g.title });
+  });
+  if (!items.length) { shelfItems = []; return ''; }
+  const log = readLog();
+  const now = Date.now();
+  const rank = it => it.b && cwNew(it.b) > 0 ? 0 : it.rem && Number(it.rem.remind_at) <= now ? 1 : it.rem ? 2 : 3;
+  items.sort((a, b) => rank(a) - rank(b) ||
+    (a.rem && b.rem ? Number(a.rem.remind_at) - Number(b.rem.remind_at) : 0) ||
+    (log[b.title] || 0) - (log[a.title] || 0) || ((b.b && b.b.row) || 0) - ((a.b && a.b.row) || 0));
+  shelfItems = items;
+  const cards = items.map((it, i) => {
+    const b = it.b;
+    const idx = b ? allBooks.indexOf(b) : -1;
+    const img = b && b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const url = (it.rem && it.rem.url) || (b && b.url) || '';
+    const play = url ? `<button class="sh-play" onclick="shelfPlay(${i});event.stopPropagation()" title="${it.rem && it.rem.url ? 'อ่านตอนที่ตั้งเตือนไว้' : 'อ่านต่อ'}">▶</button>` : '';
+    const prog = b && b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
+    let remL = '';
+    if (it.rem) {
+      const w = shelfWhen(it.rem.remind_at);
+      const c = linkTitles[it.rem.url];
+      const ch = c && c.status === 'ok' ? chapterTitle(chapterTitle(c.title, it.rem.title), it.title) : '';
+      remL = `<div class="sh-rem${w.due ? ' due' : ''}" title="${esc(ch || it.rem.title)}">${esc(w.text)}${ch ? ' · ' + esc(ch) : ''}</div>`;
+    }
+    const nw = b ? cwNew(b) : 0;
+    const newB = nw > 0 ? `<span class="new-badge sh-new">🆕 +${nw}</span>` : '';
+    const open = b ? `openModal(${idx})` : `shelfOpenReminders()`;
+    return `<div class="sh-card${b ? '' : ' sh-remonly'}" onclick="${open}"><div class="sh-cover"><span class="sh-nc">${b ? '📖' : '🔔'}</span>${img}${newB}${play}</div><div class="sh-title">${esc(it.title)}</div>${prog}${remL}</div>`;
+  }).join('');
+  return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${items.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
+}
+/* ▶ on the shelf: the reminder's chapter link, else the novel's link */
+function shelfPlay(i) {
+  const it = shelfItems[i];
+  if (!it) return;
+  const url = (it.rem && it.rem.url) || (it.b && it.b.url);
+  if (!url) return;
+  if (it.b) markRead(allBooks.indexOf(it.b));
+  else { const log = readLog(); log[it.title] = Date.now(); try { localStorage.setItem('lastRead', JSON.stringify(log)); } catch (e) {} }
+  window.open(url, '_blank', 'noopener');
+  setTimeout(() => { if (!notifyView && !statsView && !suggestView) renderGrid(); }, 400);
+}
+/* a novel that's only in 🔔 (not in your library) → its reminders */
+function shelfOpenReminders() { nfView = 'list'; switchTab('notify'); }
 
 function buildCard(b, idx) {
   const coverHtml = b.cover
@@ -3345,9 +3415,12 @@ async function loadReminders() {
   if (!isEditor()) { reminders = []; reminderError = ''; updateNotifyBadge(); return; }
   try {
     const d = await gasPost({ action: 'remind_list' });
+    const before = JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at]));
     reminders = (d.reminders || []).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
     reminderError = '';
     remindersLoaded = true;
+    // the อ่านต่อ shelf includes reminder novels: redraw it when they changed
+    if (before !== JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at])) && !notifyView && !statsView && !suggestView && allBooks.length) renderGrid();
     fetchLinkTitles(reminders.map(r => r.url));   // 📖 chapter titles, in the background
   } catch(e) { reminderError = e.message || 'error'; }   // keep the list we already had
   updateNotifyBadge();
@@ -3606,6 +3679,7 @@ async function fetchLinkTitles(urls) {
   } finally {
     want.forEach(u => ltPending.delete(u));
     fillChapEls();
+    if (!notifyView && !statsView && !suggestView && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
     nfAutoName('nf'); nfAutoName('day');
   }
 }
