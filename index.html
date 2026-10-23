@@ -312,6 +312,14 @@ body.editor .suggest-tab{display:inline-block;}
 .nf-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
 .nf-item-title{font-weight:600;font-size:.92rem;color:var(--text);line-height:1.45;}
 .nf-item-when{font-size:.77rem;color:var(--dim);}
+.nf-tl{background:none;border:none;padding:0;text-align:left;font-family:inherit;cursor:pointer;}
+.nf-tl:hover{color:var(--mint2);text-decoration:underline;}
+.nf-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.nf-filter .nf-pick{flex:1;min-width:0;width:auto;border:1px solid var(--bd2);border-radius:8px;padding:8px 34px 8px 11px;font-family:inherit;font-size:.9rem;background-color:var(--bg);color:var(--text);min-height:40px;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;cursor:pointer;}
+:root[data-theme] .nf-filter .nf-pick{background-color:var(--input-bg);border-color:var(--line2);}
+.nf-filter.on .nf-pick{border-color:var(--mint);box-shadow:0 0 0 2px rgba(34,211,238,.15);}
+.nf-filter-l{font-size:.84rem;color:var(--dim);white-space:nowrap;}
+.nf-filter-sum{flex-basis:100%;font-size:.8rem;color:var(--mint2);}
 .nf-chap{font-size:.82rem;color:var(--raw2);line-height:1.45;overflow-wrap:anywhere;}
 .nf-chap:empty{display:none;}
 .nf-chap-form{margin:-2px 2px 0;font-size:.8rem;}
@@ -3892,10 +3900,41 @@ function calShift(delta) {
   renderNotify();
 }
 
+/* 📚 Filter the 🔔 tab by novel (list + calendar). Names match loosely, like the shelf. */
+let nfFilter = '';
+function nfVisible() {
+  if (!nfFilter) return reminders;
+  return reminders.filter(r => String(r.url || '').indexOf(SG_REMIND_MARK) < 0 && nameMatch(r.title, nfFilter));
+}
+function setNfFilter(t) {
+  nfFilter = String(t || '');
+  nfEditId = null;
+  renderNotify();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function setNfFilterFrom(el) { setNfFilter(el.getAttribute('data-t')); }
+function nfFilterBarHtml() {
+  const groups = reminderGroups().sort((a, b) => a.title.localeCompare(b.title, 'th'));
+  if (!groups.length) return '';
+  const opts = '<option value="">ทุกเรื่อง (' + reminders.length + ')</option>' + groups.map(g =>
+    '<option value="' + esc(g.title) + '"' + (nfFilter && nameMatch(g.title, nfFilter) ? ' selected' : '') + '>' + esc(g.title) + ' (' + g.rems.length + ')</option>').join('');
+  let sum = '';
+  if (nfFilter) {
+    const vis = nfVisible();
+    const next = vis.find(r => Number(r.remind_at) > Date.now());
+    const due = vis.filter(r => Number(r.remind_at) <= Date.now()).length;
+    sum = '<div class="nf-filter-sum">' + vis.length + ' รายการ' + (due ? ' · ⏰ เลยกำหนด ' + due : '') +
+      (next ? ' · ถัดไป ' + esc(shelfWhen(next.remind_at).text.replace(/^🔔 /, '')) : '') +
+      ' <button class="sg-link" onclick="setNfFilter(\'\')">✕ ดูทุกเรื่อง</button></div>';
+  }
+  return '<div class="nf-filter' + (nfFilter ? ' on' : '') + '"><label class="nf-filter-l">📚 เรื่อง</label>' +
+    '<select class="nf-pick" onchange="setNfFilter(this.value)">' + opts + '</select>' + sum + '</div>';
+}
+
 function listBodyHtml() {
   const now = Date.now();
   const editing = nfEditId ? reminders.find(r => String(r.id) === String(nfEditId)) : null;
-  const items = reminders.map(r => {
+  const items = nfVisible().map(r => {
     const overdue = Number(r.remind_at) <= now;
     const notified = !!Number(r.sent);
     const beingEdited = String(r.id) === String(nfEditId);
@@ -3906,7 +3945,8 @@ function listBodyHtml() {
     const idAttr = String(r.id).replace(/'/g, "\\'");
     return '<div class="nf-item' + cls + '">' +
         '<div class="nf-item-main">' +
-          '<div class="nf-item-title">' + esc(r.title) + '</div>' +
+          (weekly ? '<div class="nf-item-title">' + esc(r.title) + '</div>'
+            : '<button class="nf-item-title nf-tl" data-t="' + esc(r.title) + '" onclick="setNfFilterFrom(this)" title="ดูทุกการแจ้งเตือนของเรื่องนี้">' + esc(r.title) + '</button>') +
           chapHtml(r.url, r.title) +
           '<div class="nf-item-when">' + label + ' · ' + fmtWhen(r.remind_at) + '</div>' +
           urlHtml +
@@ -3940,6 +3980,7 @@ function listBodyHtml() {
         '<button class="btn btn-primary" onclick="saveReminder()">' + primaryLabel + '</button>' + cancelBtn +
       '</div>' +
     '</div>' +
+    nfFilterBarHtml() +
     '<div class="nf-list">' + (items || empty) + '</div>';
 }
 
@@ -3952,7 +3993,7 @@ function calendarHtml() {
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const monthLabel = first.toLocaleDateString(TH_LOCALE, { month: 'long', year: 'numeric' });
   const counts = {}, overdueMap = {};
-  reminders.forEach(r => {
+  nfVisible().forEach(r => {
     const k = dkey(r.remind_at);
     counts[k] = (counts[k] || 0) + 1;
     if (Number(r.remind_at) <= now) overdueMap[k] = true;
@@ -3981,14 +4022,18 @@ function calendarHtml() {
 }
 
 function renderNotify() {
+  // the filtered novel has no reminders left → back to ทุกเรื่อง
+  if (nfFilter && !reminderGroups().some(g => nameMatch(g.title, nfFilter))) nfFilter = '';
   const toggle = '<div class="nf-viewtoggle">' +
     '<button class="nf-vt' + (nfView === 'list' ? ' active' : '') + '" onclick="setNotifyView(\'list\')">📋 รายการ</button>' +
     '<button class="nf-vt' + (nfView === 'calendar' ? ' active' : '') + '" onclick="setNotifyView(\'calendar\')">📅 ปฏิทิน</button>' +
   '</div>';
-  const body = nfView === 'calendar' ? calendarHtml() : listBodyHtml();
+  const body = nfView === 'calendar' ? nfFilterBarHtml() + calendarHtml() : listBodyHtml();
   document.getElementById('main-content').innerHTML =
     '<div class="notify-view"><div class="nf-status" id="nf-status">…</div>' + toggle + body + '</div>';
-  document.getElementById('header-count').textContent = 'การแจ้งเตือน ' + reminders.length + ' รายการ';
+  document.getElementById('header-count').textContent = nfFilter
+    ? '🔔 ' + nfFilter + ' · ' + nfVisible().length + ' รายการ'
+    : 'การแจ้งเตือน ' + reminders.length + ' รายการ';
   if (nfView === 'list') {
     const editing = nfEditId ? reminders.find(r => String(r.id) === String(nfEditId)) : null;
     const t = document.getElementById('nf-title');
@@ -4001,6 +4046,10 @@ function renderNotify() {
     } else {
       if (w) w.value = (nfDraft && nfDraft.when) || defaultWhenValue();
       if (nfDraft) { if (t) t.value = nfDraft.title; if (u) u.value = nfDraft.url; }
+      else if (nfFilter && t && !t.value) {   // filtered to a novel → the form starts with it
+        const k = nfKnownTitles().find(o => nameMatch(o.title, nfFilter));
+        if (k) t.value = k.title;
+      }
     }
     nfSyncPick('nf');
     nfSplitWhen();
