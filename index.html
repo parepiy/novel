@@ -348,6 +348,7 @@ body.editor .suggest-tab{display:inline-block;}
 .cal-title{font-weight:700;color:var(--mint2);font-size:.98rem;}
 .cal-nav{background:none;border:1px solid var(--bd2);border-radius:8px;width:34px;height:34px;font-size:1.15rem;color:var(--dim);cursor:pointer;line-height:1;}
 .cal-nav:hover{border-color:var(--mint);color:var(--mint2);}
+.cal-nav:disabled,.cal-nav:disabled:hover{opacity:.3;cursor:default;border-color:var(--bd2);color:var(--dim);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
 .cal-days{grid-auto-rows:46px;}
 .cal-wd{margin-bottom:4px;}
@@ -3528,7 +3529,7 @@ async function finishReminder(id) {
 function fmtWhen(ms) {
   const d = new Date(Number(ms));
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+  return d.toLocaleString(TH_LOCALE, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 /* value string for <input type="datetime-local"> in LOCAL time, default = now + 1h */
@@ -3548,12 +3549,12 @@ function nfDupsOn(title, ms, exceptId) {
     String(r.title || '').trim().toLowerCase() === t && dkey(r.remind_at) === k);
 }
 function nfDupText(dups) {
-  return dups.map(r => new Date(Number(r.remind_at)).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.').join(', ');
+  return dups.map(r => new Date(Number(r.remind_at)).toLocaleTimeString(TH_LOCALE, { hour: '2-digit', minute: '2-digit' }) + ' น.').join(', ');
 }
 function nfConfirmDup(title, ms, exceptId) {
   const dups = nfDupsOn(title, ms, exceptId);
   if (!dups.length) return true;
-  const day = new Date(ms).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  const day = new Date(ms).toLocaleDateString(TH_LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
   return confirm('⚠️ “' + title + '” มีแจ้งเตือนวันที่ ' + day + ' อยู่แล้ว (' + nfDupText(dups) + ')\n\nเพิ่มซ้ำอีกไหม?');
 }
 /* the form's title/date changed → live duplicate warning + chapter-title preview */
@@ -3781,10 +3782,25 @@ function setNotifyView(v) {
   renderNotify();
 }
 
+/* Thai month/day names with international (ค.ศ.) years: "ตุลาคม 2026", not 2569 */
+const TH_LOCALE = 'th-TH-u-ca-gregory';
+
+/* The calendar starts at the current month: reminders are for the future,
+   so you can't page back into past months (the 📋 list still shows overdue ones). */
+function calClamp() {
+  const now = new Date();
+  if (calYear * 12 + calMonth < now.getFullYear() * 12 + now.getMonth()) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+}
+function calAtStart() {
+  const now = new Date();
+  return calYear * 12 + calMonth <= now.getFullYear() * 12 + now.getMonth();
+}
 function calShift(delta) {
+  if (delta < 0 && calAtStart()) return;
   calMonth += delta;
   if (calMonth < 0) { calMonth = 11; calYear--; }
   else if (calMonth > 11) { calMonth = 0; calYear++; }
+  calClamp();
   renderNotify();
 }
 
@@ -3840,12 +3856,13 @@ function listBodyHtml() {
 }
 
 function calendarHtml() {
+  calClamp();   // e.g. the app was left open into a new month
   const now = Date.now();
   const tKey = dkey(now);
   const first = new Date(calYear, calMonth, 1);
   const startDow = first.getDay();
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const monthLabel = first.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  const monthLabel = first.toLocaleDateString(TH_LOCALE, { month: 'long', year: 'numeric' });
   const counts = {}, overdueMap = {};
   reminders.forEach(r => {
     const k = dkey(r.remind_at);
@@ -3864,7 +3881,7 @@ function calendarHtml() {
   }
   return '<div class="cal-wrap">' +
       '<div class="cal-header">' +
-        '<button class="cal-nav" onclick="calShift(-1)">‹</button>' +
+        '<button class="cal-nav" onclick="calShift(-1)"' + (calAtStart() ? ' disabled title="ไม่มีการแจ้งเตือนย้อนหลัง"' : '') + '>‹</button>' +
         '<span class="cal-title">' + monthLabel + '</span>' +
         '<button class="cal-nav" onclick="calShift(1)">›</button>' +
       '</div>' +
@@ -4026,14 +4043,14 @@ function renderDayPopup() {
   const parts = key.split('-').map(Number);
   const y = parts[0], mo = parts[1], d = parts[2];
   const dateObj = new Date(y, mo - 1, d);
-  const dateLabel = dateObj.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateLabel = dateObj.toLocaleDateString(TH_LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const now = Date.now();
   const dayItems = reminders.filter(r => dkey(r.remind_at) === key).sort((a, b) => Number(a.remind_at) - Number(b.remind_at));
   const editing = dayEditId ? reminders.find(r => String(r.id) === String(dayEditId)) : null;
 
   const itemsHtml = dayItems.length ? dayItems.map(r => {
     const overdue = Number(r.remind_at) <= now;
-    const timeStr = new Date(Number(r.remind_at)).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = new Date(Number(r.remind_at)).toLocaleTimeString(TH_LOCALE, { hour: '2-digit', minute: '2-digit' });
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
     const idAttr = String(r.id).replace(/'/g, "\\'");
     return '<div class="nf-item' + (overdue ? ' overdue' : '') + (String(r.id) === String(dayEditId) ? ' editing' : '') + '">' +
