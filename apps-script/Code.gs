@@ -49,24 +49,61 @@ function stampAdded_(sh, row) {
   sh.getRange(row, 9).setNumberFormat('@').setValue(Utilities.formatDate(new Date(), ADDED_TZ, 'yyyy-MM-dd'));
 }
 
-// Columns J..L = 📖 progress (chapter you read up to), progress_at (last read, yyyy-MM-dd), 📝 note
-const META_COLS = { progress: 10, progress_at: 11, note: 12 };
-function metaSet_(sh, row, d) {
-  Object.keys(META_COLS).forEach(k => {
-    if (d[k] === undefined || d[k] === null) return;   // not sent → keep what's there
-    const c = META_COLS[k];
-    if (!sh.getRange(1, c).getValue()) sh.getRange(1, c).setValue(k);
-    sh.getRange(row, c).setNumberFormat('@').setValue(sgText_(String(d[k])));
+// 📖 progress (chapter read up to), last-read date and 📝 note live in their OWN
+// columns, found by their header name. The first time, they are added after your
+// last used column — the script never writes into a column you already use.
+const META_HEADERS = { progress: 'nv_progress', progress_at: 'nv_progress_at', note: 'nv_note' };
+function metaCols_(sh, create) {
+  const lastCol = Math.max(sh.getLastColumn(), 1);
+  const head = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h == null ? '' : h).trim());
+  const out = {};
+  let next = lastCol + 1;
+  let added = false;
+  Object.keys(META_HEADERS).forEach(k => {
+    const i = head.indexOf(META_HEADERS[k]);
+    if (i >= 0) out[k] = i + 1;
+    else if (create) { sh.getRange(1, next).setValue(META_HEADERS[k]); out[k] = next++; added = true; }
+  });
+  if (added) metaMigrate_(sh, head, out);
+  return out;
+}
+// One-time move of what an earlier version saved in columns J–L (headers
+// "progress" / "progress_at" / "note"). Only plain text is copied; nothing is deleted.
+function metaMigrate_(sh, head, cols) {
+  if (head[9] !== 'progress' || head[10] !== 'progress_at' || head[11] !== 'note') return;
+  const last = sh.getLastRow();
+  if (last < 2) return;
+  const old = sh.getRange(2, 10, last - 1, 3).getValues();
+  old.forEach((r, i) => {
+    const p = cellText_(r[0]), a = cellText_(r[1]), n = cellText_(r[2]);
+    if (p && p !== 'CellImage') sh.getRange(i + 2, cols.progress).setNumberFormat('@').setValue(sgText_(p));
+    if (a && /^\d{4}-\d{2}-\d{2}$/.test(a)) sh.getRange(i + 2, cols.progress_at).setNumberFormat('@').setValue(a);
+    if (n && n !== 'CellImage') sh.getRange(i + 2, cols.note).setNumberFormat('@').setValue(sgText_(n));
   });
 }
+function metaSet_(sh, row, d) {
+  const want = Object.keys(META_HEADERS).filter(k => d[k] !== undefined && d[k] !== null);
+  if (!want.length) return;   // not sent → keep what's there
+  const cols = metaCols_(sh, true);
+  want.forEach(k => sh.getRange(row, cols[k]).setNumberFormat('@').setValue(sgText_(String(d[k]))));
+}
+// a cell as text; a picture placed in a cell (CellImage) or other object is not text
+function cellText_(v) {
+  if (v == null) return '';
+  if (v instanceof Date) return addedText_(v);
+  if (typeof v === 'object') return '';
+  return String(v);
+}
 
-// Columns A..I = title, summary, url, tags(|-joined), source, cover, star, status, added_at; J..L see above
+// Columns A..I = title, summary, url, tags(|-joined), source, cover, star, status, added_at; + the nv_ columns above
 function readAll_() {
   const sh = getSheet_();
   const last = sh.getLastRow();
   const books = [];
   if (last >= 2) {
-    const vals = sh.getRange(2, 1, last - 1, 12).getValues();
+    const mc = metaCols_(sh, false);
+    const vals = sh.getRange(2, 1, last - 1, Math.max(9, sh.getLastColumn())).getValues();
+    const meta = (r, k) => mc[k] ? cellText_(r[mc[k] - 1]) : '';
     vals.forEach((r, i) => {
       const title = (r[0] || '').toString().trim();
       if (!title) return;
@@ -81,9 +118,9 @@ function readAll_() {
         star: parseInt(r[6], 10) || 0,
         status: (r[7] || '').toString().trim(),
         added: addedText_(r[8]),
-        progress: (r[9] || '').toString(),
-        progress_at: addedText_(r[10]),
-        note: (r[11] || '').toString()
+        progress: meta(r, 'progress'),
+        progress_at: meta(r, 'progress_at'),
+        note: meta(r, 'note')
       });
     });
   }
