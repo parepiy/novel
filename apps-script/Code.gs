@@ -438,7 +438,7 @@ function suggestRouter_(action, d) {
 // The app sends the reminder links; Google fetches each page once and reads its
 // title. Results are kept in the "link_titles" sheet so each link is fetched
 // only once (failed ones are retried after 6 hours).
-const LT_COLS = ['url', 'title', 'status', 'fetched_at', 'page_title', 'og_title', 'parent'];
+const LT_COLS = ['url', 'title', 'status', 'fetched_at', 'page_title', 'og_title', 'parent', 'image'];
 const LT_RETRY_MS = 6 * 3600 * 1000;
 
 function ltDecode_(s) {
@@ -465,7 +465,16 @@ function ltExtract_(html) {
   const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const page = t ? ltDecode_(t[1]) : '';
   const a = html.match(/href=["'](?:https?:\/\/(?:www\.)?readawrite\.com)?\/a\/([0-9a-z]{6,})["'?#]/i);
-  return { title: og || page, page: page, og: og, parent: a ? 'https://www.readawrite.com/a/' + a[1] : '' };
+  return { title: og || page, page: page, og: og, parent: a ? 'https://www.readawrite.com/a/' + a[1] : '',
+    image: ltMeta_(html, 'og:image') || ltMeta_(html, 'twitter:image') };   // 🖼️ the cover shown when the link is shared
+}
+// a relative or protocol-less image link → a full https link
+function ltAbs_(img, pageUrl) {
+  img = String(img || '').trim();
+  if (!img) return '';
+  if (/^\/\//.test(img)) return 'https:' + img;
+  if (/^\//.test(img)) { const o = String(pageUrl).match(/^https?:\/\/[^\/]+/); return o ? o[0] + img : ''; }
+  return /^https?:\/\//i.test(img) ? img : '';
 }
 
 // an anti-bot / error page instead of the real chapter
@@ -503,9 +512,11 @@ function linkTitlesRouter_(action, d) {
       const v = vals[r - 1];
       const fresh = Date.now() - new Date(v[3]).getTime() < LT_RETRY_MS;
       const ok = String(v[2]) === 'ok';
-      const old = ok && !v[4] && !v[5];   // saved before page_title/og_title existed → read it once more
+      // saved before page_title/og_title, or before covers ('image' empty = never looked) → read it once more
+      const old = ok && ((!v[4] && !v[5]) || !v[7]);
       if (!old && (ok || fresh)) {
-        out[u] = { title: String(v[1] || ''), status: String(v[2] || ''), page: String(v[4] || ''), og: String(v[5] || ''), parent: String(v[6] || '') };
+        out[u] = { title: String(v[1] || ''), status: String(v[2] || ''), page: String(v[4] || ''), og: String(v[5] || ''), parent: String(v[6] || ''),
+          image: String(v[7] || '') === 'none' ? '' : String(v[7] || '') };
         return;
       }
     }
@@ -513,23 +524,41 @@ function linkTitlesRouter_(action, d) {
   });
   if (todo.length) {
     const resps = ltFetch_(todo);
-    todo.forEach((u, i) => {
+    const got = todo.map((u, i) => {
       const res = resps[i];
-      let info = { title: '', page: '', og: '', parent: '' }, status = 'error';
+      let info = { title: '', page: '', og: '', parent: '', image: '' }, status = 'error';
       if (res) {
         const code = res.getResponseCode();
         if (code === 200) {
           info = ltExtract_(res.getContentText('UTF-8').slice(0, 300000));
           status = !info.title ? 'no_title' : ltBlocked_(info.title) ? 'blocked' : 'ok';
-          if (status !== 'ok') info = { title: '', page: '', og: '', parent: '' };
+          if (status !== 'ok') info = { title: '', page: '', og: '', parent: '', image: '' };
+          info.image = ltAbs_(info.image, u);
         } else status = 'http_' + code;
       }
-      out[u] = { title: info.title, status: status, page: info.page, og: info.og, parent: info.parent };
-      const r = rowOf[u] || sh.getLastRow() + 1;
-      rowOf[u] = r;
-      sh.getRange(1, 1, 1, LT_COLS.length).setValues([LT_COLS]);
+      return { u: u, info: info, status: status };
+    });
+    // no cover on the chapter page → take it from the novel's own page
+    const parents = [];
+    got.forEach(g => { if (g.status === 'ok' && !g.info.image && g.info.parent && parents.indexOf(g.info.parent) < 0 && parents.length < 20) parents.push(g.info.parent); });
+    const pImg = {};
+    if (parents.length) {
+      const pr = ltFetch_(parents);
+      parents.forEach((pu, i) => {
+        const res = pr[i];
+        if (res && res.getResponseCode() === 200) pImg[pu] = ltAbs_(ltExtract_(res.getContentText('UTF-8').slice(0, 300000)).image, pu);
+      });
+    }
+    sh.getRange(1, 1, 1, LT_COLS.length).setValues([LT_COLS]);
+    got.forEach(g => {
+      const info = g.info;
+      if (g.status === 'ok' && !info.image && info.parent) info.image = pImg[info.parent] || '';
+      out[g.u] = { title: info.title, status: g.status, page: info.page, og: info.og, parent: info.parent, image: info.image };
+      const r = rowOf[g.u] || sh.getLastRow() + 1;
+      rowOf[g.u] = r;
       sh.getRange(r, 1, 1, LT_COLS.length).setNumberFormat('@')
-        .setValues([[u, info.title, status, new Date().toISOString(), info.page, info.og, info.parent].map(sgText_)]);
+        .setValues([[g.u, info.title, g.status, new Date().toISOString(), info.page, info.og, info.parent,
+          g.status === 'ok' ? (info.image || 'none') : ''].map(sgText_)]);
     });
   }
   return json_({ ok: true, titles: out });

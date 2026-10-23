@@ -1496,7 +1496,8 @@ function shelfHtml() {
   const cards = items.map((it, i) => {
     const b = it.b;
     const idx = b ? allBooks.indexOf(b) : -1;
-    const img = b && b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const cov = shelfCover(it);
+    const img = cov ? `<img src="${esc(cov)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
     const url = (it.rem && it.rem.url) || (b && b.url) || '';
     const play = url ? `<button class="sh-play" onclick="shelfPlay(${i});event.stopPropagation()" title="${it.rem && it.rem.url ? 'อ่านตอนที่ตั้งเตือนไว้' : 'อ่านต่อ'}">▶</button>` : '';
     const prog = b && b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
@@ -1513,6 +1514,18 @@ function shelfHtml() {
     return `<div class="sh-card${b ? '' : ' sh-remonly'}" onclick="${open}"><div class="sh-cover"><span class="sh-nc">${b ? '📖' : '🔔'}</span>${img}${newB}${play}</div><div class="sh-title">${esc(it.title)}</div>${prog}${remL}</div>`;
   }).join('');
   return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${items.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
+}
+/* 🖼️ cover: the library's own, else the one Google read from a reminder link of
+   this novel (og:image), else the 💡 suggestion's cover */
+function shelfCover(it) {
+  if (it.b && it.b.cover) return fixCoverUrl(it.b.cover);
+  const g = reminderGroups().find(g => nameMatch(g.title, it.title));
+  for (const r of (g ? g.rems : (it.rem ? [it.rem] : []))) {
+    const c = linkTitles[r.url];
+    if (c && c.status === 'ok' && c.image) return c.image;
+  }
+  const x = sgList.find(x => x.thumb && nameMatch(x.name, it.title)) || null;
+  return x ? x.thumb : '';
 }
 /* ▶ on the shelf: the reminder's chapter link, else the novel's link */
 function shelfPlay(i) {
@@ -3669,7 +3682,8 @@ async function fetchLinkTitles(urls) {
   const want = [...new Set((urls || []).map(u => String(u || '').trim()))].filter(u => {
     if (!/^https?:\/\//i.test(u) || u.indexOf(SG_REMIND_MARK) >= 0 || ltPending.has(u)) return false;
     const c = linkTitles[u];
-    return !c || (c.status !== 'ok' && Date.now() - (c.at || 0) > LT_RETRY);
+    return !c || (c.status !== 'ok' && Date.now() - (c.at || 0) > LT_RETRY) ||
+      (c.status === 'ok' && c.image === undefined);   // saved before covers were read → ask once more
   }).slice(0, 30);
   if (!want.length) return;
   want.forEach(u => ltPending.add(u));
@@ -3679,7 +3693,7 @@ async function fetchLinkTitles(urls) {
     if (!d || !d.titles) { ltUnsupported = true; return; }   // Code.gs not updated yet
     Object.keys(d.titles).forEach(u => {
       const t = d.titles[u] || {};
-      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', at: Date.now() };
+      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', image: t.image || '', at: Date.now() };
     });
     ltSave();
   } catch (e) {
