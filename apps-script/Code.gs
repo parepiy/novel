@@ -156,6 +156,8 @@ function doPost(e) {
     if (sr) return sr;
     const lr = linkTitlesRouter_(action, d);
     if (lr) return lr;
+    const cr = chapterWatchRouter_(action, d);
+    if (cr) return cr;
 
     const sh = getSheet_();
 
@@ -245,7 +247,15 @@ function readSubs_() {
 
 function reminderRouter_(action, d) {
   if (action === 'remind_list') return json_({ ok: true, reminders: readReminders_() });
-  if (action === 'push_pull')   return json_({ ok: true, reminders: readReminders_(), subs: readSubs_() });
+  if (action === 'push_pull')   return json_({ ok: true, reminders: readReminders_(), subs: readSubs_(), notices: sgRead_('push_queue', NOTICE_COLS) });
+  // the GitHub sender delivered these one-off notices (e.g. 🆕 new chapters)
+  if (action === 'notice_done') {
+    const ids = (Array.isArray(d.ids) ? d.ids : [d.id]).map(String);
+    const sh = sgSheet_('push_queue', NOTICE_COLS);
+    const vals = sh.getDataRange().getValues();
+    for (let i = vals.length - 1; i >= 1; i--) if (ids.indexOf(String(vals[i][0])) >= 0) sh.deleteRow(i + 1);
+    return json_({ ok: true });
+  }
 
   if (action === 'remind_add') {
     const sh = remindersSheet_();
@@ -486,6 +496,79 @@ function linkTitlesRouter_(action, d) {
     });
   }
   return json_({ ok: true, titles: out });
+}
+
+// ---------------- 🆕 new-chapter alerts ----------------
+// The 💡 bookmarklet looks up your Reading novels on ReadAWrite and sends their
+// chapter counts here. chapters = latest count, seen = the count you last
+// acknowledged (✓ รับทราบ), so "new" = chapters - seen. When a count goes up,
+// one push notice is queued for the GitHub sender (push_pull → notice_done).
+const CW_COLS = ['aid', 'title', 'chapters', 'seen', 'end', 'found', 'updated', 'checked_at'];
+const NOTICE_COLS = ['id', 'title', 'body', 'url', 'created_at'];
+
+function chapterWatchRouter_(action, d) {
+  if (action === 'cw_state') return json_({ ok: true, items: sgRead_('chapter_watch', CW_COLS) });
+
+  if (action === 'cw_save' || action === 'cw_ack') {
+    const sh = sgSheet_('chapter_watch', CW_COLS);
+    const vals = sh.getDataRange().getValues();
+    const norm = t => String(t || '').trim().toLowerCase();
+    const findRow = (aid, title) => {
+      for (let i = 1; i < vals.length; i++) {
+        if (aid && String(vals[i][0]) === aid) return i + 1;
+        if (norm(vals[i][1]) && norm(vals[i][1]) === norm(title)) return i + 1;
+      }
+      return 0;
+    };
+    const write = (r, row) => {
+      sh.getRange(r, 1, 1, CW_COLS.length).setNumberFormat('@').setValues([row.map(v => sgText_(v))]);
+      while (vals.length < r) vals.push([]);
+      vals[r - 1] = row;
+    };
+
+    if (action === 'cw_ack') {
+      const r = findRow(String(d.aid || ''), d.title);
+      if (!r) return json_({ ok: false, error: 'not found' });
+      const v = vals[r - 1];
+      const row = CW_COLS.map((c, j) => v[j] == null ? '' : v[j]);
+      row[3] = String(parseInt(d.seen, 10) || parseInt(v[2], 10) || 0);
+      write(r, row);
+      return json_({ ok: true });
+    }
+
+    const now = new Date().toISOString();
+    const fresh = [];
+    (Array.isArray(d.items) ? d.items : []).forEach(it => {
+      const title = String(it.title || '').trim();
+      if (!title) return;
+      const aid = String(it.aid || '');
+      const ch = parseInt(it.chapters, 10) || 0;
+      const found = it.found && ch > 0;
+      const r = findRow(aid, title);
+      if (r) {
+        const v = vals[r - 1];
+        const prev = parseInt(v[2], 10) || 0;
+        let seen = parseInt(v[3], 10) || 0;
+        if (!found) {   // not found this time: keep the old counts
+          write(r, [v[0], title, prev, seen, v[4], 0, v[6], now]);
+          return;
+        }
+        if (!prev && !seen) seen = ch;   // first real count → nothing "new" yet
+        if (prev && ch > prev && ch > seen) fresh.push({ title: title, n: ch - seen });
+        write(r, [aid || v[0], title, ch, seen, it.end ? 1 : 0, 1, it.updated || '', now]);
+      } else {
+        write(sh.getLastRow() + 1, [aid, title, found ? ch : 0, found ? ch : 0, it.end ? 1 : 0, found ? 1 : 0, it.updated || '', now]);
+      }
+    });
+    if (fresh.length) {
+      const body = fresh.map(f => f.title + ' +' + f.n + ' ตอน').join(' · ');
+      const q = sgSheet_('push_queue', NOTICE_COLS);
+      q.appendRow(['n' + Date.now() + Math.floor(Math.random() * 1000), fresh.length > 1 ? '🆕 มีตอนใหม่ ' + fresh.length + ' เรื่อง' : '🆕 มีตอนใหม่', body,
+        String(d.app_url || 'https://parepiy.github.io/novel/').split('#')[0] + '#newch', now].map(sgText_));
+    }
+    return json_({ ok: true, items: sgRead_('chapter_watch', CW_COLS), fresh: fresh.length });
+  }
+  return null;
 }
 
 // ---------------- run these by hand from the editor ----------------
