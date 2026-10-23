@@ -1,7 +1,8 @@
 /* Scheduled Web Push sender for reading reminders.
  * Runs from GitHub Actions on a cron. Pulls due reminders + push
  * subscriptions from the Apps Script endpoint, sends a push for each due
- * reminder, then marks it sent. Requires these env vars (GitHub secrets):
+ * reminder, then marks it sent. Also sends one-off notices queued by the
+ * script (🆕 new chapters found by the 💡 bookmarklet) and clears them. Requires these env vars (GitHub secrets):
  *   GAS_URL, GAS_SECRET, VAPID_PUBLIC, VAPID_PRIVATE, [VAPID_SUBJECT] */
 const webpush = require('web-push');
 
@@ -40,19 +41,14 @@ async function gas(body) {
   const all = data.reminders || [];
   const subs = data.subs || [];
   const due = all.filter(r => !Number(r.sent) && Number(r.remind_at) <= now);
-  console.log(`reminders=${all.length} due=${due.length} subs=${subs.length}`);
+  const notices = data.notices || [];
+  console.log(`reminders=${all.length} due=${due.length} notices=${notices.length} subs=${subs.length}`);
 
-  if (!due.length) { console.log('no due reminders'); return; }
+  if (!due.length && !notices.length) { console.log('nothing to send'); return; }
   if (!subs.length) { console.log('no push subscriptions saved yet'); return; }
 
-  for (const rem of due) {
-    const weekly = String(rem.url || '').includes(WEEKLY_MARK);
-    const payload = JSON.stringify({
-      title: weekly ? '💡 นิยายแนะนำ' : '📖 ถึงเวลาอ่านนิยาย',
-      body: rem.title || '',
-      url: rem.url || DEFAULT_URL,
-      tag: 'reminder-' + rem.id
-    });
+  // send one payload to every saved device; drop subscriptions that are gone
+  async function sendAll(payload) {
     let delivered = false;
     for (const s of subs) {
       const sub = { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } };
@@ -67,6 +63,26 @@ async function gas(body) {
         }
       }
     }
+    return delivered;
+  }
+
+  for (const n of notices) {
+    const ok = await sendAll(JSON.stringify({
+      title: n.title || '🆕 มีตอนใหม่', body: n.body || '', url: n.url || DEFAULT_URL + '#newch', tag: 'notice-' + n.id
+    }));
+    if (ok) { await gas({ action: 'notice_done', token: SECRET, ids: [n.id] }); console.log('sent notice:', n.id, '-', n.body); }
+    else console.log('notice not delivered, will retry:', n.id);
+  }
+
+  for (const rem of due) {
+    const weekly = String(rem.url || '').includes(WEEKLY_MARK);
+    const payload = JSON.stringify({
+      title: weekly ? '💡 นิยายแนะนำ' : '📖 ถึงเวลาอ่านนิยาย',
+      body: rem.title || '',
+      url: rem.url || DEFAULT_URL,
+      tag: 'reminder-' + rem.id
+    });
+    const delivered = await sendAll(payload);
     if (delivered && weekly) {
       // Keep the same weekday/time: step forward whole weeks past "now".
       let next = Number(rem.remind_at) + WEEK;

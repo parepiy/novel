@@ -650,6 +650,17 @@ body.editor .m-edit{display:inline-block;}
 .sh-nc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--mute);}
 .sh-play{position:absolute;right:6px;bottom:6px;z-index:1;width:30px;height:30px;border-radius:50%;border:none;background:var(--mint);color:#fff;font-size:.78rem;display:flex;align-items:center;justify-content:center;padding-left:2px;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s;}
 .sh-play:hover{transform:scale(1.1);}
+.new-badge{display:inline-block;align-self:flex-start;font-size:.66rem;font-weight:700;padding:1px 8px;border-radius:999px;color:#fff;background:linear-gradient(90deg,#f43f5e,#f59e0b);box-shadow:0 0 10px rgba(244,63,94,.35);}
+.sh-new{position:absolute;left:5px;top:5px;z-index:1;}
+.fb.st-new{color:#e11d48;border-color:rgba(244,63,94,.45);font-weight:600;}
+:root[data-theme="dark"] .fb.st-new{color:#fda4af;}
+.m-newch{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.07);font-size:.86rem;line-height:1.6;}
+.m-newch:empty{display:none;}
+.m-newch b{color:#e11d48;}
+:root[data-theme="dark"] .m-newch b{color:#fda4af;}
+.m-newch .mn-sub{font-size:.78rem;color:var(--dim);}
+.m-newch .mn-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.m-newch.end{border-color:var(--line2,var(--bd2));background:none;}
 .sh-prog{margin-top:2px;font-size:.66rem;color:var(--raw2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sh-title{margin-top:5px;font-size:.74rem;font-weight:600;line-height:1.35;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 @media(min-width:700px){.shelf{padding:16px 20px 12px;}.sh-card{width:118px;}}
@@ -925,6 +936,7 @@ body.editor .m-edit{display:inline-block;}
     </div>
     <div class="m-summary" id="m-summary"></div>
     <div class="m-note" id="m-note"></div>
+    <div class="m-newch" id="m-newch"></div>
     <div id="m-quick"></div>
     <div class="mq-msg" id="m-quick-msg"></div>
     <div class="m-actions">
@@ -1080,6 +1092,7 @@ let suggestView = false;  // true while the 💡 Suggestions tab is showing
 let activeTags = new Set();
 let activeStar = null;
 let activeStatus = null;   // null = any, or a reading-status key
+let activeNew = false;     // 🆕 only novels with new chapters
 let searchQ = '';
 let searchScope = 'title';
 let sortBy = (function(){ try { return localStorage.getItem('sortBy') || 'default'; } catch(e){ return 'default'; } })();
@@ -1268,6 +1281,7 @@ async function refreshFromGas() {
       if (o) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
     });
     renderAll();
+    loadChapterWatch();
   } catch(e) { /* keep CSV data on failure */ }
 }
 
@@ -1309,7 +1323,10 @@ function renderFilterStrip() {
     '<option value="title"'   + (sortBy === 'title'   ? ' selected' : '') + '>↕ ชื่อ ก-ฮ</option>' +
   '</select>';
 
+  const nNew = isEditor() ? allBooks.filter(b => cwNew(b) > 0).length : 0;
+  const newBtn = nNew ? `<button class="fb st-new${activeNew ? ' active' : ''}" onclick="setNewFilter()">🆕 มีตอนใหม่ ${nNew}</button>` : '';
   const groups = [sortSel, srcBtns];
+  if (newBtn) groups.push(newBtn);
   if (statusBtns) groups.push(statusBtns);
   if (starBtns) groups.push(starBtns);
   if (tagBtns) groups.push(tagBtns);
@@ -1319,7 +1336,7 @@ function renderFilterStrip() {
 }
 
 function updateClearBtn() {
-  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null || activeStatus !== null;
+  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null || activeStatus !== null || activeNew;
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
@@ -1334,6 +1351,7 @@ function renderActiveFilters() {
   const chips = [];
   if (activeSource) chips.push(afChip(activeSource === 'meb' ? 'MEB' : 'RAW', "setSource('" + activeSource + "')", activeSource === 'raw' ? 'raw' : 'meb'));
   if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
+  if (activeNew) chips.push(afChip('🆕 มีตอนใหม่', 'setNewFilter()', ''));
   if (activeStar !== null) chips.push(afChip(activeStar + '★', 'setStar(' + activeStar + ')', 'star'));
   [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + t.replace(/'/g, "\\'") + "')", '')));
   const q = searchQ.trim();
@@ -1356,7 +1374,7 @@ function getFilteredBooks() {
   const list = pool.filter(b => {
     const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
     const starOk = activeStar === null || b.star === activeStar;
-    const statusOk = activeStatus === null || b.status === activeStatus;
+    const statusOk = (activeStatus === null || b.status === activeStatus) && (!activeNew || cwNew(b) > 0);
     const searchOk = !q || b.title.toLowerCase().includes(q) ||
       (searchScope === 'summary' && (b.summary.toLowerCase().includes(q) || (isEditor() && (b.note || '').toLowerCase().includes(q))));
     return tagOk && starOk && statusOk && searchOk;
@@ -1382,7 +1400,7 @@ function renderGrid() {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน' + (sgSec ? 'ในคลัง' : '') + '</div>' + sgSec;
     return;
   }
-  const noFilter = !activeSource && !activeStatus && activeStar === null && !activeTags.size && !searchQ.trim();
+  const noFilter = !activeSource && !activeStatus && !activeNew && activeStar === null && !activeTags.size && !searchQ.trim();
   document.getElementById('main-content').innerHTML = (noFilter ? shelfHtml() : '') +
     `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>` + sgSec;
   updateScrollBtns();
@@ -1411,13 +1429,16 @@ function shelfHtml() {
   const reading = allBooks.filter(b => b.status === 'reading');
   if (!reading.length) return '';
   const log = readLog();
-  reading.sort((a, b) => (log[b.title] || 0) - (log[a.title] || 0) || (b.row || 0) - (a.row || 0));
+  // 🆕 new chapters first, then the ones you opened most recently
+  reading.sort((a, b) => (cwNew(b) > 0) - (cwNew(a) > 0) || (log[b.title] || 0) - (log[a.title] || 0) || (b.row || 0) - (a.row || 0));
   const cards = reading.map(b => {
     const idx = allBooks.indexOf(b);
     const img = b.cover ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.remove()">` : '';
     const play = b.url ? `<button class="sh-play" onclick="continueRead(${idx});event.stopPropagation()" title="อ่านต่อ">▶</button>` : '';
     const prog = b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
-    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${play}</div><div class="sh-title">${esc(b.title)}</div>${prog}</div>`;
+    const nw = cwNew(b);
+    const newB = nw > 0 ? `<span class="new-badge sh-new">🆕 +${nw}</span>` : '';
+    return `<div class="sh-card" onclick="openModal(${idx})"><div class="sh-cover"><span class="sh-nc">📖</span>${img}${newB}${play}</div><div class="sh-title">${esc(b.title)}</div>${prog}</div>`;
   }).join('');
   return `<section class="shelf"><div class="shelf-h"><span class="shelf-t"><span class="shelf-ic">▶️</span> <span class="shelf-tx">อ่านต่อ</span></span><span class="shelf-n">${reading.length} เรื่อง</span></div><div class="shelf-row">${cards}</div></section>`;
 }
@@ -1430,7 +1451,9 @@ function buildCard(b, idx) {
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
   const starHtml = b.star > 0 ? `<span class="star-badge">${b.star}★</span>` : '';
   const stMeta = b.status && STATUS_META[b.status];
-  const stHtml = stMeta ? `<span class="st-pill ${stMeta.cls}">${stMeta.label}</span>` : '';
+  const nw = cwNew(b);
+  const stHtml = (stMeta ? `<span class="st-pill ${stMeta.cls}">${stMeta.label}</span>` : '') +
+    (nw > 0 ? `<span class="new-badge">🆕 +${nw} ตอน</span>` : '');
   return `<div class="card" onclick="openModal(${idx})">
     <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
     <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
@@ -1534,6 +1557,12 @@ function setSource(s) {
   renderGrid();
 }
 
+function setNewFilter() {
+  if (notifyView || statsView || suggestView) switchTab('all');
+  activeNew = !activeNew;
+  renderFilterStrip();
+  renderGrid();
+}
 function setStatus(s) {
   if (notifyView || statsView || suggestView) switchTab('all');
   activeStatus = (activeStatus === s) ? null : s;
@@ -2413,7 +2442,8 @@ function sgStartBridge() {
         let books = allBooks;
         try { const b = await gasPostWith(creds, { action: 'list' }); if (Array.isArray(b.books)) books = b.books; } catch (e) {}
         setBusy(true, 'กำลังดึงเรื่องย่อเรื่องใหม่ (แท็บ readawrite)');
-        reply({ type: 'nv-state', list: st.list || [], marks: st.marks || [], lib: (books || []).map(b => ({ t: b.title || '', u: b.url || '' })) });
+        reply({ type: 'nv-state', list: st.list || [], marks: st.marks || [], lib: (books || []).map(b => ({ t: b.title || '', u: b.url || '' })),
+          watch: cwWatchList(books || []) });   // 🆕 Reading novels to check for new chapters
       } else if (m.type === 'nv-save' && creds && !saving) {
         saving = true;
         setBusy(true, 'กำลังบันทึกนิยายแนะนำ');
@@ -2421,12 +2451,21 @@ function sgStartBridge() {
           action: 'sg_save', list: Array.isArray(m.list) ? m.list : [],
           updated_at: String(m.updated_at || new Date().toISOString())
         });
+        let fresh = 0;
+        if (Array.isArray(m.chapters) && m.chapters.length) {
+          setBusy(true, 'กำลังบันทึกตอนใหม่');
+          try {
+            const r = await gasPostWith(creds, { action: 'cw_save', items: m.chapters, app_url: location.origin + location.pathname });
+            if (Array.isArray(r.items)) cwItems = r.items;
+            fresh = +r.fresh || 0;
+          } catch (e) { toast('บันทึกตอนใหม่ไม่ได้: ' + e.message, 5000); }
+        }
         reply({ type: 'nv-done', added: +m.added || 0 });
         window.removeEventListener('message', onMsg);
         clearTimeout(safety);
         setBusy(false);
         if (isEditor()) switchTab('suggest');
-        toast('บันทึกนิยายแนะนำลงชีตแล้ว ✓' + (+m.added ? ' · เรื่องใหม่ ' + m.added + ' เรื่อง' : '') +
+        toast('บันทึกนิยายแนะนำลงชีตแล้ว ✓' + (+m.added ? ' · เรื่องใหม่ ' + m.added + ' เรื่อง' : '') + (fresh ? ' · 🆕 มีตอนใหม่ ' + fresh + ' เรื่อง' : '') +
           ' — ถ้าใช้แอปบน Dock กลับไปที่แอปได้เลย รายการจะโหลดใหม่เอง (ปิดแท็บนี้ได้)', 9000);
       } else if (m.type === 'nv-abort') {
         clearTimeout(safety);
@@ -2445,9 +2484,15 @@ function sgStartBridge() {
 /* …/#suggest (weekly notification) opens this tab; …/#sg-bridge receives a handoff */
 function handleHashRoute() {
   const h = location.hash;
-  if (h !== SG_REMIND_MARK && h !== '#sg-bridge') return;
+  if (h !== SG_REMIND_MARK && h !== '#sg-bridge' && h !== '#newch') return;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   if (h === '#sg-bridge') { sgStartBridge(); return; }
+  if (h === '#newch') {   // tapped the 🆕 push notification
+    switchTab('all');
+    cwOpenNew = true;   // turned on once the library + counts are loaded
+    loadChapterWatch();
+    return;
+  }
   if (isEditor()) switchTab('suggest');
 }
 window.addEventListener('hashchange', handleHashRoute);
@@ -2506,6 +2551,7 @@ function clearAll() {
   searchQ = '';
   activeSource = null;
   activeStatus = null;
+  activeNew = false;
   document.getElementById('search-input').value = '';
   renderFilterStrip();
   if (suggestView) { renderSuggest(); return; }
@@ -2560,6 +2606,7 @@ function openModal(idx) {
     ? '📖 อ่านถึง ' + (b.progress || '—') + (b.progressAt ? ' · อ่านล่าสุด ' + sgThaiDate(b.progressAt) : '') : '';
   const nt = document.getElementById('m-note');
   nt.textContent = isEditor() && b.note ? b.note : '';
+  renderNewChapters(b, idx);
   const meb = document.getElementById('m-meb');
   const wantMeb = b.status === 'wishlist' || b.status === 'bought';
   meb.style.display = wantMeb ? 'inline-block' : 'none';
@@ -2578,6 +2625,98 @@ function openModal(idx) {
   renderModalQuick(b);
   document.getElementById('modal-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+/* ===== 🆕 NEW-CHAPTER ALERTS =====
+   The weekly 💡 bookmarklet looks up your Reading novels on ReadAWrite and the
+   Sheet ("chapter_watch") keeps: chapters (latest), seen (what you acknowledged). */
+let cwItems = [];
+let cwLoading = null;
+let cwOpenNew = false;   // opened from the 🆕 push → show the 🆕 filter
+function loadChapterWatch() {
+  if (!isEditor()) return Promise.resolve();
+  if (cwLoading) return cwLoading;
+  cwLoading = gasPost({ action: 'cw_state' }).then(d => {
+    if (d && Array.isArray(d.items)) {
+      cwItems = d.items;
+      if (cwOpenNew && allBooks.length) { cwOpenNew = false; if (allBooks.some(b => cwNew(b) > 0)) activeNew = true; }
+      if (!notifyView && !statsView && !suggestView) { renderFilterStrip(); renderGrid(); }
+    }
+  }).catch(() => {}).finally(() => { cwLoading = null; });
+  return cwLoading;
+}
+/* Reading novels from ReadAWrite (source RAW or a readawrite link), with the
+   ReadAWrite novel id when the app knows it */
+function cwWatchList(books) {
+  return books.filter(b => normStatus(b.status) === 'reading' && (String(b.source || '').trim() === 'raw' || /readawrite/i.test(b.url || '')))
+    .map(b => {
+      const t = String(b.title || '').trim();
+      let aid = (String(b.url || '').match(/readawrite\.com\/a\/([0-9a-z]+)/i) || [])[1] || '';
+      if (!aid) {   // a chapter link from a reminder whose page pointed to the novel
+        const n = sgNormName(t);
+        const r = (reminders || []).find(r => sgNormName(r.title) === n && linkTitles[r.url] && linkTitles[r.url].parent);
+        if (r) aid = (String(linkTitles[r.url].parent).match(/\/a\/([0-9a-z]+)/i) || [])[1] || '';
+      }
+      if (!aid) {
+        const n = sgNormName(t);
+        const x = sgList.find(x => sgNormName(x.name) === n) || sgMarks.find(x => sgNormName(x.name) === n);
+        if (x) aid = String(x.guid || '');
+      }
+      return { title: t, aid: aid };
+    });
+}
+function cwFor(b) {
+  if (!b || !cwItems.length) return null;
+  const n = sgNormName(b.title);
+  return cwItems.find(x => sgNormName(x.title) === n) || null;
+}
+function cwNew(b) {
+  if (!isEditor() || b.status !== 'reading') return 0;
+  const c = cwFor(b);
+  if (!c || String(c.found) !== '1') return 0;
+  return Math.max(0, (parseInt(c.chapters, 10) || 0) - (parseInt(c.seen, 10) || 0));
+}
+/* the chapter number in "📖 อ่านถึง" (e.g. "ตอนที่ 45 …" → 45) */
+function progressNum(p) {
+  const m = String(p || '').match(/(?:ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode)\s*(\d+)/i);
+  return m ? parseInt(m[1], 10) : 0;
+}
+function renderNewChapters(b, idx) {
+  const el = document.getElementById('m-newch');
+  if (!el) return;
+  const c = isEditor() && b.status === 'reading' ? cwFor(b) : null;
+  el.className = 'm-newch';
+  if (!c) { el.innerHTML = ''; return; }
+  const checked = c.checked_at ? 'ตรวจล่าสุด ' + sgThaiDate(c.checked_at) : '';
+  if (String(c.found) !== '1') {
+    el.className = 'm-newch end';
+    el.innerHTML = '<div class="mn-sub">🆕 หาเรื่องนี้ใน ReadAWrite ไม่เจอ จึงตรวจตอนใหม่ไม่ได้ (ชื่อต้องตรงกับใน ReadAWrite หรือใส่ลิงก์ readawrite.com/a/… ของเรื่อง)' + (checked ? ' · ' + checked : '') + '</div>';
+    return;
+  }
+  const total = parseInt(c.chapters, 10) || 0;
+  const nw = cwNew(b);
+  const at = progressNum(b.progress);
+  const left = at && total > at ? total - at : 0;
+  const upd = c.updated && !isNaN(new Date(c.updated)) ? ' · ReadAWrite อัปเดตล่าสุด ' + sgThaiDate(c.updated) : '';
+  const lines = [];
+  if (nw > 0) lines.push('<b>🆕 มีตอนใหม่ ' + nw + ' ตอน</b>');
+  if (String(c.end) === '1') lines.push('<b>🏁 เรื่องนี้จบแล้ว (ครบ ' + total + ' ตอน)</b>');
+  lines.push('<span class="mn-sub">ทั้งหมด ' + total + ' ตอน' + upd + (checked ? ' · ' + checked : '') + '</span>');
+  if (left) lines.push('<span class="mn-sub">📖 คุณอ่านถึง ตอนที่ ' + at + ' → เหลืออีก ' + left + ' ตอน</span>');
+  if (!nw && String(c.end) !== '1' && !left) { el.className = 'm-newch end'; }
+  el.innerHTML = lines.join('<br>') + (nw > 0
+    ? '<div class="mn-btns"><button class="btn btn-primary btn-sm" onclick="remindFromNovel(' + idx + ')">🔔 ตั้งเตือนตอนถัดไป</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="cwAck(' + idx + ')">✓ รับทราบ</button></div>' : '');
+}
+async function cwAck(idx) {
+  const b = allBooks[idx];
+  const c = cwFor(b);
+  if (!b || !c) return;
+  const prev = c.seen;
+  c.seen = String(c.chapters);   // optimistic
+  renderNewChapters(b, idx); renderFilterStrip(); renderGrid();
+  try { await gasPost({ action: 'cw_ack', aid: c.aid || '', title: c.title, seen: parseInt(c.chapters, 10) || 0 }); }
+  catch (e) { c.seen = prev; renderNewChapters(b, idx); renderFilterStrip(); renderGrid(); alert('บันทึกไม่ได้: ' + e.message); }
 }
 
 /* 🛒 the novel on MEB: its own link when it's an MEB link, otherwise a search */
@@ -2888,9 +3027,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles']);
+const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');

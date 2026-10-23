@@ -8,6 +8,10 @@
           ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list,
           and never a novel that's already in your library.
 
+   🆕 New chapters: the app also sends your Reading novels; each one is looked
+   up on ReadAWrite (by its novel id, else by its exact title) and the chapter
+   counts go back to the Sheet, which notices the ones that went up.
+
    It calls ReadAWrite's own list API from your verified browser session (it
    never bypasses or automates the "ยืนยันตัวตน" check), builds the 3 BL
    lists, merges them with the list + marks saved in your Google Sheet
@@ -275,6 +279,48 @@
     return out;
   }
 
+  /* 🆕 chapter counts for your Reading novels: [{ title, aid }] → [{ title, aid, chapters, end, found, updated }] */
+  function cleanQuery(t) {
+    return String(t || '').replace(/[\(\[\{（【「『<][^\)\]\}）】」』>]*[\)\]\}）】」』>]/g, ' ').replace(/#\S+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  async function checkChapters(watch) {
+    var out = [];
+    for (var i = 0; i < (watch || []).length; i++) {
+      var w = watch[i];
+      progress('🆕 ตรวจตอนใหม่ ' + (i + 1) + '/' + watch.length + ': ' + w.title);
+      var list = await safeApi('ค้นหา ' + w.title, {
+        api_call: 'Search', method_call: 'userSearchArticlesBySearchService', token: '',
+        article_name: cleanQuery(w.title), author_name: '', article_synopsis: '', publisher_name: '', category_name: '',
+        article_species: 'ALL', article_type: 'ALL', category_id_2: '', tag_name: '',
+        is_end: '', is_yourname: '', is_fanfiction: '',
+        excluded_article_species: ['CARTOON', 'TOPIC', 'CHAT'],
+        sort_by: 'view_count', sort_type: 'DESC', app_id: 'RAW', app_platform: 'WEB',
+        result_per_page: 20, more_than_one_chapter: 0, is_user_verified: 0, required_verify: 1,
+        exact_search: 0, page_no: 1
+      }) || [];
+      var want = normName(w.title);
+      var aid = String(w.aid || '').toLowerCase();
+      var hit = null;
+      for (var k = 0; k < list.length && !hit; k++) {
+        var a = list[k];
+        var g = String(a.article_guid || '').toLowerCase(), sg = String(a.article_short_guid || '').toLowerCase();
+        if (aid && (g === aid || sg === aid)) hit = a;
+      }
+      for (var k2 = 0; k2 < list.length && !hit; k2++) if (normName(clean(list[k2].article_name)) === want) hit = list[k2];
+      if (hit) {
+        out.push({
+          title: w.title, aid: String(hit.article_guid || hit.article_short_guid || w.aid || ''),
+          chapters: parseInt(hit.chapter_count, 10) || 0, end: String(hit.is_end) === '1' ? 1 : 0, found: 1,
+          updated: String(hit.last_chapter_date || hit.article_update_date || hit.update_date || hit.last_update_date || hit.chapter_update_date || '')
+        });
+      } else out.push({ title: w.title, aid: w.aid || '', chapters: 0, end: 0, found: 0, updated: '' });
+      await sleep(200);
+    }
+    var found = out.filter(function (x) { return x.found; }).length;
+    if (out.length) log('🆕 ตรวจตอนใหม่ ' + out.length + ' เรื่อง (เจอใน ReadAWrite ' + found + ' เรื่อง)');
+    return out;
+  }
+
   async function fetchSyn(items) {
     var need = items.filter(function (x) { return !x.syn; });
     for (var i = 0; i < need.length; i += 5) {
@@ -442,8 +488,9 @@
             try {
               var res = merge((m.list || []).map(fromRow), pools, m.marks || [], m.lib || []);
               await fetchSyn(res.list);
+              var chapters = await checkChapters(m.watch || []);
               progress('💾 แอปกำลังบันทึก…');
-              reply({ type: 'nv-save', list: res.list.map(toRow), added: res.added, updated_at: new Date().toISOString() });
+              reply({ type: 'nv-save', list: res.list.map(toRow), added: res.added, updated_at: new Date().toISOString(), chapters: chapters });
             } catch (e) {
               working = false;
               progress('');
@@ -514,8 +561,18 @@
       try { lib = (await gas({ action: 'list' })).books || []; } catch (e) {}
       var res = merge((state.list || []).map(fromRow), pools, state.marks || [], lib);
       await fetchSyn(res.list);
+      /* Reading novels from ReadAWrite (source RAW or a readawrite link) */
+      var watch = lib.filter(function (b) {
+        return /^(reading|กำลังอ่าน)$/i.test(String(b.status || '').trim()) &&
+          (String(b.source || '').trim() === 'raw' || /readawrite/i.test(b.url || ''));
+      }).map(function (b) {
+        var m2 = String(b.url || '').match(/readawrite\.com\/a\/([0-9a-z]+)/i);
+        return { title: String(b.title || '').trim(), aid: m2 ? m2[1] : '' };
+      });
+      var chapters = await checkChapters(watch);
       progress('💾 กำลังบันทึกลง Google Sheet…');
       await gas({ action: 'sg_save', list: res.list.map(toRow), updated_at: new Date().toISOString() });
+      if (chapters.length) { try { await gas({ action: 'cw_save', items: chapters, app_url: CFG.a || '' }); } catch (e) { log('⚠️ บันทึกตอนใหม่ไม่ได้: ' + e.message, '#f0a94d'); } }
       progress('');
       log('✅ อัปเดตแล้ว! ' + (res.added ? 'เพิ่มเรื่องใหม่ ' + res.added + ' เรื่อง' : 'รายการพร้อมแล้ว') + ' — เปิดแอป › 💡 แนะนำ แล้วกดโหลดใหม่', '#6fd3ad');
     } else {
