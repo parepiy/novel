@@ -2971,7 +2971,7 @@ function renderBmSheet() {
   document.getElementById('bmk-card').innerHTML =
     '<button class="ov-close" onclick="closeBmSheet()">✕</button><h3>' + head + '</h3>' +
     (titleInput
-      ? '<div class="f-row"><label>ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
+      ? '<div class="f-row"><label>ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmForm.autoTitle=\'\';bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
         '<div class="f-row"><label>ที่อ่าน</label><div class="bmk-seg"><button class="' + (f.source === 'meb' ? 'on' : '') + '" onclick="bmSetSource(\'meb\')">MEB</button><button class="' + (f.source === 'raw' ? 'on' : '') + '" onclick="bmSetSource(\'raw\')">RAW</button></div></div>'
       : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="src-mini ' + f.source + '">' + src + '</span>' + (f.other ? ' · <span class="bmk-out">ไม่มีในคลัง</span>' : '') + '</div>') +
     '<div class="f-row"><label>ตอนที่ <b class="req">*</b></label><div class="bmk-chline">' +
@@ -3023,6 +3023,16 @@ function bmUrlChanged(now) {
     await fetchLinkTitles([url]);
     if (!bmForm || (bmForm.url || '').trim() !== url) return;
     const c = linkTitles[url];
+    // ✨ a novel that isn't in your library: its name from the link too
+    let named = '';
+    if (!bmForm.fixedTitle && c && c.status === 'ok') {
+      const nm = guessNovelName(c);
+      const ti = document.getElementById('bmk-title');
+      if (nm && ti && (!ti.value.trim() || ti.value === bmForm.autoTitle)) {
+        ti.value = nm; bmForm.title = nm; bmForm.autoTitle = nm; named = nm;
+        bmTitleHint();
+      }
+    }
     const ch = c && c.status === 'ok' ? chapterTitle(c.title, bmForm.title) : '';
     const n = progressNum(ch);
     const inp = document.getElementById('bmk-ch');
@@ -3030,7 +3040,7 @@ function bmUrlChanged(now) {
       inp.value = String(n); bmForm.chapter = inp.value; bmForm.autoCh = false; bmForm.hint = '';
       const h = document.getElementById('bmk-hint'); if (h) h.textContent = '';
     }
-    if (note) note.textContent = ch ? '📖 ' + ch + (n ? ' → ตอนที่ ' + n : '') : 'อ่านชื่อตอนจากลิงก์นี้ไม่ได้ — ใส่เลขตอนเองได้เลย';
+    if (note) note.textContent = ch ? '📖 ' + ch + (n ? ' → ตอนที่ ' + n : '') + (named ? ' · ✨ ใส่ชื่อเรื่องให้แล้ว' : '') : 'อ่านชื่อตอนจากลิงก์นี้ไม่ได้ — ใส่เลขตอนเองได้เลย';
   }, now ? 0 : 700);
 }
 async function saveBookmark() {
@@ -4076,7 +4086,9 @@ async function fetchLinkTitles(urls) {
   }
 }
 function ltStripSite(t) {
-  return String(t || '').trim().replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite|meb|mebmarket|dek-d|fictionlog|joylada|tunwalai|kawebook)[^|\-–—]*$/i, '').trim();
+  return String(t || '').trim()
+    .replace(/\s*:\s*นิยาย(?:\s|$).*$/, '')   // ReadAWrite: "… : นิยาย Boy Love Lovely Room"
+    .replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite|meb|mebmarket|dek-d|fictionlog|joylada|tunwalai|kawebook)[^|\-–—]*$/i, '').trim();
 }
 /* page title → just the chapter: drop the site name and the novel's own name */
 function chapterTitle(raw, novel) {
