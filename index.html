@@ -3061,7 +3061,7 @@ function bmUrlChanged(now) {
   bmUrlTimer = setTimeout(async () => {
     const note = document.getElementById('bmk-urlnote');
     if (note) note.textContent = '📖 กำลังอ่านชื่อตอน…';
-    await fetchLinkTitles([url]);
+    await fetchLinkTitles([url], true);
     if (!bmForm || (bmForm.url || '').trim() !== url) return;
     const c = linkTitles[url];
     // ✨ a novel that isn't in your library: its name from the link too
@@ -4095,17 +4095,45 @@ function nfDupHint(p) {
 /* 📖 Chapter titles: Google (Code.gs → link_titles) opens each link once and
    reads the page title; this device keeps a copy. */
 const LT_RETRY = 6 * 3600e3;
-let linkTitles = (function () { try { return JSON.parse(localStorage.getItem('linkTitles') || '{}') || {}; } catch (e) { return {}; } })();
+let linkTitles = (function () {
+  let lt = {};
+  try { lt = JSON.parse(localStorage.getItem('linkTitles') || '{}') || {}; } catch (e) {}
+  // v2: names were saved as "none" while Code.gs couldn't read novel pages yet → ask those once more
+  try {
+    if (localStorage.getItem('ltVer') !== '2') {
+      Object.keys(lt).forEach(u => { if (lt[u] && !lt[u].novel) delete lt[u].novel; });
+      localStorage.setItem('ltVer', '2');
+    }
+    if (localStorage.getItem('ltVer2') !== '3') {   // v3: share title = novel name → read chapters from the full page title
+      Object.keys(lt).forEach(u => { const c = lt[u]; if (c && c.og && c.page && ltOgIsNovel(c)) c.title = c.page; });
+      localStorage.setItem('ltVer2', '3');
+      localStorage.setItem('linkTitles', JSON.stringify(lt));
+    }
+  } catch (e) {}
+  return lt;
+})();
 let ltUnsupported = false;
 let ltPending = new Set();
 function ltSave() { try { localStorage.setItem('linkTitles', JSON.stringify(linkTitles)); } catch (e) {} }
-async function fetchLinkTitles(urls) {
+/* ReadAWrite's share title (og:title) is the NOVEL's name when it's one part of the page
+   title ("chapter - novel" pages); then the full page title is the one to read the chapter from */
+function ltOgIsNovel(t) {
+  const og = String(t.og || '').trim(), page = ltStripSite(t.page || '');
+  return !!og && !!page && og !== page && page.indexOf(og) >= 0;
+}
+function ltFullTitle(t) { return ltOgIsNovel(t) ? String(t.page || '') : String(t.title || ''); }
+
+/* force = a link you just pasted: ask again if its novel name is still unknown */
+async function fetchLinkTitles(urls, force) {
   if (!isEditor() || ltUnsupported) return;
   const want = [...new Set((urls || []).map(u => String(u || '').trim()))].filter(u => {
     if (!/^https?:\/\//i.test(u) || u.indexOf(SG_REMIND_MARK) >= 0 || ltPending.has(u)) return false;
     const c = linkTitles[u];
-    return !c || (c.status !== 'ok' && Date.now() - (c.at || 0) > LT_RETRY) ||
-      (c.status === 'ok' && (c.image === undefined || c.novel === undefined));   // saved before covers / novel names were read → ask once more
+    if (!c) return true;
+    if (c.status !== 'ok') return Date.now() - (c.at || 0) > LT_RETRY;
+    if (c.image === undefined) return true;   // saved before covers were read
+    // novel name unknown (Code.gs older than this app): ask again now and then, or right away when pasted
+    return c.novel === undefined && (force || Date.now() - (c.novelAt || 0) > 10 * 60e3);
   }).slice(0, 30);
   if (!want.length) return;
   want.forEach(u => ltPending.add(u));
@@ -4115,7 +4143,8 @@ async function fetchLinkTitles(urls) {
     if (!d || !d.titles) { ltUnsupported = true; return; }   // Code.gs not updated yet
     Object.keys(d.titles).forEach(u => {
       const t = d.titles[u] || {};
-      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', image: t.image || '', novel: t.novel || '', at: Date.now() };
+      linkTitles[u] = { title: ltFullTitle(t), status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', image: t.image || '', at: Date.now() };
+      if ('novel' in t) linkTitles[u].novel = t.novel || ''; else linkTitles[u].novelAt = Date.now();   // older Code.gs: name not known yet
     });
     ltSave();
   } catch (e) {
@@ -4177,8 +4206,9 @@ function guessNovelName(info) {
     const x = sgList.find(x => x.guid === g || x.uid === g) || sgMarks.find(r => r.guid === g || r.uid === g);
     if (x && x.name) return x.name;
   }
-  // the name on the novel's own page (read by Code.gs) — the reliable one
-  const own = ltStripSite(info.novel || '');
+  // the name on the novel's own page (read by Code.gs) — the reliable one;
+  // else the share title when it's one part of the page title (that's the novel's name)
+  const own = ltStripSite(info.novel || '') || (ltOgIsNovel(info) ? String(info.og).trim() : '');
   if (own) {
     const lib = allBooks.find(b => nameMatch(b.title, own));
     return lib ? lib.title : own;
@@ -4192,8 +4222,7 @@ function guessNovelName(info) {
   if (best) return best;
   const parts = ltStripSite(info.page || info.title).split(/\s+[|\-–—•»]+\s+|\s*::\s*|\s+:\s+/).map(x => x.trim()).filter(Boolean);
   if (parts.length < 2) return '';
-  const chap = String(info.og || '').trim();
-  const isChap = x => /^(ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode|#)\s*\d/i.test(x) || /^\d+\s*[.:)]/.test(x) || (chap && chap !== (info.page || '').trim() && x === chap);
+  const isChap = x => /^(ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode|#)\s*\d/i.test(x) || /^\d+\s*[.:)]/.test(x);
   const cand = parts.filter(x => !isChap(x) && !/read\s*a\s*write/i.test(x));
   return cand.length && cand.length < parts.length ? cand[cand.length - 1] : (cand.length === parts.length ? parts[parts.length - 1] : '');
 }
@@ -4242,7 +4271,7 @@ function nfChapPreview(p) {
     el.setAttribute('data-url', url);
     el.setAttribute('data-novel', t ? t.value : '');
     clearTimeout(ltPreviewTimer);
-    ltPreviewTimer = setTimeout(() => fetchLinkTitles([url]), 700);
+    ltPreviewTimer = setTimeout(() => fetchLinkTitles([url], true), 700);
   } else el.removeAttribute('data-url');
   el.textContent = '';
   fillChapEls();
