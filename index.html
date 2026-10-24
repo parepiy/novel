@@ -662,6 +662,12 @@ body.editor .m-edit{display:inline-block;}
 .sh-card{flex:none;width:96px;cursor:pointer;scroll-snap-align:start;}
 .sh-cover{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:var(--s3);}
 .sh-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.cov-wide::before{content:'';position:absolute;inset:-12px;background:var(--cov-bg) center/cover no-repeat;filter:blur(10px) brightness(.75);}
+.cov-wide img{object-fit:contain !important;}
+.cover-view{z-index:400;cursor:zoom-out;}
+.cover-view figure{margin:0;max-width:min(92vw,900px);text-align:center;}
+.cover-view img{max-width:100%;max-height:80vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);}
+.cover-view figcaption{color:#fff;margin-top:10px;font-size:.95rem;text-shadow:0 1px 4px rgba(0,0,0,.6);}
 .sh-nc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--mute);}
 .sh-play{position:absolute;right:6px;bottom:6px;z-index:1;width:30px;height:30px;border-radius:50%;border:none;background:var(--mint);color:#fff;font-size:.78rem;display:flex;align-items:center;justify-content:center;padding-left:2px;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s;}
 .sh-play:hover{transform:scale(1.1);}
@@ -691,7 +697,8 @@ body.editor .m-edit{display:inline-block;}
 .bmk-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;}
 :root[data-theme] .bmk-card{background:var(--glass);border-color:var(--line);}
 .bmk-head{display:flex;align-items:center;gap:10px;cursor:pointer;}
-.bmk-cov{position:relative;flex:none;width:44px;height:62px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.bmk-cov{position:relative;flex:none;width:48px;height:68px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:width .2s;}
+.bmk-cov[title]{cursor:zoom-in;}
 .bmk-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
 .bmk-info{flex:1;min-width:0;}
 .bmk-title{font-weight:700;font-size:.92rem;line-height:1.35;overflow-wrap:anywhere;}
@@ -787,7 +794,9 @@ body.editor .m-edit{display:inline-block;}
   :root[data-theme] .hdr-btn{width:31px;height:31px;}
   :root[data-theme] .hdr-btn .ic-svg{width:15px;height:15px;}
   :root[data-theme] .nav-tabs{padding:2px 14px 10px;gap:8px;}
-  :root[data-theme] .nav-tab{padding:5px 10px;}
+  :root[data-theme] .nav-tab{padding:5px 9px;}
+  :root[data-theme] .tabs-seg{flex-shrink:0;}   /* 5 tabs: never squeezed — the search box gives way */
+  :root[data-theme] .search-box{min-width:96px;}
   :root[data-theme] .nav-tab .ic-svg{margin-right:0;}
   :root[data-theme] .nav-tab.active .ic-svg{margin-right:4px;}
   :root[data-theme] .nav-tab[data-tab="all"]:not(.active) .nt-lbl{display:none;}
@@ -1550,7 +1559,7 @@ function shelfHtml() {
     const b = it.b;
     const idx = b ? allBooks.indexOf(b) : -1;
     const cov = shelfCover(it);
-    const img = cov ? `<img src="${esc(cov)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
+    const img = cov ? `<img src="${esc(cov)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">` : '';
     const url = (it.rem && it.rem.url) || (b && b.url) || '';
     const play = url ? `<button class="sh-play" onclick="shelfPlay(${i});event.stopPropagation()" title="${it.rem && it.rem.url ? 'อ่านตอนที่ตั้งเตือนไว้' : 'อ่านต่อ'}">▶</button>` : '';
     const prog = b && b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
@@ -1585,6 +1594,30 @@ function shelfCover(it) {
   }
   const x = sgList.find(x => x.thumb && nameMatch(x.name, it.title)) || null;
   return x ? x.thumb : '';
+}
+/* 🖼️ Pictures read from links are often wide share images: show the whole
+   picture (no cropping) on a blurred copy of itself; in the 🔖 list the box
+   takes the picture's own shape. */
+function coverFit(img) {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h || w < h * 1.05) return;   // portrait covers stay as they are
+  const box = img.parentElement;
+  if (!box) return;
+  box.classList.add('cov-wide');
+  box.style.setProperty('--cov-bg', 'url("' + img.src.replace(/"/g, '%22') + '")');
+  if (box.classList.contains('bmk-cov')) box.style.width = Math.min(132, Math.round(68 * w / h)) + 'px';
+}
+/* tap a 🔖 cover (novel not in your library) → the picture, big */
+function showCover(src, title) {
+  let o = document.getElementById('cover-view');
+  if (!o) {
+    o = document.createElement('div');
+    o.id = 'cover-view'; o.className = 'overlay cover-view';
+    o.onclick = () => o.classList.remove('open');
+    document.body.appendChild(o);
+  }
+  o.innerHTML = '<figure><img src="' + esc(src) + '" alt="" referrerpolicy="no-referrer"><figcaption>' + esc(title || '') + '</figcaption></figure>';
+  o.classList.add('open');
 }
 /* ▶ on the shelf: the reminder's chapter link, else the novel's link */
 function shelfPlay(i) {
@@ -2922,8 +2955,9 @@ function renderBmList() {
     const items = q ? g.items.filter(x => bmMatch(g, x, q)) : g.items;
     return '<div class="bmk-card' + (open ? ' open' : '') + '" data-k="' + esc(g.key) + '">' +
       '<div class="bmk-head" onclick="toggleBmGroup(\'' + k + '\')">' +
-        '<div class="bmk-cov"' + (idx >= 0 ? ' onclick="event.stopPropagation();openModal(' + idx + ')"' : '') + '><span>🔖</span>' +
-          (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</div>' +
+        '<div class="bmk-cov"' + (idx >= 0 ? ' onclick="event.stopPropagation();openModal(' + idx + ')"'
+          : cov ? ' onclick="event.stopPropagation();showCover(\'' + jsq(cov) + '\', \'' + jsq(g.title) + '\')" title="ดูรูปใหญ่"' : '') + '><span>🔖</span>' +
+          (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">' : '') + '</div>' +
         '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
           '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
           (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · ล่าสุด ' + esc(fmtCh(g.latest.chapter)) +
@@ -4676,6 +4710,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (nfDelId != null || nfDoneId != null) { closeNfDel(); return; }
     if (bmForm) { closeBmSheet(); return; }
+    const cv = document.getElementById('cover-view');
+    if (cv && cv.classList.contains('open')) { cv.classList.remove('open'); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
