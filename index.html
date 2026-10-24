@@ -689,7 +689,11 @@ body.editor .m-edit{display:inline-block;}
 .bmk-date2{font-size:.68rem;color:var(--mute);margin-top:1px;}
 .bmk-act{float:right;display:flex;gap:4px;}
 .bmk-act button{background:none;border:1px solid var(--bd2);border-radius:8px;padding:2px 8px;font-size:.78rem;color:var(--dim);cursor:pointer;}
-.bmk-view{padding:14px 16px 30px;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.bmk-view{padding:14px 16px 30px;display:flex;flex-direction:column;gap:10px;}
+@media(min-width:700px){.bmk-view{padding:16px 24px 30px;}}
+/* novels side by side on wide screens (no empty sides) */
+#bmk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start;}
+#bmk-list > .sg-empty,#bmk-list > .loading{grid-column:1/-1;}
 .bmk-top{display:flex;gap:8px;}
 .bmk-top input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
 :root[data-theme] .bmk-top input{background:var(--input-bg);border-color:var(--line2);}
@@ -2854,7 +2858,21 @@ function bmNorm(o) {
 }
 function bmBook(title) { return sgFindInLibrary({ name: title, guid: '', uid: '' }); }
 function fmtCh(c) { c = String(c || '').trim(); return /^\d+(\.\d+)?$/.test(c) ? 'ตอนที่ ' + c : c; }
-function chNum(c) { c = String(c || '').trim(); return /^\d+(\.\d+)?$/.test(c) ? parseFloat(c) : progressNum(c); }
+/* the chapter's number: "26", "22 เตรียมตัวไปงาน", "ตอนที่ 26 …" → 26 (0 = no number, e.g. "ตอนพิเศษ") */
+function chNum(c) {
+  c = String(c || '').trim();
+  const m = c.match(/^(\d+(?:\.\d+)?)(?!\d)/);
+  return m ? parseFloat(m[1]) : progressNum(c);
+}
+/* reading order: numbered chapters 1 → n, then the others (newest first) */
+function bmSortItems(items) {
+  return items.slice().sort((a, b) => {
+    const x = chNum(a.chapter), y = chNum(b.chapter);
+    if (x && y) return x - y || String(b.created_at).localeCompare(String(a.created_at));
+    if (x || y) return x ? -1 : 1;
+    return String(b.created_at).localeCompare(String(a.created_at));
+  });
+}
 function bmKey(title) { const b = bmBook(title); return b ? 'b:' + sgNormName(b.title) : 'n:' + sgNormName(title); }
 function jsq(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }   // for '…' inside onclick
 function bmGroups() {
@@ -2952,7 +2970,7 @@ function renderBmList() {
     const cov = shelfCover({ b: g.book, title: g.title, rem: null });
     const k = jsq(g.key);
     const idx = g.book ? allBooks.indexOf(g.book) : -1;
-    const items = q ? g.items.filter(x => bmMatch(g, x, q)) : g.items;
+    const items = bmSortItems(q ? g.items.filter(x => bmMatch(g, x, q)) : g.items);
     return '<div class="bmk-card' + (open ? ' open' : '') + '" data-k="' + esc(g.key) + '">' +
       '<div class="bmk-head" onclick="toggleBmGroup(\'' + k + '\')">' +
         '<div class="bmk-cov"' + (idx >= 0 ? ' onclick="event.stopPropagation();openModal(' + idx + ')"'
@@ -3121,7 +3139,7 @@ async function saveBookmark() {
 async function bmProgress(item) {
   const b = bmBook(item.title);
   if (!b) return;
-  const nu = chNum(item.chapter), cur = progressNum(b.progress);
+  const nu = chNum(item.chapter), cur = chNum(b.progress);
   if (nu && cur && nu < cur) return;
   const progress = fmtCh(item.chapter), at = todayYMD();
   const prev = { progress: b.progress, progressAt: b.progressAt };
