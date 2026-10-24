@@ -4105,7 +4105,7 @@ async function fetchLinkTitles(urls) {
     if (!/^https?:\/\//i.test(u) || u.indexOf(SG_REMIND_MARK) >= 0 || ltPending.has(u)) return false;
     const c = linkTitles[u];
     return !c || (c.status !== 'ok' && Date.now() - (c.at || 0) > LT_RETRY) ||
-      (c.status === 'ok' && c.image === undefined);   // saved before covers were read → ask once more
+      (c.status === 'ok' && (c.image === undefined || c.novel === undefined));   // saved before covers / novel names were read → ask once more
   }).slice(0, 30);
   if (!want.length) return;
   want.forEach(u => ltPending.add(u));
@@ -4115,7 +4115,7 @@ async function fetchLinkTitles(urls) {
     if (!d || !d.titles) { ltUnsupported = true; return; }   // Code.gs not updated yet
     Object.keys(d.titles).forEach(u => {
       const t = d.titles[u] || {};
-      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', image: t.image || '', at: Date.now() };
+      linkTitles[u] = { title: t.title || '', status: t.status || '', page: t.page || '', og: t.og || '', parent: t.parent || '', image: t.image || '', novel: t.novel || '', at: Date.now() };
     });
     ltSave();
   } catch (e) {
@@ -4176,6 +4176,12 @@ function guessNovelName(info) {
     if (b) return b.title;
     const x = sgList.find(x => x.guid === g || x.uid === g) || sgMarks.find(r => r.guid === g || r.uid === g);
     if (x && x.name) return x.name;
+  }
+  // the name on the novel's own page (read by Code.gs) — the reliable one
+  const own = ltStripSite(info.novel || '');
+  if (own) {
+    const lib = allBooks.find(b => nameMatch(b.title, own));
+    return lib ? lib.title : own;
   }
   const texts = [info.page, info.og, info.title].filter(Boolean).join(' \n ').toLowerCase();
   let best = '';
