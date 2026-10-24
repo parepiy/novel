@@ -1577,6 +1577,12 @@ function shelfCover(it) {
     const c = linkTitles[r.url];
     if (c && c.status === 'ok' && c.image) return c.image;
   }
+  // 🔖 a bookmark of this novel with a chapter link
+  for (const x of bmItems) {
+    if (!x.url || !nameMatch(x.title, it.title)) continue;
+    const c = linkTitles[x.url];
+    if (c && c.status === 'ok' && c.image) return c.image;
+  }
   const x = sgList.find(x => x.thumb && nameMatch(x.name, it.title)) || null;
   return x ? x.thumb : '';
 }
@@ -2800,6 +2806,7 @@ function loadBookmarks() {
     if (!d || !Array.isArray(d.items)) throw new Error('unknown action');
     bmItems = d.items.map(bmNorm);
     bmError = '';
+    fetchLinkTitles(bmItems.map(x => x.url).filter(Boolean));   // 🖼️ covers from bookmark links
   }).catch(e => {
     bmError = /unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อนใช้บุ๊กมาร์ก (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : (e.message || 'error');
   }).finally(() => {
@@ -3067,6 +3074,7 @@ async function saveBookmark() {
   try {
     const r = await gasPost(Object.assign({ action: 'bm_save' }, item));
     if (r && r.item) { const i = bmItems.findIndex(x => x.id === item.id); if (i >= 0) bmItems[i] = bmNorm(r.item); }
+    if (item.url) fetchLinkTitles([item.url]);   // its cover (usually already read when the link was pasted)
     toast('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว');
   } catch (e) {
     bmItems = prevList; bmRerender();
@@ -4082,6 +4090,7 @@ async function fetchLinkTitles(urls) {
     want.forEach(u => ltPending.delete(u));
     fillChapEls();
     if (!notifyView && !statsView && !suggestView && !bmView && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
+    if (bmView && bmItems.some(x => x.url && want.indexOf(x.url) >= 0)) renderBmList();
     nfAutoName('nf'); nfAutoName('day');
   }
 }
