@@ -711,6 +711,12 @@ body.editor .m-edit{display:inline-block;}
 .bmk-count{flex:none;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;color:#06101c;background:linear-gradient(90deg,#67e8f9,#a78bfa);}
 .bmk-items{margin-top:4px;}
 .bmk-hits{font-size:.72rem;color:var(--mint2);margin-top:2px;}
+.bmk-topname{font-size:.76rem;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bmk-big{flex:none;min-width:64px;max-width:96px;text-align:center;padding:6px 8px;border-radius:12px;background:linear-gradient(160deg,rgba(103,232,249,.16),rgba(167,139,250,.18));border:1px solid var(--line,var(--bd));display:flex;flex-direction:column;align-items:center;}
+.bmk-big-l{font-size:.6rem;color:var(--dim);white-space:nowrap;}
+.bmk-big-n{font-family:'Kanit','Sarabun',sans-serif;font-size:1.7rem;font-weight:600;line-height:1.05;background:linear-gradient(90deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+:root[data-theme="dark"] .bmk-big-n{background:linear-gradient(90deg,#67e8f9,#c4b5fd);-webkit-background-clip:text;background-clip:text;}
+.bmk-big-t{font-size:.78rem;font-weight:700;line-height:1.25;color:var(--text);overflow-wrap:anywhere;}
 .bmg-head{display:flex;align-items:center;gap:12px;padding-right:26px;margin-bottom:6px;}
 .bmg-cov{width:58px;height:82px;}
 .bmg-title{font-weight:700;font-size:1rem;line-height:1.35;overflow-wrap:anywhere;color:var(--text);}
@@ -2871,7 +2877,7 @@ function bmBook(title) { return sgFindInLibrary({ name: title, guid: '', uid: ''
 function fmtCh(c) { c = String(c || '').trim(); return /^\d+(\.\d+)?$/.test(c) ? 'ตอนที่ ' + c : c; }
 /* the chapter's number: "26", "22 เตรียมตัวไปงาน", "ตอนที่ 26 …" → 26 (0 = no number, e.g. "ตอนพิเศษ") */
 function chNum(c) {
-  c = String(c || '').trim();
+  c = thaiDigits(c).trim();
   const m = c.match(/^(\d+(?:\.\d+)?)(?!\d)/);
   return m ? parseFloat(m[1]) : progressNum(c);
 }
@@ -2979,15 +2985,21 @@ function renderBmList() {
   el.innerHTML = gs.map(g => {
     const cov = shelfCover({ b: g.book, title: g.title, rem: null });
     const hits = q ? g.items.filter(x => bmMatch(g, x, q)).length : 0;
+    // the furthest chapter, big: the highest numbered bookmark (else the newest one)
+    const top = bmSortItems(g.items).filter(x => chNum(x.chapter) > 0).pop() || g.latest;
+    const tn = chNum(top.chapter);
+    const big = '<div class="bmk-big" title="' + esc(fmtCh(top.chapter)) + '"><span class="bmk-big-l">' + (tn ? 'ล่าสุด · ตอนที่' : 'ล่าสุด') + '</span>' +
+      (tn ? '<span class="bmk-big-n">' + esc(String(tn)) + '</span>' : '<span class="bmk-big-t">' + esc(top.chapter) + '</span>') + '</div>';
     return '<div class="bmk-card" data-k="' + esc(g.key) + '">' +
       '<div class="bmk-head" onclick="openBmGroup(\'' + jsq(g.key) + '\')" title="ดูบุ๊กมาร์กของเรื่องนี้">' +
         bmCoverHtml(g, cov, 'bmk-cov') +
         '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
           '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
-          (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · ล่าสุด ' + esc(fmtCh(g.latest.chapter)) +
+          (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ' +
           (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div>' +
+          (top.chapter !== String(tn) && tn ? '<div class="bmk-topname">' + esc(fmtCh(top.chapter)) + '</div>' : '') +
           (q ? '<div class="bmk-hits">🔍 ตรงกับคำค้น ' + hits + ' รายการ</div>' : '') + '</div>' +
-        '<span class="bmk-count">' + g.items.length + '</span>' +
+        big +
       '</div></div>';
   }).join('');
 }
@@ -3142,13 +3154,16 @@ function bmUrlChanged(now) {
       }
     }
     const ch = c && c.status === 'ok' ? chapterTitle(c.title, bmForm.title) : '';
-    const n = progressNum(ch);
+    const fill = ch ? chapFromTitle(ch) : '';
     const inp = document.getElementById('bmk-ch');
-    if (n && inp && (bmForm.autoCh || !inp.value.trim())) {
-      inp.value = String(n); bmForm.chapter = inp.value; bmForm.autoCh = false; bmForm.hint = '';
+    let filled = false;
+    if (fill && inp && (bmForm.autoCh || bmForm.chFromLink === inp.value || !inp.value.trim())) {
+      inp.value = fill; bmForm.chapter = fill; bmForm.chFromLink = fill; bmForm.autoCh = false; bmForm.hint = '';
       const h = document.getElementById('bmk-hint'); if (h) h.textContent = '';
+      const e = document.getElementById('bmk-err'); if (e) e.textContent = '';
+      filled = true;
     }
-    if (note) note.textContent = ch ? '📖 ' + ch + (n ? ' → ตอนที่ ' + n : '') + (named ? ' · ✨ ใส่ชื่อเรื่องให้แล้ว' : '') : 'อ่านชื่อตอนจากลิงก์นี้ไม่ได้ — ใส่เลขตอนเองได้เลย';
+    if (note) note.textContent = ch ? '📖 ' + ch + (filled ? ' · ✓ ใส่ตอนให้แล้ว' : '') + (named ? ' · ✨ ใส่ชื่อเรื่องให้แล้ว' : '') : 'อ่านชื่อตอนจากลิงก์นี้ไม่ได้ — ใส่เลขตอนเองได้เลย';
   }, now ? 0 : 700);
 }
 async function saveBookmark() {
@@ -3265,9 +3280,17 @@ function cwNew(b) {
   return Math.max(0, (parseInt(c.chapters, 10) || 0) - (parseInt(c.seen, 10) || 0));
 }
 /* the chapter number in "📖 อ่านถึง" (e.g. "ตอนที่ 45 …" → 45) */
+function thaiDigits(s) { return String(s || '').replace(/[๐-๙]/g, d => String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d))); }
 function progressNum(p) {
-  const m = String(p || '').match(/(?:ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode)\s*(\d+)/i);
+  const m = thaiDigits(p).match(/(?:ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode)\s*(\d+)/i);
   return m ? parseInt(m[1], 10) : 0;
+}
+/* a chapter title from a link → how you write chapters: "ตอนที่ 41 เอาคืน" → "41 เอาคืน",
+   "28 เป็นของกันและกัน(Nc*)" stays, "๒๐ …" → "20 …"; no number → the title as it is */
+function chapFromTitle(ch) {
+  const t = thaiDigits(ch).trim();
+  const m = t.match(/^(?:ตอนที่|ตอน|บทที่|บท|chapter|ch\.?|ep\.?|episode)\s*(\d+(?:\.\d+)?)\s*[:.\-–—]?\s*(.*)$/i);
+  return m ? (m[1] + (m[2] ? ' ' + m[2] : '')) : t;
 }
 function renderNewChapters(b, idx) {
   const el = document.getElementById('m-newch');
