@@ -195,6 +195,8 @@ function doPost(e) {
     if (lr) return lr;
     const cr = chapterWatchRouter_(action, d);
     if (cr) return cr;
+    const br = bookmarksRouter_(action, d);
+    if (br) return br;
 
     const sh = getSheet_();
 
@@ -633,6 +635,39 @@ function chapterWatchRouter_(action, d) {
         String(d.app_url || 'https://parepiy.github.io/novel/').split('#')[0] + '#newch', now].map(sgText_));
     }
     return json_({ ok: true, items: sgRead_('chapter_watch', CW_COLS), fresh: fresh.length });
+  }
+  return null;
+}
+
+// ---------------- 🔖 bookmarks ----------------
+// One row per bookmark. The app makes the id, so saving the same bookmark twice
+// (a retry) just updates it. title = the novel's name (in your library or not).
+const BM_COLS = ['id', 'title', 'source', 'chapter', 'note', 'url', 'created_at', 'updated_at'];
+
+function bookmarksRouter_(action, d) {
+  if (action === 'bm_list') return json_({ ok: true, items: sgRead_('bookmarks', BM_COLS) });
+
+  if (action === 'bm_save') {
+    const id = String(d.id || '').trim();
+    const title = String(d.title || '').trim();
+    const chapter = String(d.chapter || '').trim();
+    if (!id || !title || !chapter) return json_({ ok: false, error: 'ต้องมีชื่อเรื่องและเลขตอน' });
+    const sh = sgSheet_('bookmarks', BM_COLS);
+    const vals = sh.getDataRange().getValues();
+    let r = 0;
+    for (let i = 1; i < vals.length; i++) if (String(vals[i][0]) === id) { r = i + 1; break; }
+    const now = new Date().toISOString();
+    const created = r ? String(vals[r - 1][6] || now) : now;
+    const row = [id, title, d.source === 'raw' ? 'raw' : 'meb', chapter, String(d.note || ''), String(d.url || ''), created, now];
+    sh.getRange(r || sh.getLastRow() + 1, 1, 1, BM_COLS.length).setNumberFormat('@').setValues([row.map(sgText_)]);
+    return json_({ ok: true, item: BM_COLS.reduce((o, c, j) => { o[c] = row[j]; return o; }, {}) });
+  }
+
+  if (action === 'bm_delete') {
+    const sh = sgSheet_('bookmarks', BM_COLS);
+    const vals = sh.getDataRange().getValues();
+    for (let i = vals.length - 1; i >= 1; i--) if (String(vals[i][0]) === String(d.id)) sh.deleteRow(i + 1);
+    return json_({ ok: true });
   }
   return null;
 }

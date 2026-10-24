@@ -671,6 +671,47 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme="dark"] .fb.st-new{color:#fda4af;}
 .m-newch{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.07);font-size:.86rem;line-height:1.6;}
 .m-newch:empty{display:none;}
+.m-bmk{margin:0 0 12px;}
+.m-bmk:empty{display:none;}
+.mb-h{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.88rem;margin-bottom:2px;}
+.bmk-item{border-left:3px solid var(--mint);padding:5px 0 5px 10px;margin-top:7px;position:relative;}
+.bmk-item.raw{border-left-color:var(--raw);}
+.bmk-ch{font-weight:700;font-size:.88rem;color:var(--text);}
+.bmk-note{font-size:.82rem;color:var(--dim);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;}
+.bmk-link{font-size:.76rem;color:var(--raw2);}
+.bmk-date{float:right;font-size:.7rem;color:var(--mute);}
+.bmk-date2{font-size:.68rem;color:var(--mute);margin-top:1px;}
+.bmk-act{float:right;display:flex;gap:4px;}
+.bmk-act button{background:none;border:1px solid var(--bd2);border-radius:8px;padding:2px 8px;font-size:.78rem;color:var(--dim);cursor:pointer;}
+.bmk-view{padding:14px 16px 30px;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.bmk-top{display:flex;gap:8px;}
+.bmk-top input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
+:root[data-theme] .bmk-top input{background:var(--input-bg);border-color:var(--line2);}
+.bmk-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
+.bmk-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;}
+:root[data-theme] .bmk-card{background:var(--glass);border-color:var(--line);}
+.bmk-head{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.bmk-cov{position:relative;flex:none;width:44px;height:62px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.bmk-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.bmk-info{flex:1;min-width:0;}
+.bmk-title{font-weight:700;font-size:.92rem;line-height:1.35;overflow-wrap:anywhere;}
+.bmk-sub{font-size:.74rem;color:var(--dim);margin-top:2px;}
+.bmk-out{color:var(--overdue);font-weight:600;}
+.bmk-count{flex:none;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;color:#06101c;background:linear-gradient(90deg,#67e8f9,#a78bfa);}
+.bmk-items{margin-top:4px;}
+.bmk-addmore{margin-top:10px;}
+.src-mini{font-size:.62rem;font-weight:700;padding:0 6px;border-radius:999px;border:1px solid var(--bd2);color:var(--mint2);}
+.src-mini.raw{color:var(--raw2);}
+.bmk-novel{font-weight:700;font-size:.92rem;margin:-4px 0 6px;overflow-wrap:anywhere;}
+.bmk-chline{display:flex;gap:6px;}
+.bmk-chline input{flex:1;min-width:0;}
+.bmk-err{font-size:.76rem;color:#e05a5a;font-weight:600;margin-top:3px;}
+.bmk-err:empty{display:none;}
+#bmk-hint:empty{display:none;}
+.bmk-seg{display:flex;gap:6px;}
+.bmk-seg button{flex:1;border:1px solid var(--bd2);background:none;color:var(--dim);border-radius:999px;padding:6px;font-family:inherit;font-size:.86rem;cursor:pointer;}
+.bmk-seg button.on{background:linear-gradient(90deg,#67e8f9,#a78bfa);color:#06101c;font-weight:700;border-color:transparent;}
+#bmk-card .req{color:var(--overdue);}
 .m-newch b{color:#e11d48;}
 :root[data-theme="dark"] .m-newch b{color:#fda4af;}
 .m-newch .mn-sub{font-size:.78rem;color:var(--dim);}
@@ -919,6 +960,7 @@ body.editor .m-edit{display:inline-block;}
       <button class="nav-tab stats-tab icon-tab" data-tab="stats" onclick="switchTab('stats')"><span class="ic-emoji">📈</span><svg class="ic-svg" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="nt-lbl"> สถิติ</span></button>
       <button class="nav-tab notify-tab icon-tab" data-tab="notify" onclick="switchTab('notify')"><span class="ic-emoji">🔔</span><svg class="ic-svg" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="nt-lbl"> แจ้งเตือน</span></button>
       <button class="nav-tab suggest-tab icon-tab" data-tab="suggest" onclick="switchTab('suggest')"><span class="ic-emoji">💡</span><svg class="ic-svg" viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 9l-5.2 4.2L17.6 20 12 16.3 6.4 20l1.8-6.8L3 9l6.6-.4z"/></svg><span class="nt-lbl"> แนะนำ</span></button>
+      <button class="nav-tab suggest-tab bm-tab icon-tab" data-tab="bookmarks" onclick="switchTab('bookmarks')"><span class="ic-emoji">🔖</span><svg class="ic-svg" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg><span class="nt-lbl"> บุ๊กมาร์ก</span></button>
     </div>
     <div class="search-box">
       <button class="scope-btn" id="scope-btn" onclick="toggleScope()" title="สลับค้นหา ชื่อเรื่อง / เนื้อเรื่อง">🔍</button>
@@ -955,12 +997,14 @@ body.editor .m-edit{display:inline-block;}
     <div class="m-summary" id="m-summary"></div>
     <div class="m-note" id="m-note"></div>
     <div class="m-newch" id="m-newch"></div>
+    <div class="m-bmk" id="m-bmk"></div>
     <div id="m-quick"></div>
     <div class="mq-msg" id="m-quick-msg"></div>
     <div class="m-actions">
       <a class="m-link" id="m-link" href="#" target="_blank" rel="noopener" onclick="markRead(window._mIdx)">อ่านนิยาย →</a>
       <button class="m-edit" id="m-edit" onclick="openEdit(window._mIdx)">✎ แก้ไข</button>
       <button class="m-edit" id="m-remind" onclick="remindFromNovel(window._mIdx)" title="ตั้งเตือนให้อ่านเรื่องนี้">🔔 เตือน</button>
+      <button class="m-edit" id="m-bmk-btn" onclick="openBookmark(window._mIdx)" title="บุ๊กมาร์กตอนที่อ่าน">🔖 บุ๊กมาร์ก</button>
       <a class="m-meb" id="m-meb" href="#" target="_blank" rel="noopener" title="ค้นหาเรื่องนี้ใน MEB">🛒 หาใน MEB</a>
     </div>
   </div>
@@ -1041,6 +1085,11 @@ body.editor .m-edit{display:inline-block;}
   <div class="f-card" id="day-card" style="max-width:460px;"></div>
 </div>
 
+<!-- 🔖 ADD / EDIT BOOKMARK -->
+<div class="overlay" id="bmk-bg" style="z-index:225" onclick="if(event.target===this)closeBmSheet()">
+  <div class="f-card" id="bmk-card" style="max-width:440px;"></div>
+</div>
+
 <!-- 🔔 DELETE: this one or the whole novel -->
 <div class="overlay" id="nfdel-bg" style="z-index:230" onclick="if(event.target===this)closeNfDel()">
   <div class="f-card" id="nfdel-card" style="max-width:400px;"></div>
@@ -1081,6 +1130,7 @@ body.editor .m-edit{display:inline-block;}
     <div class="help-row"><span>แท็บสถิติ</span><kbd>2</kbd></div>
     <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>3</kbd></div>
     <div class="help-row"><span>แท็บแนะนำ (เมื่อปลดล็อก)</span><kbd>4</kbd></div>
+    <div class="help-row"><span>แท็บบุ๊กมาร์ก (เมื่อปลดล็อก)</span><kbd>5</kbd></div>
     <div class="help-row"><span>เปลี่ยนแท็บบนมือถือ</span><kbd>ปัดซ้าย / ขวา</kbd></div>
     <div class="help-row"><span>แจ้งเตือน · มุมมองรายการ</span><kbd>L</kbd></div>
     <div class="help-row"><span>แจ้งเตือน · มุมมองปฏิทิน</span><kbd>K</kbd></div>
@@ -1107,6 +1157,7 @@ let activeSource = null;  // null = all novels, 'meb', or 'raw' (single-select s
 let notifyView = false;   // true while the 🔔 Notification tab is showing
 let statsView = false;    // true while the 📈 Stats tab is showing
 let suggestView = false;  // true while the 💡 Suggestions tab is showing
+let bmView = false;       // true while the 🔖 Bookmarks tab is showing
 let activeTags = new Set();
 let activeStar = null;
 let activeStatus = null;   // null = any, or a reading-status key
@@ -1284,7 +1335,7 @@ async function loadData() {
     if (isEditor()) refreshFromGas();
   } catch(e) {
     if (allBooks.length) return;   // a newer load already succeeded — don't cover it with this error
-    if (notifyView || statsView || suggestView) return;
+    if (notifyView || statsView || suggestView || bmView) return;
     document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${e.message}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
   }
 }
@@ -1303,6 +1354,7 @@ async function refreshFromGas() {
     });
     renderAll();
     loadChapterWatch();
+    loadBookmarks();
   } catch(e) { /* keep CSV data on failure */ }
 }
 
@@ -1311,6 +1363,7 @@ function renderAll() {
   if (notifyView) return;   // don't let a background data refresh overwrite the Notification view
   if (statsView) { renderStats(); return; }   // refresh stats when new data arrives
   if (suggestView) { renderSuggest(); return; }   // library changed → refresh "in library" badges
+  if (bmView) { renderBookmarks(); return; }
   renderFilterStrip();
   renderGrid();
 }
@@ -1368,7 +1421,7 @@ function afChip(label, onclick, cls) {
 function renderActiveFilters() {
   const el = document.getElementById('active-filters');
   if (!el) return;
-  if (notifyView || statsView || suggestView) { el.style.display = 'none'; return; }
+  if (notifyView || statsView || suggestView || bmView) { el.style.display = 'none'; return; }
   const chips = [];
   if (activeSource) chips.push(afChip(activeSource === 'meb' ? 'MEB' : 'RAW', "setSource('" + activeSource + "')", activeSource === 'raw' ? 'raw' : 'meb'));
   if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
@@ -1444,7 +1497,7 @@ function continueRead(idx) {
   if (!b || !b.url) return;
   markRead(idx);
   window.open(b.url, '_blank', 'noopener');
-  setTimeout(() => { if (!notifyView && !statsView && !suggestView) renderGrid(); }, 400);
+  setTimeout(() => { if (!notifyView && !statsView && !suggestView && !bmView) renderGrid(); }, 400);
 }
 /* ▶️ อ่านต่อ = your Reading novels + every novel that has a 🔔 reminder.
    A reminder's chapter link is what ▶ opens. Order: 🆕 new chapters, reminders
@@ -1536,7 +1589,7 @@ function shelfPlay(i) {
   if (it.b) markRead(allBooks.indexOf(it.b));
   else { const log = readLog(); log[it.title] = Date.now(); try { localStorage.setItem('lastRead', JSON.stringify(log)); } catch (e) {} }
   window.open(url, '_blank', 'noopener');
-  setTimeout(() => { if (!notifyView && !statsView && !suggestView) renderGrid(); }, 400);
+  setTimeout(() => { if (!notifyView && !statsView && !suggestView && !bmView) renderGrid(); }, 400);
 }
 /* a novel that's only in 🔔 (not in your library) → its reminders */
 function shelfOpenReminders() { nfView = 'list'; switchTab('notify'); }
@@ -1580,11 +1633,12 @@ function switchTab(tab) {
   const notify = tab === 'notify';
   const stats = tab === 'stats';
   const suggest = tab === 'suggest';
-  const hideFilters = notify || stats || suggest;
+  const bm = tab === 'bookmarks';
+  const hideFilters = notify || stats || suggest || bm;
   document.getElementById('filter-strip').style.display = hideFilters ? 'none' : '';
-  document.querySelector('.search-box').style.display = (notify || stats) ? 'none' : '';   // 💡 searches every suggested novel
+  document.querySelector('.search-box').style.display = (notify || stats || bm) ? 'none' : '';   // 💡 searches every suggested novel; 🔖 has its own search
   if (hideFilters) document.getElementById('active-filters').style.display = 'none';
-  notifyView = notify; statsView = stats; suggestView = suggest;
+  notifyView = notify; statsView = stats; suggestView = suggest; bmView = bm;
   applyScopeUI();
   if (!notify) nfDraft = null;   // leaving the tab drops a reminder pre-filled from a novel
   if (notify) {
@@ -1595,6 +1649,11 @@ function switchTab(tab) {
   }
   if (stats) {
     renderStats();
+    return;
+  }
+  if (bm) {
+    renderBookmarks();
+    loadBookmarks();
     return;
   }
   if (suggest) {
@@ -1611,10 +1670,10 @@ function switchTab(tab) {
    Ignored when the swipe starts on things that already scroll sideways (filter
    chips, the อ่านต่อ shelf, the 💡 list tabs), on form fields, in popups, or at
    the very screen edges (iOS uses those for its own gestures). */
-function currentTab() { return notifyView ? 'notify' : statsView ? 'stats' : suggestView ? 'suggest' : 'all'; }
-function tabOrder() { return isEditor() ? ['all', 'stats', 'notify', 'suggest'] : ['all', 'stats']; }
+function currentTab() { return notifyView ? 'notify' : statsView ? 'stats' : suggestView ? 'suggest' : bmView ? 'bookmarks' : 'all'; }
+function tabOrder() { return isEditor() ? ['all', 'stats', 'notify', 'suggest', 'bookmarks'] : ['all', 'stats']; }
 (function swipeTabs() {
-  const SKIP = 'input,textarea,select,.tag-strip,.active-filters,.shelf-row,.sg-tabs,.f-tag-picker,.modal-bg,.overlay,.busy-overlay';
+  const SKIP = 'input,textarea,select,.tag-strip,.active-filters,.shelf-row,.sg-tabs,.bmk-chips,.f-tag-picker,.modal-bg,.overlay,.busy-overlay';
   let sx = 0, sy = 0, st = 0, on = false;
   document.addEventListener('touchstart', e => {
     on = false;
@@ -1649,20 +1708,20 @@ function swipeToTab(tab, from) {
 }
 
 function setSource(s) {
-  if (notifyView || statsView || suggestView) switchTab('all');
+  if (notifyView || statsView || suggestView || bmView) switchTab('all');
   activeSource = (activeSource === s) ? null : s;
   renderFilterStrip();
   renderGrid();
 }
 
 function setNewFilter() {
-  if (notifyView || statsView || suggestView) switchTab('all');
+  if (notifyView || statsView || suggestView || bmView) switchTab('all');
   activeNew = !activeNew;
   renderFilterStrip();
   renderGrid();
 }
 function setStatus(s) {
-  if (notifyView || statsView || suggestView) switchTab('all');
+  if (notifyView || statsView || suggestView || bmView) switchTab('all');
   activeStatus = (activeStatus === s) ? null : s;
   renderFilterStrip();
   renderGrid();
@@ -1680,7 +1739,7 @@ const SURPRISE_MIN_STAR = 3;
 const SURPRISE_SOURCE = 'meb';
 let lastSurprise = null;
 function surpriseMe() {
-  if (notifyView || statsView || suggestView) switchTab('all');
+  if (notifyView || statsView || suggestView || bmView) switchTab('all');
   let list = getFilteredBooks().filter(b => b.source === SURPRISE_SOURCE && (b.star || 0) >= SURPRISE_MIN_STAR);
   if (!list.length) {
     const filtered = activeSource || activeStatus || activeStar !== null || activeTags.size || searchQ.trim();
@@ -2224,7 +2283,7 @@ function sgEditReasonHit(i) { if (sgHits[i]) sgOpenReasons(sgHits[i].x); }
 function sgLibrarySearchHtml(q) {
   if (!isEditor() || !q) return '';
   if (!sgLoaded) {
-    loadSuggest().then(() => { if (!notifyView && !statsView && !suggestView && searchQ.trim()) renderGrid(); });
+    loadSuggest().then(() => { if (!notifyView && !statsView && !suggestView && !bmView && searchQ.trim()) renderGrid(); });
     return '<div class="sgs-sec"><div class="sgs-h">💡 กำลังค้นในนิยายที่เคยแนะนำ…</div></div>';
   }
   const hits = sgSearch(q);
@@ -2235,7 +2294,7 @@ function sgLibrarySearchHtml(q) {
 /* redraw whichever view shows suggestions */
 function sgRerender() {
   if (suggestView) renderSuggest();
-  else if (!notifyView && !statsView && searchQ.trim() && isEditor()) renderGrid();
+  else if (!notifyView && !statsView && !bmView && searchQ.trim() && isEditor()) renderGrid();
 }
 
 function sgPanelHtml() {
@@ -2663,7 +2722,7 @@ function filterBooks() {
 }
 function refreshSearchView() {
   if (suggestView) renderSuggest();
-  else if (!notifyView && !statsView) renderGrid();
+  else if (!notifyView && !statsView && !bmView) renderGrid();
 }
 
 function applyScopeUI() {
@@ -2680,7 +2739,7 @@ function toggleScope() {
 }
 
 function focusSearch(scope) {
-  if (notifyView || statsView) switchTab('all');
+  if (notifyView || statsView || bmView) switchTab('all');
   searchScope = scope;
   applyScopeUI();
   document.getElementById('search-input').focus();
@@ -2705,6 +2764,7 @@ function openModal(idx) {
   const nt = document.getElementById('m-note');
   nt.textContent = isEditor() && b.note ? b.note : '';
   renderNewChapters(b, idx);
+  renderModalBookmarks(b);
   const meb = document.getElementById('m-meb');
   const wantMeb = b.status === 'wishlist' || b.status === 'bought';
   meb.style.display = wantMeb ? 'inline-block' : 'none';
@@ -2725,6 +2785,316 @@ function openModal(idx) {
   document.body.style.overflow = 'hidden';
 }
 
+/* ===== 🔖 BOOKMARKS =====
+   Saved in the Sheet ("bookmarks" tab): id, title, source (meb/raw), chapter (any
+   text), note, url (RAW only), dates. A bookmark belongs to a library novel when
+   its title matches one (loosely); otherwise it shows as "ไม่มีในคลัง". */
+let bmItems = [], bmLoaded = false, bmError = '', bmLoading = null;
+let bmQ = '', bmFilt = 'all';
+const bmOpenKeys = new Set();
+let bmForm = null;   // the add/edit sheet: { id, edit, title, source, chapter, note, url, other, fixedTitle, autoCh }
+function loadBookmarks() {
+  if (!isEditor()) return Promise.resolve();
+  if (bmLoading) return bmLoading;
+  bmLoading = gasPost({ action: 'bm_list' }).then(d => {
+    if (!d || !Array.isArray(d.items)) throw new Error('unknown action');
+    bmItems = d.items.map(bmNorm);
+    bmError = '';
+  }).catch(e => {
+    bmError = /unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อนใช้บุ๊กมาร์ก (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : (e.message || 'error');
+  }).finally(() => {
+    bmLoaded = true; bmLoading = null;
+    bmRerender();
+  });
+  return bmLoading;
+}
+function bmNorm(o) {
+  return { id: String(o.id || ''), title: String(o.title || '').trim(), source: o.source === 'raw' ? 'raw' : 'meb', chapter: String(o.chapter || '').trim(),
+    note: String(o.note || ''), url: String(o.url || ''), created_at: String(o.created_at || ''), updated_at: String(o.updated_at || '') };
+}
+function bmBook(title) { return sgFindInLibrary({ name: title, guid: '', uid: '' }); }
+function fmtCh(c) { c = String(c || '').trim(); return /^\d+(\.\d+)?$/.test(c) ? 'ตอนที่ ' + c : c; }
+function chNum(c) { c = String(c || '').trim(); return /^\d+(\.\d+)?$/.test(c) ? parseFloat(c) : progressNum(c); }
+function bmKey(title) { const b = bmBook(title); return b ? 'b:' + sgNormName(b.title) : 'n:' + sgNormName(title); }
+function jsq(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }   // for '…' inside onclick
+function bmGroups() {
+  const map = new Map();
+  bmItems.forEach(x => {
+    const k = bmKey(x.title);
+    if (!map.has(k)) { const b = bmBook(x.title); map.set(k, { key: k, book: b, title: b ? b.title : x.title, items: [] }); }
+    map.get(k).items.push(x);
+  });
+  const gs = [...map.values()];
+  gs.forEach(g => {
+    g.items.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    g.source = g.book ? (g.book.source === 'raw' ? 'raw' : 'meb') : g.items[0].source;
+    g.latest = g.items[0];
+  });
+  return gs.sort((a, b) => String(b.latest.created_at).localeCompare(String(a.latest.created_at)));
+}
+function bmFor(b) { const k = 'b:' + sgNormName(b.title); return bmGroups().find(g => g.key === k) || null; }
+/* chapter to suggest: your last numbered bookmark + 1, else 📖 อ่านถึง */
+function bmNextCh(items, book) {
+  const nums = items.map(x => chNum(x.chapter)).filter(n => n > 0);
+  if (nums.length) return String(Math.floor(Math.max(...nums)) + 1);
+  const p = book ? progressNum(book.progress) : 0;
+  return p ? String(p) : '';
+}
+function bmHintFor(items, chapter) {
+  if (!chapter) return '';
+  return items.some(x => chNum(x.chapter) > 0) ? 'เติมให้ = ตอนล่าสุดที่บุ๊กมาร์ก + 1' : 'เติมให้จาก 📖 อ่านถึง';
+}
+
+/* popup: the novel's latest bookmarks */
+function renderModalBookmarks(b) {
+  const el = document.getElementById('m-bmk');
+  if (!el) return;
+  const g = isEditor() ? bmFor(b) : null;
+  if (!g) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="mb-h"><b>🔖 บุ๊กมาร์ก (' + g.items.length + ')</b><button class="btn btn-ghost btn-sm" onclick="goBookmarks(\'' + jsq(g.key) + '\')">ดูทั้งหมด</button></div>' +
+    g.items.slice(0, 2).map(x => bmItemHtml(x, false)).join('');
+}
+function bmItemHtml(x, withActions) {
+  const id = jsq(x.id);
+  return '<div class="bmk-item ' + x.source + '">' +
+    (withActions ? '<span class="bmk-act"><button onclick="editBookmark(\'' + id + '\')" title="แก้ไข">✎</button><button onclick="deleteBookmark(\'' + id + '\')" title="ลบ">🗑</button></span>'
+      : '<span class="bmk-date">' + (x.created_at ? esc(sgThaiDate(x.created_at)) : '') + '</span>') +
+    '<div class="bmk-ch">' + esc(fmtCh(x.chapter)) + '</div>' +
+    (x.note ? '<div class="bmk-note">' + esc(x.note) + '</div>' : '') +
+    (x.url ? '<a class="bmk-link" href="' + esc(x.url) + '" target="_blank" rel="noopener">🔗 เปิดตอนนี้</a>' : '') +
+    (withActions && x.created_at ? '<div class="bmk-date2">' + esc(sgThaiDate(x.created_at)) + '</div>' : '') +
+  '</div>';
+}
+function goBookmarks(key) {
+  closeModalBtn();
+  bmOpenKeys.add(key);
+  bmQ = ''; bmFilt = 'all';
+  switchTab('bookmarks');
+  setTimeout(() => { const c = [...document.querySelectorAll('.bmk-card')].find(c => c.getAttribute('data-k') === key); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+}
+
+/* ---- the 🔖 tab ---- */
+function renderBookmarks() {
+  const main = document.getElementById('main-content');
+  if (!isEditor()) {
+    main.innerHTML = '<div class="bmk-view"><div class="sg-empty">ปลดล็อกการแก้ไข (🔑) ก่อนเพื่อใช้บุ๊กมาร์ก</div></div>';
+    document.getElementById('header-count').textContent = '🔖 บุ๊กมาร์ก';
+    return;
+  }
+  const gs = bmGroups();
+  const n = { all: gs.length, meb: gs.filter(g => g.source === 'meb').length, raw: gs.filter(g => g.source === 'raw').length, out: gs.filter(g => !g.book).length };
+  document.getElementById('header-count').textContent = '🔖 บุ๊กมาร์ก · ' + gs.length + ' เรื่อง · ' + bmItems.length + ' รายการ';
+  const chip = (k, label) => '<button class="fb' + (bmFilt === k ? ' active' : '') + '" onclick="setBmFilt(\'' + k + '\')">' + label + ' ' + n[k] + '</button>';
+  main.innerHTML = '<div class="bmk-view">' +
+    '<div class="bmk-top"><input type="text" id="bmk-q" placeholder="🔍 ค้นหาชื่อ / ตอน / โน้ต…" value="' + esc(bmQ) + '" oninput="bmQ=this.value;renderBmList()">' +
+      '<button class="btn btn-primary btn-sm" onclick="openBookmarkOther()">＋ เรื่องอื่น</button></div>' +
+    '<div class="bmk-chips">' + chip('all', 'ทั้งหมด') + chip('meb', 'MEB') + chip('raw', 'RAW') + chip('out', 'นอกคลัง') + '</div>' +
+    '<div id="bmk-list"></div></div>';
+  renderBmList();
+}
+function setBmFilt(k) { bmFilt = k; renderBookmarks(); }
+function toggleBmGroup(key) { if (bmOpenKeys.has(key)) bmOpenKeys.delete(key); else bmOpenKeys.add(key); renderBmList(); }
+function bmMatch(g, x, q) { return g.title.toLowerCase().includes(q) || (fmtCh(x.chapter) + ' ' + x.chapter + ' ' + x.note).toLowerCase().includes(q); }
+function renderBmList() {
+  const el = document.getElementById('bmk-list');
+  if (!el) return;
+  if (!bmLoaded) { el.innerHTML = '<div class="loading"><div class="spinner"></div><span>กำลังโหลดบุ๊กมาร์ก...</span></div>'; return; }
+  if (bmError && !bmItems.length) { el.innerHTML = '<div class="sg-empty sg-err">' + esc(bmError) + '</div>'; return; }
+  const q = bmQ.trim().toLowerCase();
+  let gs = bmGroups().filter(g => bmFilt === 'all' || (bmFilt === 'out' ? !g.book : g.source === bmFilt));
+  if (q) gs = gs.filter(g => g.items.some(x => bmMatch(g, x, q)));
+  if (!gs.length) {
+    el.innerHTML = '<div class="sg-empty">' + (bmItems.length ? 'ไม่พบบุ๊กมาร์กที่ตรงกัน' : 'ยังไม่มีบุ๊กมาร์ก — เปิดนิยายแล้วกด 🔖 บุ๊กมาร์ก หรือกด ＋ เรื่องอื่น') + '</div>';
+    return;
+  }
+  el.innerHTML = gs.map(g => {
+    const open = bmOpenKeys.has(g.key) || !!q;
+    const cov = shelfCover({ b: g.book, title: g.title, rem: null });
+    const k = jsq(g.key);
+    const idx = g.book ? allBooks.indexOf(g.book) : -1;
+    const items = q ? g.items.filter(x => bmMatch(g, x, q)) : g.items;
+    return '<div class="bmk-card' + (open ? ' open' : '') + '" data-k="' + esc(g.key) + '">' +
+      '<div class="bmk-head" onclick="toggleBmGroup(\'' + k + '\')">' +
+        '<div class="bmk-cov"' + (idx >= 0 ? ' onclick="event.stopPropagation();openModal(' + idx + ')"' : '') + '><span>🔖</span>' +
+          (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</div>' +
+        '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
+          '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
+          (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · ล่าสุด ' + esc(fmtCh(g.latest.chapter)) +
+          (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div></div>' +
+        '<span class="bmk-count">' + g.items.length + '</span>' +
+      '</div>' +
+      (open ? '<div class="bmk-items">' + items.map(x => bmItemHtml(x, true)).join('') +
+        '<button class="btn btn-ghost btn-sm bmk-addmore" onclick="openBookmarkFor(\'' + k + '\')">＋ บุ๊กมาร์กตอนใหม่</button></div>' : '') +
+    '</div>';
+  }).join('');
+}
+
+/* ---- add / edit sheet ---- */
+function bmNewId() { return 'm' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
+function openBookmark(idx) {
+  const b = allBooks[idx];
+  if (!b || !isEditor()) return;
+  const g = bmFor(b);
+  const ch = bmNextCh(g ? g.items : [], b);
+  bmForm = { id: bmNewId(), edit: false, title: b.title, source: b.source === 'raw' ? 'raw' : 'meb', chapter: ch, hint: bmHintFor(g ? g.items : [], ch), note: '', url: '', other: false, fixedTitle: true, autoCh: true };
+  showBmSheet();
+}
+function openBookmarkFor(key) {
+  const g = bmGroups().find(g => g.key === key);
+  if (!g) return;
+  const ch = bmNextCh(g.items, g.book);
+  bmForm = { id: bmNewId(), edit: false, title: g.title, source: g.source, chapter: ch, hint: bmHintFor(g.items, ch), note: '', url: '', other: !g.book, fixedTitle: true, autoCh: true };
+  showBmSheet();
+}
+function openBookmarkOther() {
+  if (!isEditor()) return;
+  bmForm = { id: bmNewId(), edit: false, title: '', source: 'meb', chapter: '', note: '', url: '', other: true, fixedTitle: false, autoCh: true };
+  showBmSheet();
+  setTimeout(() => { const t = document.getElementById('bmk-title'); if (t) t.focus(); }, 50);
+}
+function editBookmark(id) {
+  const x = bmItems.find(x => x.id === id);
+  if (!x) return;
+  const b = bmBook(x.title);
+  bmForm = { id: x.id, edit: true, title: b ? b.title : x.title, source: b ? (b.source === 'raw' ? 'raw' : 'meb') : x.source,
+    chapter: x.chapter, note: x.note, url: x.url, other: !b, fixedTitle: !!b, autoCh: false };
+  showBmSheet();
+}
+function showBmSheet() { renderBmSheet(); document.getElementById('bmk-bg').classList.add('open'); }
+function closeBmSheet() { bmForm = null; const bg = document.getElementById('bmk-bg'); if (bg) bg.classList.remove('open'); }
+function renderBmSheet() {
+  const f = bmForm;
+  if (!f) return;
+  const titleInput = !f.fixedTitle;   // a novel that isn't in your library: name + MEB/RAW can be typed
+  const head = !f.edit && f.other && !f.fixedTitle ? '🔖 บุ๊กมาร์กเรื่องอื่น' : (f.edit ? '🔖 แก้ไขบุ๊กมาร์ก' : '🔖 บุ๊กมาร์ก');
+  const src = f.source === 'raw' ? 'RAW' : 'MEB';
+  document.getElementById('bmk-card').innerHTML =
+    '<button class="ov-close" onclick="closeBmSheet()">✕</button><h3>' + head + '</h3>' +
+    (titleInput
+      ? '<div class="f-row"><label>ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
+        '<div class="f-row"><label>ที่อ่าน</label><div class="bmk-seg"><button class="' + (f.source === 'meb' ? 'on' : '') + '" onclick="bmSetSource(\'meb\')">MEB</button><button class="' + (f.source === 'raw' ? 'on' : '') + '" onclick="bmSetSource(\'raw\')">RAW</button></div></div>'
+      : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="src-mini ' + f.source + '">' + src + '</span>' + (f.other ? ' · <span class="bmk-out">ไม่มีในคลัง</span>' : '') + '</div>') +
+    '<div class="f-row"><label>ตอนที่ <b class="req">*</b></label><div class="bmk-chline">' +
+      '<input type="text" id="bmk-ch" value="' + esc(f.chapter) + '" placeholder="เช่น 26 หรือ ตอนพิเศษ 2" oninput="bmForm.chapter=this.value;bmForm.autoCh=false;bmForm.hint=\'\';document.getElementById(\'bmk-err\').textContent=\'\';document.getElementById(\'bmk-hint\').textContent=\'\'">' +
+      '<button class="btn btn-ghost btn-sm" onclick="bmStep(-1)">−</button><button class="btn btn-ghost btn-sm" onclick="bmStep(1)">＋</button></div>' +
+      '<div class="bmk-err" id="bmk-err"></div>' +
+      '<div class="f-note" id="bmk-hint">' + esc(f.hint || '') + '</div></div>' +
+    (f.source === 'raw' ? '<div class="f-row"><label>ลิงก์ตอน (ไม่บังคับ)</label><div class="f-url-line">' +
+      '<input type="text" id="bmk-url" value="' + esc(f.url) + '" placeholder="https://www.readawrite.com/c/…" oninput="bmForm.url=this.value;bmUrlChanged()">' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="bmPasteUrl()">📋 วาง</button></div>' +
+      '<div class="f-note" id="bmk-urlnote">วางลิงก์แล้วแอปเติมเลขตอนให้ (ถ้าอ่านได้)</div></div>' : '') +
+    '<div class="f-row"><label>โน้ต (ไม่บังคับ)</label><textarea id="bmk-note" placeholder="เช่น ฉากที่ชอบ / หยุดอ่านตรงนี้…" oninput="bmForm.note=this.value">' + esc(f.note) + '</textarea></div>' +
+    '<div class="f-actions"><button class="btn btn-primary" onclick="saveBookmark()">💾 บันทึก</button><button class="btn btn-ghost" onclick="closeBmSheet()">ยกเลิก</button>' +
+      (f.edit ? '<button class="btn btn-danger" onclick="deleteBookmark(\'' + jsq(f.id) + '\')">ลบ</button>' : '') + '</div>';
+  bmTitleHint();
+}
+function bmSetSource(src) { bmForm.source = src; renderBmSheet(); }
+function bmTitleHint() {
+  const el = document.getElementById('bmk-dup');
+  if (!el || !bmForm) return;
+  const d = bmForm.title.trim() ? libDupOf(bmForm.title, '', null) : null;
+  el.textContent = d ? '⚠️ มีในคลังแล้ว: “' + d.title + '” — ตอนบันทึกจะถามว่าใช้เรื่องนั้นไหม' : '';
+}
+function bmStep(d) {
+  const inp = document.getElementById('bmk-ch');
+  const v = String(inp.value || '').trim();
+  if (v && !/^\d+(\.\d+)?$/.test(v)) return;   // text chapters: no ± (type it)
+  inp.value = String(Math.max(1, Math.floor(parseFloat(v || '0')) + d));
+  bmForm.chapter = inp.value; bmForm.autoCh = false; bmForm.hint = '';
+  document.getElementById('bmk-hint').textContent = '';
+}
+async function bmPasteUrl() {
+  const txt = await readClipboard();
+  if (txt == null) return;
+  const m = txt.match(/https?:\/\/\S+/);
+  const inp = document.getElementById('bmk-url');
+  inp.value = m ? m[0] : txt; bmForm.url = inp.value;
+  bmUrlChanged(true);
+}
+/* a pasted chapter link → its chapter number (from the page title Google reads) */
+let bmUrlTimer = null;
+function bmUrlChanged(now) {
+  clearTimeout(bmUrlTimer);
+  const url = (bmForm && bmForm.url || '').trim();
+  if (!/^https?:\/\/\S+\.\S+/i.test(url)) return;
+  bmUrlTimer = setTimeout(async () => {
+    const note = document.getElementById('bmk-urlnote');
+    if (note) note.textContent = '📖 กำลังอ่านชื่อตอน…';
+    await fetchLinkTitles([url]);
+    if (!bmForm || (bmForm.url || '').trim() !== url) return;
+    const c = linkTitles[url];
+    const ch = c && c.status === 'ok' ? chapterTitle(c.title, bmForm.title) : '';
+    const n = progressNum(ch);
+    const inp = document.getElementById('bmk-ch');
+    if (n && inp && (bmForm.autoCh || !inp.value.trim())) {
+      inp.value = String(n); bmForm.chapter = inp.value; bmForm.autoCh = false; bmForm.hint = '';
+      const h = document.getElementById('bmk-hint'); if (h) h.textContent = '';
+    }
+    if (note) note.textContent = ch ? '📖 ' + ch + (n ? ' → ตอนที่ ' + n : '') : 'อ่านชื่อตอนจากลิงก์นี้ไม่ได้ — ใส่เลขตอนเองได้เลย';
+  }, now ? 0 : 700);
+}
+async function saveBookmark() {
+  const f = bmForm;
+  if (!f) return;
+  const ch = (document.getElementById('bmk-ch').value || '').trim();
+  if (!ch) { document.getElementById('bmk-err').textContent = 'กรุณาใส่เลขตอน'; document.getElementById('bmk-ch').focus(); return; }
+  let title = String(f.title || '').trim();
+  if (!title) { alert('กรุณาใส่ชื่อเรื่อง'); return; }
+  let source = f.source;
+  if (!f.fixedTitle) {
+    const d = libDupOf(title, '', null);
+    if (d && confirm('📚 มีเรื่องนี้ในคลังแล้ว: “' + d.title + '”\nบุ๊กมาร์กไว้กับเรื่องนี้เลยไหม?')) { title = d.title; source = d.source === 'raw' ? 'raw' : 'meb'; }
+  }
+  const old = bmItems.find(x => x.id === f.id);
+  const item = bmNorm({ id: f.id, title: title, source: source, chapter: ch, note: (document.getElementById('bmk-note').value || '').trim(),
+    url: source === 'raw' ? (f.url || '').trim() : '', created_at: (old && old.created_at) || new Date().toISOString() });
+  const prevList = bmItems.slice();
+  bmItems = bmItems.filter(x => x.id !== item.id).concat([item]);   // optimistic
+  const wasEdit = f.edit;
+  closeBmSheet();
+  bmOpenKeys.add(bmKey(item.title));
+  bmRerender();
+  try {
+    const r = await gasPost(Object.assign({ action: 'bm_save' }, item));
+    if (r && r.item) { const i = bmItems.findIndex(x => x.id === item.id); if (i >= 0) bmItems[i] = bmNorm(r.item); }
+    toast('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว');
+  } catch (e) {
+    bmItems = prevList; bmRerender();
+    alert('บันทึกบุ๊กมาร์กไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+    return;
+  }
+  if (!wasEdit) bmProgress(item);
+}
+/* a new bookmark also moves 📖 อ่านถึง forward (never backwards) */
+async function bmProgress(item) {
+  const b = bmBook(item.title);
+  if (!b) return;
+  const nu = chNum(item.chapter), cur = progressNum(b.progress);
+  if (nu && cur && nu < cur) return;
+  const progress = fmtCh(item.chapter), at = todayYMD();
+  const prev = { progress: b.progress, progressAt: b.progressAt };
+  b.progress = progress; b.progressAt = at;
+  try {
+    const res = await gasPost({ action: 'progress', row: b.row, title: b.title, progress: progress, progress_at: at });
+    if (res && res.row && res.row !== b.row) b.row = res.row;
+    if (!notifyView && !statsView && !suggestView && !bmView) renderGrid();
+  } catch (e) { Object.assign(b, prev); }
+}
+async function deleteBookmark(id) {
+  const x = bmItems.find(x => x.id === id);
+  if (!x || !confirm('ลบบุ๊กมาร์ก ' + fmtCh(x.chapter) + ' ของ “' + x.title + '”?')) return;
+  closeBmSheet();
+  const prevList = bmItems.slice();
+  bmItems = bmItems.filter(y => y.id !== id);
+  bmRerender();
+  try { await gasPost({ action: 'bm_delete', id: id }); }
+  catch (e) { bmItems = prevList; bmRerender(); alert('ลบไม่ได้: ' + e.message); }
+}
+function bmRerender() {
+  if (bmView) renderBookmarks();
+  if (document.getElementById('modal-bg').classList.contains('open') && allBooks[window._mIdx]) renderModalBookmarks(allBooks[window._mIdx]);
+}
+
 /* ===== 🆕 NEW-CHAPTER ALERTS =====
    The weekly 💡 bookmarklet looks up your Reading novels on ReadAWrite and the
    Sheet ("chapter_watch") keeps: chapters (latest), seen (what you acknowledged). */
@@ -2738,7 +3108,7 @@ function loadChapterWatch() {
     if (d && Array.isArray(d.items)) {
       cwItems = d.items;
       if (cwOpenNew && allBooks.length) { cwOpenNew = false; if (allBooks.some(b => cwNew(b) > 0)) activeNew = true; }
-      if (!notifyView && !statsView && !suggestView) { renderFilterStrip(); renderGrid(); }
+      if (!notifyView && !statsView && !suggestView && !bmView) { renderFilterStrip(); renderGrid(); }
     }
   }).catch(() => {}).finally(() => { cwLoading = null; });
   return cwLoading;
@@ -3125,9 +3495,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state']);
+const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -3441,7 +3811,7 @@ async function loadReminders() {
     reminderError = '';
     remindersLoaded = true;
     // the อ่านต่อ shelf includes reminder novels: redraw it when they changed
-    if (before !== JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at])) && !notifyView && !statsView && !suggestView && allBooks.length) renderGrid();
+    if (before !== JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at])) && !notifyView && !statsView && !suggestView && !bmView && allBooks.length) renderGrid();
     fetchLinkTitles(reminders.map(r => r.url));   // 📖 chapter titles, in the background
   } catch(e) { reminderError = e.message || 'error'; }   // keep the list we already had
   updateNotifyBadge();
@@ -3701,7 +4071,7 @@ async function fetchLinkTitles(urls) {
   } finally {
     want.forEach(u => ltPending.delete(u));
     fillChapEls();
-    if (!notifyView && !statsView && !suggestView && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
+    if (!notifyView && !statsView && !suggestView && !bmView && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
     nfAutoName('nf'); nfAutoName('day');
   }
 }
@@ -4284,6 +4654,7 @@ function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (nfDelId != null || nfDoneId != null) { closeNfDel(); return; }
+    if (bmForm) { closeBmSheet(); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
@@ -4304,6 +4675,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Digit2') { e.preventDefault(); switchTab('stats'); return; }
   if (e.code === 'Digit3') { if (isEditor()) { e.preventDefault(); switchTab('notify'); } return; }
   if (e.code === 'Digit4') { if (isEditor()) { e.preventDefault(); switchTab('suggest'); } return; }
+  if (e.code === 'Digit5') { if (isEditor()) { e.preventDefault(); switchTab('bookmarks'); } return; }
   /* Notification sub-views: L = list, K = calendar (only in that tab) */
   if (notifyView && e.code === 'KeyL') { e.preventDefault(); setNotifyView('list'); return; }
   if (notifyView && e.code === 'KeyK') { e.preventDefault(); setNotifyView('calendar'); return; }
