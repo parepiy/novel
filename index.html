@@ -710,6 +710,12 @@ body.editor .m-edit{display:inline-block;}
 .bmk-out{color:var(--overdue);font-weight:600;}
 .bmk-count{flex:none;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;color:#06101c;background:linear-gradient(90deg,#67e8f9,#a78bfa);}
 .bmk-items{margin-top:4px;}
+.bmk-hits{font-size:.72rem;color:var(--mint2);margin-top:2px;}
+.bmg-head{display:flex;align-items:center;gap:12px;padding-right:26px;margin-bottom:6px;}
+.bmg-cov{width:58px;height:82px;}
+.bmg-title{font-weight:700;font-size:1rem;line-height:1.35;overflow-wrap:anywhere;color:var(--text);}
+.bmg-items{max-height:min(56vh,520px);overflow:auto;margin:0 -4px;padding:0 4px;}
+.bmk-item.hit{background:rgba(34,211,238,.1);border-radius:0 8px 8px 0;}
 .bmk-addmore{margin-top:10px;}
 .src-mini{font-size:.62rem;font-weight:700;padding:0 6px;border-radius:999px;border:1px solid var(--bd2);color:var(--mint2);}
 .src-mini.raw{color:var(--raw2);}
@@ -1096,6 +1102,11 @@ body.editor .m-edit{display:inline-block;}
 <!-- CALENDAR DAY POPUP -->
 <div class="overlay" id="day-bg" onclick="if(event.target===this)closeDayPopup()">
   <div class="f-card" id="day-card" style="max-width:460px;"></div>
+</div>
+
+<!-- 🔖 A NOVEL'S BOOKMARKS -->
+<div class="overlay" id="bmg-bg" style="z-index:215" onclick="if(event.target===this)closeBmGroup()">
+  <div class="f-card" id="bmg-card" style="max-width:520px;"></div>
 </div>
 
 <!-- 🔖 ADD / EDIT BOOKMARK -->
@@ -2925,10 +2936,9 @@ function bmItemHtml(x, withActions) {
 }
 function goBookmarks(key) {
   closeModalBtn();
-  bmOpenKeys.add(key);
   bmQ = ''; bmFilt = 'all';
   switchTab('bookmarks');
-  setTimeout(() => { const c = [...document.querySelectorAll('.bmk-card')].find(c => c.getAttribute('data-k') === key); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  openBmGroup(key);
 }
 
 /* ---- the 🔖 tab ---- */
@@ -2965,27 +2975,66 @@ function renderBmList() {
     el.innerHTML = '<div class="sg-empty">' + (bmItems.length ? 'ไม่พบบุ๊กมาร์กที่ตรงกัน' : 'ยังไม่มีบุ๊กมาร์ก — เปิดนิยายแล้วกด 🔖 บุ๊กมาร์ก หรือกด ＋ เรื่องอื่น') + '</div>';
     return;
   }
+  // compact cards; tap one → its bookmarks in a popup
   el.innerHTML = gs.map(g => {
-    const open = bmOpenKeys.has(g.key) || !!q;
     const cov = shelfCover({ b: g.book, title: g.title, rem: null });
-    const k = jsq(g.key);
-    const idx = g.book ? allBooks.indexOf(g.book) : -1;
-    const items = bmSortItems(q ? g.items.filter(x => bmMatch(g, x, q)) : g.items);
-    return '<div class="bmk-card' + (open ? ' open' : '') + '" data-k="' + esc(g.key) + '">' +
-      '<div class="bmk-head" onclick="toggleBmGroup(\'' + k + '\')">' +
-        '<div class="bmk-cov"' + (idx >= 0 ? ' onclick="event.stopPropagation();openModal(' + idx + ')"'
-          : cov ? ' onclick="event.stopPropagation();showCover(\'' + jsq(cov) + '\', \'' + jsq(g.title) + '\')" title="ดูรูปใหญ่"' : '') + '><span>🔖</span>' +
-          (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">' : '') + '</div>' +
+    const hits = q ? g.items.filter(x => bmMatch(g, x, q)).length : 0;
+    return '<div class="bmk-card" data-k="' + esc(g.key) + '">' +
+      '<div class="bmk-head" onclick="openBmGroup(\'' + jsq(g.key) + '\')" title="ดูบุ๊กมาร์กของเรื่องนี้">' +
+        bmCoverHtml(g, cov, 'bmk-cov') +
         '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
           '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
           (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · ล่าสุด ' + esc(fmtCh(g.latest.chapter)) +
-          (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div></div>' +
+          (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div>' +
+          (q ? '<div class="bmk-hits">🔍 ตรงกับคำค้น ' + hits + ' รายการ</div>' : '') + '</div>' +
         '<span class="bmk-count">' + g.items.length + '</span>' +
-      '</div>' +
-      (open ? '<div class="bmk-items">' + items.map(x => bmItemHtml(x, true)).join('') +
-        '<button class="btn btn-ghost btn-sm bmk-addmore" onclick="openBookmarkFor(\'' + k + '\')">＋ บุ๊กมาร์กตอนใหม่</button></div>' : '') +
-    '</div>';
+      '</div></div>';
   }).join('');
+}
+/* the cover: tap → the novel's popup (library) or the picture, big */
+function bmCoverHtml(g, cov, cls) {
+  const idx = g.book ? allBooks.indexOf(g.book) : -1;
+  const tap = idx >= 0 ? ' onclick="event.stopPropagation();closeBmGroup();openModal(' + idx + ')" title="เปิดนิยาย"'
+    : cov ? ' onclick="event.stopPropagation();showCover(\'' + jsq(cov) + '\', \'' + jsq(g.title) + '\')" title="ดูรูปใหญ่"' : '';
+  return '<div class="' + cls + '"' + tap + '><span>🔖</span>' +
+    (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">' : '') + '</div>';
+}
+
+/* ---- a novel's bookmarks, in a popup ---- */
+let bmGroupKey = null;
+function openBmGroup(key) {
+  bmGroupKey = key;
+  renderBmGroup();
+  if (bmGroupKey) document.getElementById('bmg-bg').classList.add('open');
+}
+function closeBmGroup() {
+  bmGroupKey = null;
+  const bg = document.getElementById('bmg-bg');
+  if (bg) bg.classList.remove('open');
+}
+function renderBmGroup() {
+  if (!bmGroupKey) return;
+  const g = bmGroups().find(g => g.key === bmGroupKey);
+  if (!g) { closeBmGroup(); return; }   // its last bookmark was deleted
+  const cov = shelfCover({ b: g.book, title: g.title, rem: null });
+  const q = bmQ.trim().toLowerCase();
+  const idx = g.book ? allBooks.indexOf(g.book) : -1;
+  document.getElementById('bmg-card').innerHTML =
+    '<button class="ov-close" onclick="closeBmGroup()">✕</button>' +
+    '<div class="bmg-head">' + bmCoverHtml(g, cov, 'bmk-cov bmg-cov') +
+      '<div class="bmk-info"><div class="bmg-title">' + esc(g.title) + '</div>' +
+        '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
+        (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ</div>' +
+        (g.book && g.book.progress ? '<div class="bmk-sub">📖 อ่านถึง ' + esc(g.book.progress) + '</div>' : '') +
+      '</div></div>' +
+    '<div class="bmg-items">' + bmSortItems(g.items).map(x => {
+      const h = bmItemHtml(x, true);
+      return q && bmMatch(g, x, q) ? h.replace('class="bmk-item ', 'class="bmk-item hit ') : h;
+    }).join('') + '</div>' +
+    '<div class="f-actions">' +
+      '<button class="btn btn-primary" onclick="openBookmarkFor(\'' + jsq(g.key) + '\')">＋ บุ๊กมาร์กตอนใหม่</button>' +
+      (idx >= 0 ? '<button class="btn btn-ghost" onclick="closeBmGroup();openModal(' + idx + ')">📖 เปิดนิยาย</button>' : '') +
+    '</div>';
 }
 
 /* ---- add / edit sheet ---- */
@@ -3162,6 +3211,7 @@ async function deleteBookmark(id) {
 }
 function bmRerender() {
   if (bmView) renderBookmarks();
+  if (bmGroupKey) renderBmGroup();
   if (document.getElementById('modal-bg').classList.contains('open') && allBooks[window._mIdx]) renderModalBookmarks(allBooks[window._mIdx]);
 }
 
@@ -4763,6 +4813,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (nfDelId != null || nfDoneId != null) { closeNfDel(); return; }
     if (bmForm) { closeBmSheet(); return; }
+    if (bmGroupKey) { closeBmGroup(); return; }
     const cv = document.getElementById('cover-view');
     if (cv && cv.classList.contains('open')) { cv.classList.remove('open'); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
