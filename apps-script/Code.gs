@@ -440,7 +440,7 @@ function suggestRouter_(action, d) {
 // The app sends the reminder links; Google fetches each page once and reads its
 // title. Results are kept in the "link_titles" sheet so each link is fetched
 // only once (failed ones are retried after 6 hours).
-const LT_COLS = ['url', 'title', 'status', 'fetched_at', 'page_title', 'og_title', 'parent', 'image'];
+const LT_COLS = ['url', 'title', 'status', 'fetched_at', 'page_title', 'og_title', 'parent', 'image', 'novel'];
 const LT_RETRY_MS = 6 * 3600 * 1000;
 
 function ltDecode_(s) {
@@ -514,11 +514,13 @@ function linkTitlesRouter_(action, d) {
       const v = vals[r - 1];
       const fresh = Date.now() - new Date(v[3]).getTime() < LT_RETRY_MS;
       const ok = String(v[2]) === 'ok';
-      // saved before page_title/og_title, or before covers ('image' empty = never looked) → read it once more
-      const old = ok && ((!v[4] && !v[5]) || !v[7]);
+      // saved before page_title/og_title, covers ('image' empty = never looked) or the novel's
+      // name from its own page ('novel' empty while there is a novel page) → read it once more
+      const old = ok && ((!v[4] && !v[5]) || !v[7] || (v[6] && !v[8]));
       if (!old && (ok || fresh)) {
+        const none = x => String(x || '') === 'none' ? '' : String(x || '');
         out[u] = { title: String(v[1] || ''), status: String(v[2] || ''), page: String(v[4] || ''), og: String(v[5] || ''), parent: String(v[6] || ''),
-          image: String(v[7] || '') === 'none' ? '' : String(v[7] || '') };
+          image: none(v[7]), novel: none(v[8]) };
         return;
       }
     }
@@ -540,27 +542,32 @@ function linkTitlesRouter_(action, d) {
       }
       return { u: u, info: info, status: status };
     });
-    // no cover on the chapter page → take it from the novel's own page
+    // the novel's own page (readawrite.com/a/…): its real name, and its cover when the chapter has none.
+    // A chapter page's title is usually "novel - chapter", but not always (e.g. collections).
     const parents = [];
-    got.forEach(g => { if (g.status === 'ok' && !g.info.image && g.info.parent && parents.indexOf(g.info.parent) < 0 && parents.length < 20) parents.push(g.info.parent); });
-    const pImg = {};
+    got.forEach(g => { if (g.status === 'ok' && g.info.parent && parents.indexOf(g.info.parent) < 0 && parents.length < 20) parents.push(g.info.parent); });
+    const pImg = {}, pName = {};
     if (parents.length) {
       const pr = ltFetch_(parents);
       parents.forEach((pu, i) => {
         const res = pr[i];
-        if (res && res.getResponseCode() === 200) pImg[pu] = ltAbs_(ltExtract_(res.getContentText('UTF-8').slice(0, 300000)).image, pu);
+        if (!res || res.getResponseCode() !== 200) return;
+        const x = ltExtract_(res.getContentText('UTF-8').slice(0, 300000));
+        pImg[pu] = ltAbs_(x.image, pu);
+        if (x.title && !ltBlocked_(x.title)) pName[pu] = x.title;
       });
     }
     sh.getRange(1, 1, 1, LT_COLS.length).setValues([LT_COLS]);
     got.forEach(g => {
       const info = g.info;
       if (g.status === 'ok' && !info.image && info.parent) info.image = pImg[info.parent] || '';
-      out[g.u] = { title: info.title, status: g.status, page: info.page, og: info.og, parent: info.parent, image: info.image };
+      info.novel = g.status === 'ok' && info.parent ? (pName[info.parent] || '') : '';
+      out[g.u] = { title: info.title, status: g.status, page: info.page, og: info.og, parent: info.parent, image: info.image, novel: info.novel };
       const r = rowOf[g.u] || sh.getLastRow() + 1;
       rowOf[g.u] = r;
       sh.getRange(r, 1, 1, LT_COLS.length).setNumberFormat('@')
         .setValues([[g.u, info.title, g.status, new Date().toISOString(), info.page, info.og, info.parent,
-          g.status === 'ok' ? (info.image || 'none') : ''].map(sgText_)]);
+          g.status === 'ok' ? (info.image || 'none') : '', g.status === 'ok' && info.parent ? (info.novel || 'none') : ''].map(sgText_)]);
     });
   }
   return json_({ ok: true, titles: out });
