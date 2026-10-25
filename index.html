@@ -694,6 +694,14 @@ body.editor .m-edit{display:inline-block;}
 /* novels side by side on wide screens (no empty sides) */
 #bmk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start;}
 #bmk-list > .sg-empty,#bmk-list > .loading{grid-column:1/-1;}
+/* every card the same height: long text is cut with … (the popup shows it all) */
+#bmk-list .bmk-card{height:124px;display:flex;align-items:center;overflow:hidden;}
+#bmk-list .bmk-head{width:100%;min-width:0;}
+#bmk-list .bmk-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+#bmk-list .bmk-sub,#bmk-list .bmk-hits{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#bmk-list .bmk-big{width:92px;max-width:92px;height:84px;justify-content:center;overflow:hidden;}
+#bmk-list .bmk-big-t{font-size:.72rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+@media(max-width:479px){#bmk-list .bmk-big{width:78px;max-width:78px;height:76px;padding:4px 6px;} #bmk-list .bmk-big-n{font-size:1.45rem;} #bmk-list .bmk-big-l{font-size:.56rem;}}
 .bmk-top{display:flex;gap:8px;}
 .bmk-top input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
 :root[data-theme] .bmk-top input{background:var(--input-bg);border-color:var(--line2);}
