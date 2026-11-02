@@ -951,6 +951,104 @@ body.editor .m-edit{display:inline-block;}
 @keyframes slideFromRight{from{opacity:.25;transform:translateX(36px)}to{opacity:1;transform:none}}
 @keyframes slideFromLeft{from{opacity:.25;transform:translateX(-36px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){#main-content.slide-from-right,#main-content.slide-from-left{animation:none;}}
+
+/* ==================== 💾 🏷️ ☑️ ⏩ 🗓️ (new tools) ==================== */
+/* toast with a button */
+.toast{width:max-content;max-width:calc(100vw - 24px);}
+.toast.act span{flex:1;min-width:0;}
+.toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;}
+.toast-btn{flex-shrink:0;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:var(--grad);color:var(--on-grad);white-space:nowrap;}
+.busy-cancel{display:none;margin-top:4px;background:var(--glass);color:var(--text);}
+/* 🚫 excluded tag chip */
+.tag-fb{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+.fb.excl,:root[data-theme] .fb.excl{color:#e11d48;border-color:rgba(225,29,72,.55);background:rgba(225,29,72,.1);text-decoration:line-through;text-decoration-thickness:1px;}
+:root[data-theme="dark"] .fb.excl{color:#fda4af;}
+.af-chip.excl{background:rgba(225,29,72,.1);border-color:rgba(225,29,72,.55);color:#e11d48;}
+:root[data-theme="dark"] .af-chip.excl{color:#fda4af;}
+.fb.tm-fb,.fb.sel-fb{font-weight:600;}
+:root[data-theme] .fb.tm-fb{border-style:dashed;}
+/* 🏷️ tag manager */
+.tm-count{font-size:.78rem;font-weight:400;color:var(--mute);margin-left:4px;}
+.tm-top{display:flex;gap:8px;margin:4px 0 10px;}
+.tm-top input{flex:1;min-width:0;padding:8px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--input-bg,var(--s1));color:var(--text);font-family:inherit;font-size:.9rem;}
+.tm-top .sort-sel{flex-shrink:0;}
+.tm-twins{border:1px dashed var(--line2);border-radius:12px;padding:8px 10px;margin-bottom:10px;font-size:.8rem;color:var(--dim);display:flex;flex-direction:column;gap:6px;}
+.tm-twin{display:flex;align-items:center;gap:8px;justify-content:space-between;}
+.tm-twin span{min-width:0;}
+.tm-list{display:flex;flex-direction:column;gap:2px;max-height:52vh;overflow:auto;margin:0 -4px;padding:0 4px;}
+.tm-row{display:flex;align-items:center;gap:6px;padding:4px 4px;border-radius:10px;}
+.tm-row.on{background:var(--mdim);}
+.tm-ck{display:flex;align-items:center;padding:4px;cursor:pointer;}
+.tm-ck input{width:17px;height:17px;accent-color:var(--mint);}
+.tm-name{flex:1;min-width:0;text-align:left;background:none;border:none;color:var(--text);font-family:inherit;font-size:.9rem;cursor:pointer;padding:4px 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tm-name:hover{color:var(--mint2);}
+.tm-n{font-size:.76rem;color:var(--mute);font-variant-numeric:tabular-nums;min-width:26px;text-align:right;}
+.tm-act{background:none;border:1px solid var(--line2);border-radius:8px;width:32px;height:30px;cursor:pointer;color:var(--dim);font-size:.82rem;flex-shrink:0;}
+.tm-act.del{color:#b85c5c;}
+.tm-foot{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.tm-foot .f-note{flex:1;min-width:200px;}
+.h3-btn{margin-left:auto;font-family:'Sarabun','Cordia New',sans-serif;font-weight:500;}
+/* ☑️ select mode */
+.card .sel-ck{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;width:36px;height:36px;font-size:1.1rem !important;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;box-shadow:0 1px 6px rgba(0,0,0,.35);}
+.card.picked .sel-ck{background:var(--mint);border-color:#fff;}
+.card.picked,:root[data-theme] .card.picked{outline:3px solid var(--mint);outline-offset:-3px;}
+body.selmode .edit-btn{display:none !important;}
+body.selmode #main-content{padding-bottom:120px;}
+body.selmode .toast{bottom:136px;}
+.sel-bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:205;width:min(620px,calc(100vw - 20px));display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:16px;
+  background:var(--panel-bg,var(--s1));border:1px solid var(--panel-bd,var(--bd));box-shadow:0 10px 30px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);}
+.sel-row{display:flex;align-items:center;gap:6px;}
+.sel-row .btn{white-space:nowrap;padding:6px 10px;}
+.sel-n{font-size:.86rem;color:var(--text);margin-right:auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sel-acts .btn{flex:1;min-width:0;padding:7px 4px;overflow:hidden;text-overflow:ellipsis;}
+.sel-acts .btn-danger{margin-left:0;}
+.sel-bar .btn:disabled{opacity:.45;cursor:default;}
+.sel-st{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-st .stpick{padding:8px 14px;font-size:.88rem;}
+.sel-tags{max-height:40vh;overflow:auto;}
+.tagpick small{opacity:.65;font-size:.72em;}
+/* ⏩ snooze */
+.nf-snooze{display:flex;gap:6px;margin:2px 0 1px;}
+.nf-snooze button{background:var(--glass);border:1px solid var(--line2);color:var(--dim);border-radius:999px;padding:2px 10px;font-family:inherit;font-size:.74rem;cursor:pointer;}
+.nf-snooze button:hover{color:var(--mint2);border-color:var(--mint);}
+/* 🗓️ year in review */
+.yr-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 12px;}
+.yr-tiles{margin-bottom:4px;}
+.yr-tiles .stat-tile{padding:11px 13px;}
+.yr-tiles .stat-tile .num{font-size:1.45rem;}
+.yr-h{font-size:.82rem;font-weight:600;color:var(--dim);margin:16px 0 8px;font-family:'Kanit','Sarabun',sans-serif;}
+.yr-chart .mc-readout:empty::before{content:'แตะแท่งเพื่อดูตัวเลข';color:var(--mute);}
+.mc-bar.fin{background:linear-gradient(180deg,#93c5fd,#3b82f6);}
+.mc-col.future .mc-bar{opacity:.35;}
+.yr-sec .bar-row{grid-template-columns:minmax(0,150px) 1fr 34px;}
+.yr-sec .bar-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.yr-best{margin-top:14px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2);background:var(--glass);font-size:.86rem;color:var(--text);cursor:pointer;}
+.yr-best b{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;}
+.yr-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:10px;}
+.yr-book{display:flex;flex-direction:column;gap:3px;background:none;border:none;padding:0;cursor:pointer;text-align:left;font-family:inherit;min-width:0;}
+.yr-cov{position:relative;aspect-ratio:2/3;border-radius:9px;overflow:hidden;background:var(--s3);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+.yr-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;}
+.yr-nc{font-size:1.3rem;opacity:.5;}
+.yr-bt{font-size:.7rem;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.yr-bd{font-size:.62rem;color:var(--mute);}
+/* 🧰 tools */
+.tools-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.tool-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;border-radius:14px;border:1px solid var(--line2);background:var(--glass);color:var(--text);font-family:inherit;cursor:pointer;min-width:0;}
+.tool-btn:hover:not(:disabled){border-color:var(--mint);box-shadow:var(--hover-glow,none);}
+.tool-btn:disabled{opacity:.55;cursor:default;}
+.tool-ic{font-size:1.3rem;}
+.tool-t{font-weight:700;font-size:.88rem;font-family:'Kanit','Sarabun',sans-serif;}
+.tool-s{font-size:.72rem;color:var(--dim);line-height:1.35;}
+/* 💾 backup sheets */
+.bk-list{display:flex;flex-direction:column;gap:2px;margin:6px 0 10px;}
+.bk-row{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--line);font-size:.86rem;color:var(--text);}
+.bk-row span{flex:1;min-width:0;}
+.bk-row b{font-variant-numeric:tabular-nums;color:var(--dim);font-weight:600;}
+.bk-pick{cursor:pointer;}
+.bk-pick input{width:17px;height:17px;accent-color:var(--mint);}
+.bk-warn{font-size:.78rem;color:var(--dim);background:rgba(240,169,77,.12);border:1px solid rgba(240,169,77,.4);border-radius:10px;padding:8px 10px;margin-bottom:6px;line-height:1.5;}
+.s-backup-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.f-row input.f-date{max-width:200px;}
 </style>
 <script>
 /* Theme: "dark" = 🌌 space (the default look), "light" = original mint.
@@ -1077,6 +1175,7 @@ body.editor .m-edit{display:inline-block;}
     </div>
     <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
     <div class="f-row"><label>📖 อ่านถึง</label><input type="text" id="f-progress" placeholder="เช่น ตอนที่ 25 (เติมให้อัตโนมัติเมื่อกด ✓ เสร็จ ในแจ้งเตือน)"></div>
+    <div class="f-row"><label>🏁 อ่านจบเมื่อ</label><input type="date" id="f-finished" class="f-date"><div class="f-note">ใส่ให้อัตโนมัติเมื่อตั้งสถานะ Finished — ใช้ใน 📈 สรุปประจำปี</div></div>
     <div class="f-row"><label>📝 โน้ต / รีวิวส่วนตัว</label><textarea id="f-note" placeholder="ทำไมให้กี่ดาว คู่ที่ชอบ ฉากที่ประทับใจ…"></textarea></div>
     <div class="f-row"><label>รูปปก</label>
       <div class="f-cover-line">
@@ -1104,6 +1203,7 @@ body.editor .m-edit{display:inline-block;}
 <div class="busy-overlay" id="busy-overlay" aria-hidden="true">
   <div class="busy-ring"></div>
   <div class="busy-text" id="busy-text">กำลังทำงาน</div>
+  <button class="btn btn-ghost busy-cancel" id="busy-cancel" onclick="busyCancelNow()">หยุด</button>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1126,6 +1226,16 @@ body.editor .m-edit{display:inline-block;}
 <!-- 🔖 ADD / EDIT BOOKMARK -->
 <div class="overlay" id="bmk-bg" style="z-index:225" onclick="if(event.target===this)closeBmSheet()">
   <div class="f-card" id="bmk-card" style="max-width:440px;"></div>
+</div>
+
+<!-- 🏷️ TAG MANAGER -->
+<div class="overlay" id="tagm-bg" style="z-index:212" onclick="if(event.target===this)closeTagManager()">
+  <div class="f-card" id="tagm-card" style="max-width:480px;"></div>
+</div>
+
+<!-- 💾 / ☑️ small sheets (backup ready, restore, bulk status / tags) -->
+<div class="overlay" id="tools-bg" style="z-index:222" onclick="if(event.target===this)closeTools()">
+  <div class="f-card" id="tools-card" style="max-width:440px;"></div>
 </div>
 
 <!-- 🔔 DELETE: this one or the whole novel -->
@@ -1152,6 +1262,14 @@ body.editor .m-edit{display:inline-block;}
       <p class="f-note">เปิด Apps Script › คลิกในไฟล์สคริปต์ › เลือกทั้งหมด (⌘A) › วางทับ (⌘V) › Save › Deploy ▾ › Manage deployments › ✏️ › New version › Deploy</p>
       <textarea id="s-code" class="s-code" readonly style="display:none"></textarea>
     </div>
+    <div class="s-script s-backup">
+      <label>💾 สำรอง / กู้คืนข้อมูล</label>
+      <div class="s-backup-btns">
+        <button class="btn btn-ghost" onclick="closeSettings();backupDownload()">⬇️ ดาวน์โหลดไฟล์สำรอง</button>
+        <button class="btn btn-ghost" onclick="closeSettings();backupPick()">⬆️ กู้คืนจากไฟล์</button>
+      </div>
+      <p class="f-note" id="s-backup-note"></p>
+    </div>
   </div>
 </div>
 
@@ -1172,6 +1290,8 @@ body.editor .m-edit{display:inline-block;}
     <div class="help-row"><span>เปลี่ยนแท็บบนมือถือ</span><kbd>ปัดซ้าย / ขวา</kbd></div>
     <div class="help-row"><span>แจ้งเตือน · มุมมองรายการ</span><kbd>L</kbd></div>
     <div class="help-row"><span>แจ้งเตือน · มุมมองปฏิทิน</span><kbd>K</kbd></div>
+    <div class="help-row"><span>ไม่เอาแท็กนี้ (ซ่อนเรื่องที่มีแท็ก)</span><kbd>กดค้างที่แท็ก / คลิกขวา</kbd></div>
+    <div class="help-row"><span>เลือกหลายเรื่อง (แท็บนิยาย)</span><kbd>☑️ เลือก</kbd></div>
     <div class="help-row"><span>กรองเฉพาะ MEB</span><kbd>M</kbd></div>
     <div class="help-row"><span>กรองเฉพาะ RAW</span><kbd>R</kbd></div>
     <div class="help-row"><span>ค้นหาชื่อเรื่อง</span><kbd>/</kbd></div>
@@ -1197,6 +1317,7 @@ let statsView = false;    // true while the 📈 Stats tab is showing
 let suggestView = false;  // true while the 💡 Suggestions tab is showing
 let bmView = false;       // true while the 🔖 Bookmarks tab is showing
 let activeTags = new Set();
+let excludedTags = new Set();   // 🚫 hide novels with these tags (long-press a tag)
 let activeStar = null;
 let activeStatus = null;   // null = any, or a reading-status key
 let activeNew = false;     // 🆕 only novels with new chapters
@@ -1314,6 +1435,7 @@ function parseCSV(text) {
       progress:   meta(cols, 'nv_progress'),       // 📖 chapter read up to
       progressAt: normAdded(meta(cols, 'nv_progress_at')),   // last read
       note:       meta(cols, 'nv_note'),           // 📝 your note
+      finishedAt: normAdded(meta(cols, 'nv_finished_at')),   // 🏁 date finished
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1359,6 +1481,7 @@ function fromGas(b) {
     progress:   String(b.progress || '').trim(),
     progressAt: normAdded(b.progress_at),
     note:       String(b.note || '').trim(),
+    finishedAt: normAdded(b.finished_at),
     row:     b.row,
   };
 }
@@ -1385,10 +1508,13 @@ async function refreshFromGas() {
     const books = await gasGetBooks();
     const prev = allBooks;
     allBooks = books.map(fromGas);
-    // an older Code.gs doesn't send columns J–L yet: keep what the published sheet had
-    if (books.length && !('progress' in books[0])) allBooks.forEach(b => {
+    // an older Code.gs doesn't send the nv_ columns yet: keep what the published sheet had
+    const has = books[0] || {};
+    if (books.length && (!('progress' in has) || !('finished_at' in has))) allBooks.forEach(b => {
       const o = prev.find(x => x.row === b.row && x.title === b.title);
-      if (o) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
+      if (!o) return;
+      if (!('progress' in has)) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
+      if (!('finished_at' in has)) b.finishedAt = o.finishedAt;
     });
     renderAll();
     loadChapterWatch();
@@ -1419,9 +1545,8 @@ function renderFilterStrip() {
   ).join('');
 
   const tags = [...new Set(pool.flatMap(b => b.tags))].sort((a, b) => a.localeCompare(b, 'th'));
-  const tagBtns = tags.map(t =>
-    `<button class="fb${activeTags.has(t) ? ' active' : ''}" onclick="setTag('${t.replace(/'/g,"\\'")}')">${esc(t)}</button>`
-  ).join('');
+  const tagBtns = tags.map(tagChipHtml).join('') +
+    (isEditor() && tags.length ? '<button class="fb tm-fb" onclick="openTagManager()" title="เปลี่ยนชื่อ / รวม / ลบแท็ก">🏷️ จัดการแท็ก</button>' : '');
 
   const statusesPresent = STATUS_ORDER.filter(k => pool.some(b => b.status === k));
   const statusBtns = statusesPresent.map(k =>
@@ -1437,7 +1562,8 @@ function renderFilterStrip() {
 
   const nNew = isEditor() ? allBooks.filter(b => cwNew(b) > 0).length : 0;
   const newBtn = nNew ? `<button class="fb st-new${activeNew ? ' active' : ''}" onclick="setNewFilter()">🆕 มีตอนใหม่ ${nNew}</button>` : '';
-  const groups = [sortSel, srcBtns];
+  const selBtn = isEditor() ? '<button class="fb sel-fb' + (selMode ? ' active' : '') + '" onclick="toggleSelMode()" title="เลือกหลายเรื่องเพื่อแก้พร้อมกัน">☑️ เลือก</button>' : '';
+  const groups = [sortSel + selBtn, srcBtns];
   if (newBtn) groups.push(newBtn);
   if (statusBtns) groups.push(statusBtns);
   if (starBtns) groups.push(starBtns);
@@ -1448,7 +1574,7 @@ function renderFilterStrip() {
 }
 
 function updateClearBtn() {
-  const active = activeTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null || activeStatus !== null || activeNew;
+  const active = activeTags.size > 0 || excludedTags.size > 0 || activeStar !== null || searchQ.trim().length > 0 || activeSource !== null || activeStatus !== null || activeNew;
   document.getElementById('clear-btn').classList.toggle('dim', !active);
 }
 
@@ -1466,6 +1592,7 @@ function renderActiveFilters() {
   if (activeNew) chips.push(afChip('🆕 มีตอนใหม่', 'setNewFilter()', ''));
   if (activeStar !== null) chips.push(afChip(activeStar + '★', 'setStar(' + activeStar + ')', 'star'));
   [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + t.replace(/'/g, "\\'") + "')", '')));
+  [...excludedTags].forEach(t => chips.push(afChip('🚫 ' + t, "unExclude('" + jsq(t) + "')", 'excl')));
   const q = searchQ.trim();
   if (q) chips.push(afChip('🔍 ' + q, 'clearSearch()', ''));
   if (!chips.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
@@ -1484,7 +1611,8 @@ function getFilteredBooks() {
   const pool = activeSource ? allBooks.filter(b => b.source === activeSource) : allBooks;
   const q = searchQ.toLowerCase().trim();
   const list = pool.filter(b => {
-    const tagOk = activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t));
+    const tagOk = (activeTags.size === 0 || [...activeTags].every(t => b.tags.includes(t))) &&
+      (excludedTags.size === 0 || !b.tags.some(t => excludedTags.has(t)));
     const starOk = activeStar === null || b.star === activeStar;
     const statusOk = (activeStatus === null || b.status === activeStatus) && (!activeNew || cwNew(b) > 0);
     const searchOk = !q || b.title.toLowerCase().includes(q) ||
@@ -1512,10 +1640,12 @@ function renderGrid() {
     document.getElementById('main-content').innerHTML = '<div class="empty">ไม่พบนิยายที่ตรงกัน' + (sgSec ? 'ในคลัง' : '') + '</div>' + sgSec;
     return;
   }
-  const noFilter = !activeSource && !activeStatus && !activeNew && activeStar === null && !activeTags.size && !searchQ.trim();
-  document.getElementById('main-content').innerHTML = (noFilter ? shelfHtml() : '') +
+  const noFilter = !activeSource && !activeStatus && !activeNew && activeStar === null && !activeTags.size && !excludedTags.size && !searchQ.trim();
+  selVisible = filtered;
+  document.getElementById('main-content').innerHTML = (noFilter && !selMode ? shelfHtml() : '') +
     `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>` + sgSec;
   updateScrollBtns();
+  renderSelBar();
 }
 
 /* ▶️ Continue-reading shelf: your Reading novels, the ones you opened most
@@ -1673,8 +1803,9 @@ function buildCard(b, idx) {
   const nw = cwNew(b);
   const stHtml = (stMeta ? `<span class="st-pill ${stMeta.cls}">${stMeta.label}</span>` : '') +
     (nw > 0 ? `<span class="new-badge">🆕 +${nw} ตอน</span>` : '');
-  return `<div class="card" onclick="openModal(${idx})">
-    <div class="cover">${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
+  const picked = selMode && selRows.has(b.row);
+  return `<div class="card${picked ? ' picked' : ''}"${selMode ? ` data-i="${idx}"` : ''} onclick="${selMode ? `selToggle(${idx})` : `openModal(${idx})`}">
+    <div class="cover">${selMode ? '<span class="sel-ck">' + (picked ? '✓' : '') + '</span>' : ''}${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
     <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
@@ -1697,6 +1828,7 @@ function esc(s) {
 
 /* ===== TABS / FILTER / SEARCH ===== */
 function switchTab(tab) {
+  if (tab !== 'all' && selMode) selExit(true);
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   const notify = tab === 'notify';
   const stats = tab === 'stats';
@@ -1810,7 +1942,7 @@ function surpriseMe() {
   if (notifyView || statsView || suggestView || bmView) switchTab('all');
   let list = getFilteredBooks().filter(b => b.source === SURPRISE_SOURCE && (b.star || 0) >= SURPRISE_MIN_STAR);
   if (!list.length) {
-    const filtered = activeSource || activeStatus || activeStar !== null || activeTags.size || searchQ.trim();
+    const filtered = activeSource || activeStatus || activeStar !== null || activeTags.size || excludedTags.size || searchQ.trim();
     toast('ไม่มีนิยาย MEB ' + SURPRISE_MIN_STAR + '★ ขึ้นไปให้สุ่ม' + (filtered ? 'ในตัวกรองนี้' : ''));
     return;
   }
@@ -1837,7 +1969,7 @@ function mcLabel(x) { return TH_MON[x.m] + ' ' + x.y; }
 function mcShow(i) {
   const x = mcData[i];
   if (!x) return;
-  document.querySelectorAll('.mc-col').forEach((c, j) => c.classList.toggle('sel', j === i));
+  document.querySelectorAll('.mc-sec .mc-col').forEach((c, j) => c.classList.toggle('sel', j === i));
   const el = document.getElementById('mc-readout');
   if (el) el.innerHTML = '<b>' + mcLabel(x) + '</b> · เพิ่ม <b>' + x.n + '</b> เรื่อง';
 }
@@ -1955,12 +2087,13 @@ function renderStats() {
   books.forEach(b => b.tags.forEach(t => { tagMap[t] = (tagMap[t] || 0) + 1; }));
   const topTags = Object.entries(tagMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
   max = topTags.length ? topTags[0][1] : 1;
-  const tagSec = '<div class="stat-sec"><h3>🏷️ แท็กยอดนิยม</h3>' +
+  const tagSec = '<div class="stat-sec"><h3>🏷️ แท็กยอดนิยม' + (isEditor() ? '<button class="btn btn-ghost btn-sm h3-btn" onclick="openTagManager()">จัดการแท็ก</button>' : '') + '</h3>' +
     (topTags.length ? topTags.map(([t, n]) => bar(t, n, '')).join('') : '<div class="stat-empty">ไม่มีแท็ก</div>') +
     '</div>';
 
   document.getElementById('main-content').innerHTML =
-    '<div class="stats-view">' + tiles + monthlySection(books) + srcSec + statusSec + starSec + tagSec + '</div>';
+    '<div class="stats-view">' + tiles + yearSection(books) + monthlySection(books) + srcSec + statusSec + starSec + tagSec + toolsSection() + '</div>';
+  if (isEditor() && !rlLoaded && !rlLoading) loadReadLog().then(() => { if (statsView) renderStats(); });
 }
 
 /* ===== 💡 SUGGESTIONS (ReadAWrite, refreshed weekly by the rw-collect.js bookmarklet) =====
@@ -2009,6 +2142,7 @@ function toast(msg, ms) {
   const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = msg;
+  el.classList.remove('act');
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2800);
@@ -2732,6 +2866,8 @@ function renderStatusPick() {
 function pickStatus(s) {
   const el = document.getElementById('f-status');
   el.value = (el.value === s) ? '' : s;   // tap again to clear
+  const fin = document.getElementById('f-finished');
+  if (fin && el.value === 'finished' && !fin.value) fin.value = todayYMD();   // 🏁 finished today
   renderStatusPick();
 }
 
@@ -2772,6 +2908,7 @@ function setStar(n) {
 
 function clearAll() {
   activeTags = new Set();
+  excludedTags = new Set();
   activeStar = null;
   searchQ = '';
   activeSource = null;
@@ -2824,7 +2961,7 @@ function openModal(idx) {
   srcEl.className = 'm-src ' + b.source;
   document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
   document.getElementById('m-tags').innerHTML = b.tags.map(t => `<span class="m-tag">${esc(t)}</span>`).join('');
-  document.getElementById('m-added').textContent = b.added ? '📅 เพิ่มเมื่อ ' + sgThaiDate(b.added) : '';
+  document.getElementById('m-added').textContent = [b.added ? '📅 เพิ่มเมื่อ ' + sgThaiDate(b.added) : '', b.finishedAt ? '🏁 อ่านจบเมื่อ ' + sgThaiDate(b.finishedAt) : ''].filter(Boolean).join(' · ');
   document.getElementById('m-summary').textContent = b.summary;
   const pr = document.getElementById('m-prog');
   pr.textContent = (b.progress || b.progressAt)
@@ -3053,6 +3190,7 @@ function renderBmGroup() {
     }).join('') + '</div>' +
     '<div class="f-actions">' +
       '<button class="btn btn-primary" onclick="openBookmarkFor(\'' + jsq(g.key) + '\')">＋ บุ๊กมาร์กตอนใหม่</button>' +
+      '<button class="btn btn-ghost" onclick="remindNext(\'' + jsq(g.title) + '\')" title="ตั้งเตือนให้อ่านตอนถัดไป">🔔 เตือนตอนถัดไป</button>' +
       (idx >= 0 ? '<button class="btn btn-ghost" onclick="closeBmGroup();openModal(' + idx + ')">📖 เปิดนิยาย</button>' : '') +
     '</div>';
 }
@@ -3199,7 +3337,11 @@ async function saveBookmark() {
     const r = await gasPost(Object.assign({ action: 'bm_save' }, item));
     if (r && r.item) { const i = bmItems.findIndex(x => x.id === item.id); if (i >= 0) bmItems[i] = bmNorm(r.item); }
     if (item.url) fetchLinkTitles([item.url]);   // its cover (usually already read when the link was pasted)
-    toast('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว');
+    if (wasEdit) toast('🔖 บันทึก ' + fmtCh(item.chapter) + ' แล้ว');
+    else {
+      logRead({ title: item.title, chapter: item.chapter, url: item.url, via: 'bookmark' });
+      toastAction('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว', '🔔 เตือนตอนถัดไป', () => remindNext(item.title), 6500);
+    }
   } catch (e) {
     bmItems = prevList; bmRerender();
     alert('บันทึกบุ๊กมาร์กไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
@@ -3371,7 +3513,9 @@ async function quickSave(field, value) {
   const b = allBooks[window._mIdx]; if (!b) return;
   const prev = b[field];
   if (prev === value) return;
+  const prevFin = b.finishedAt;
   b[field] = value;                     // optimistic
+  if (field === 'status' && value === 'finished' && prev !== 'finished') b.finishedAt = todayYMD();   // 🏁 the server stamps it too
   renderModalQuick(b);
   document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
   const msg = document.getElementById('m-quick-msg');
@@ -3390,6 +3534,7 @@ async function quickSave(field, value) {
     if (field === 'status' && value === 'bought') offerClearReminders(b.title);
   } catch (err) {
     b[field] = prev;                    // rollback
+    b.finishedAt = prevFin;
     renderModalQuick(b);
     document.getElementById('m-stars').textContent = b.star > 0 ? '★'.repeat(b.star) + '☆'.repeat(5 - b.star) : '';
     msg.textContent = '';
@@ -3462,6 +3607,8 @@ function openSettings() {
   document.getElementById('s-token').value = c.token;
   document.getElementById('s-status').textContent = isEditor() ? '✓ ปลดล็อกแล้ว' : 'ยังไม่ได้ตั้งค่า (โหมดอ่านอย่างเดียว)';
   document.getElementById('s-code').style.display = 'none';
+  document.getElementById('s-backup-note').textContent = backupNoteText();
+  document.querySelector('.s-backup').style.display = isEditor() ? '' : 'none';
   document.getElementById('settings-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
   loadCodeGs();   // fetch now, so the copy button can copy straight away (Safari needs that)
@@ -3549,6 +3696,7 @@ function openAdd() {
   document.getElementById('f-url').value = '';
   document.getElementById('f-summary').value = '';
   document.getElementById('f-progress').value = '';
+  document.getElementById('f-finished').value = '';
   document.getElementById('f-note').value = '';
   document.getElementById('f-dup').textContent = '';
   document.getElementById('f-image').value = '';
@@ -3577,6 +3725,7 @@ function openEdit(idx) {
   document.getElementById('f-url').value = b.url || '';
   document.getElementById('f-summary').value = b.summary || '';
   document.getElementById('f-progress').value = b.progress || '';
+  document.getElementById('f-finished').value = b.finishedAt || '';
   document.getElementById('f-note').value = b.note || '';
   document.getElementById('f-dup').textContent = '';
   document.getElementById('f-image').value = '';
@@ -3646,9 +3795,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['remind_move', 'tag_edit', 'bulk_edit', 'bulk_delete', 'backup_dump', 'backup_restore', 'fill_covers', 'log_read', 'log_list', 'bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
+const GAS_QUIET = new Set(['log_list', 'log_read', 'remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -3773,6 +3922,8 @@ async function saveForm() {
   if (formMode === 'edit') payload.row = formRow;
   const before = formMode === 'edit' ? allBooks.find(b => b.row === formRow) : null;
   if (payload.progress && (!before || before.progress !== payload.progress)) payload.progress_at = todayYMD();
+  const fin = fval('f-finished');
+  if (formMode === 'add' ? fin : fin !== ((before && before.finishedAt) || '')) payload.finished_at = fin;
   // ⚠️ already in the library?
   const dup = libDupOf(title, payload.url, formMode === 'edit' ? formRow : null);
   if (dup && !confirm('📚 มีเรื่องนี้ในคลังแล้ว: “' + dup.title + '”' + (dup.status && STATUS_META[dup.status] ? ' (' + STATUS_META[dup.status].label + ')' : '') +
@@ -3870,7 +4021,6 @@ async function recordProgress(r) {
   try {
     const res = await gasPost({ action: 'progress', row: b.row, title: b.title, progress: progress, progress_at: at });
     if (res && res.row && res.row !== b.row) b.row = res.row;
-    if (chap) toast('📖 บันทึกแล้ว: “' + b.title + '” อ่านถึง ' + chap, 3500);
   } catch (e) {
     Object.assign(b, prev);
     if (/unknown action/i.test(e.message || '')) toast('อัปเดต Code.gs เพื่อบันทึก “อ่านถึง” อัตโนมัติ', 4000);
@@ -3911,9 +4061,14 @@ let calMonth = new Date().getMonth();   // 0-based
 let dayPopupKey = null;   // 'YYYY-MM-DD' of the open day popup (null = closed)
 let dayEditId = null;     // reminder being edited inside the day popup
 
+let busyCancel = null;   // set while a long job can be stopped (🖼️ covers)
+function busyCancelNow() { const f = busyCancel; busyCancel = null; if (f) f(); }
 function setBusy(on, msg) {
   const el = document.getElementById('busy-overlay');
   if (!el) return;
+  if (!on) busyCancel = null;
+  const cb = document.getElementById('busy-cancel');
+  if (cb) cb.style.display = on && busyCancel ? '' : 'none';
   if (on && msg) document.getElementById('busy-text').textContent = msg;
   el.classList.toggle('show', on);
 }
@@ -4115,9 +4270,9 @@ async function nfDonePick(next) {
   const r = reminders.find(x => String(x.id) === String(id));
   closeNfDel();
   if (!r) return;
-  const ok = await finishReminder(id);
+  const ok = await finishReminder(id, false);
   if (!ok) return;
-  if (!next) { toast('🏁 อ่าน “' + r.title + '” ครบทุกตอนที่ตั้งไว้แล้ว'); return; }
+  if (!next) { toastAction('🏁 อ่าน “' + r.title + '” ครบทุกตอนที่ตั้งไว้แล้ว', '🔖 บุ๊กมาร์ก', () => bookmarkFromReminder(r), 7000); return; }
   // same time tomorrow (rounded to the hour); the link is left empty for the next chapter
   const t = new Date(Number(r.remind_at) + 86400e3);
   t.setMinutes(0, 0, 0);
@@ -4133,15 +4288,20 @@ async function nfDonePick(next) {
     toast('วางลิงก์ตอนถัดไป (📋 วาง) แล้วกด ＋ เพิ่มการแจ้งเตือน', 4000);
   }, 80);
 }
-async function finishReminder(id) {
+async function finishReminder(id, announce) {
   const done = reminders.find(x => String(x.id) === String(id));
   setBusy(true, 'กำลังทำเครื่องหมายเสร็จ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
     recordProgress(done);   // 📖 in the background
+    const weekly = done && String(done.url || '').indexOf(SG_REMIND_MARK) >= 0;
+    const ch = done ? remChapter(done) : '';
+    if (done && !weekly) logRead({ title: (remBook(done) || done).title, chapter: ch, url: done.url, via: 'remind' });
     await loadReminders();
     renderNotify();
     if (dayPopupKey) renderDayPopup();
+    // 🔖 jot a note about the chapter you just read
+    if (done && !weekly && announce !== false) toastAction('✓ อ่านแล้ว' + (ch ? ' · ' + fmtCh(ch) : ''), '🔖 บุ๊กมาร์กตอนนี้', () => bookmarkFromReminder(done), 7000);
     return true;
   } catch(e) { alert('ทำเครื่องหมายไม่ได้: ' + e.message); return false; }
   finally { setBusy(false); }
@@ -4522,6 +4682,7 @@ function listBodyHtml() {
             : '<button class="nf-item-title nf-tl" data-t="' + esc(r.title) + '" onclick="setNfFilterFrom(this)" title="ดูทุกการแจ้งเตือนของเรื่องนี้">' + esc(r.title) + '</button>') +
           chapHtml(r.url, r.title) +
           '<div class="nf-item-when">' + label + ' · ' + fmtWhen(r.remind_at) + '</div>' +
+          snoozeHtml(r) +
           urlHtml +
         '</div>' +
         '<div class="nf-actions">' +
@@ -4769,6 +4930,7 @@ function renderDayPopup() {
           '<div class="nf-item-title">' + esc(r.title) + '</div>' +
           chapHtml(r.url, r.title) +
           '<div class="nf-item-when">' + (overdue ? '⏰ ' : '🕒 ') + timeStr + ' น.</div>' +
+          snoozeHtml(r) +
           urlHtml +
         '</div>' +
         '<div class="nf-actions">' +
@@ -4839,14 +5001,672 @@ async function saveFromDay() {
 function editFromDay(id) { dayEditId = id; renderDayPopup(); }
 function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
 
+/* ===== 💬 TOAST WITH A BUTTON ===== */
+function toastAction(msg, label, fn, ms) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.innerHTML = '<span>' + esc(msg) + '</span><button class="toast-btn">' + esc(label) + '</button>';
+  el.querySelector('.toast-btn').onclick = () => { el.classList.remove('show', 'act'); clearTimeout(toastTimer); fn(); };
+  el.classList.add('show', 'act');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show', 'act'), ms || 6000);
+}
+
+/* ===== 🚫 EXCLUDE A TAG (long-press / right-click a tag chip) ===== */
+let tagLongAt = 0, tagLongTag = '', tagSuppress = false;
+function tagChipHtml(t) {
+  const ex = excludedTags.has(t);
+  return '<button class="fb tag-fb' + (activeTags.has(t) ? ' active' : '') + (ex ? ' excl' : '') + '" data-tag="' + esc(t) + '" onclick="tagTap(this)" oncontextmenu="tagLong(this);return false" title="แตะ = เฉพาะแท็กนี้ · กดค้าง = ไม่เอาแท็กนี้">' + (ex ? '🚫 ' : '') + esc(t) + '</button>';
+}
+function tagTap(el) {
+  if (tagSuppress) { tagSuppress = false; return; }   // the click that ends a long-press
+  const t = el.getAttribute('data-tag');
+  if (excludedTags.has(t)) { unExclude(t); return; }
+  setTag(t);
+  try {
+    if (!localStorage.getItem('tagExclHint')) { localStorage.setItem('tagExclHint', '1'); toast('💡 กดค้างที่แท็ก = ซ่อนเรื่องที่มีแท็กนั้น (เช่น ไม่เอา 18+)', 4500); }
+  } catch (e) {}
+}
+function tagLong(el) {
+  const t = el.getAttribute('data-tag');
+  if (!t) return;
+  if (t === tagLongTag && Date.now() - tagLongAt < 900) return;   // Android: the timer and the context menu both fire
+  tagLongAt = Date.now(); tagLongTag = t;
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
+  if (excludedTags.has(t)) { unExclude(t); return; }
+  excludedTags.add(t); activeTags.delete(t);
+  renderFilterStrip(); renderGrid();
+  toast('🚫 ไม่แสดงเรื่องที่มีแท็ก “' + t + '” · แตะแท็กอีกครั้งเพื่อยกเลิก', 3500);
+}
+function unExclude(t) {
+  excludedTags.delete(t);
+  renderFilterStrip(); renderGrid();
+}
+(function tagLongPress() {
+  let timer = null, sx = 0, sy = 0;
+  const stop = () => { clearTimeout(timer); timer = null; };
+  document.addEventListener('pointerdown', e => {
+    tagSuppress = false;
+    const el = e.target.closest && e.target.closest('.tag-fb');
+    if (!el || e.button > 0) return;
+    sx = e.clientX; sy = e.clientY;
+    stop();
+    timer = setTimeout(() => { timer = null; tagSuppress = true; tagLong(el); }, 520);
+  });
+  document.addEventListener('pointermove', e => { if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) stop(); }, { passive: true });
+  ['pointerup', 'pointercancel', 'scroll'].forEach(k => document.addEventListener(k, stop, { passive: true, capture: true }));
+})();
+
+/* ===== 🏷️ TAG MANAGER: rename · merge · delete a tag in every novel ===== */
+let tmList = [], tmSel = new Set(), tmQ = '', tmSort = 'count';
+function tagCounts() {
+  const m = {};
+  allBooks.forEach(b => b.tags.forEach(t => { m[t] = (m[t] || 0) + 1; }));
+  return m;
+}
+function openTagManager() {
+  if (!isEditor()) { openSettings(); return; }
+  tmSel = new Set(); tmQ = '';
+  renderTagManager();
+  document.getElementById('tagm-bg').classList.add('open');
+}
+function closeTagManager() { document.getElementById('tagm-bg').classList.remove('open'); }
+function renderTagManager() {
+  const m = tagCounts();
+  const all = Object.keys(m);
+  all.sort((a, b) => tmSort === 'name' ? a.localeCompare(b, 'th') : (m[b] - m[a] || a.localeCompare(b, 'th')));
+  const q = tmQ.trim().toLowerCase();
+  tmList = all;
+  // ≈ the same tag written differently (spaces, capitals, punctuation)
+  const byNorm = {};
+  all.forEach(t => { const k = sgNormName(t) || t; (byNorm[k] = byNorm[k] || []).push(t); });
+  const twins = Object.values(byNorm).filter(g => g.length > 1).slice(0, 6);
+  const twinHtml = twins.length ? '<div class="tm-twins"><b>🧐 อาจเป็นแท็กเดียวกัน</b>' + twins.map(g =>
+    '<div class="tm-twin"><span>' + g.map(t => '“' + esc(t) + '” (' + m[t] + ')').join(' · ') + '</span>' +
+    '<button class="btn btn-ghost btn-sm" onclick="tmMergeGroup([' + g.map(t => all.indexOf(t)).join(',') + '])">รวม</button></div>').join('') + '</div>' : '';
+  const rows = all.map((t, i) => (q && t.toLowerCase().indexOf(q) < 0) ? '' :
+    '<div class="tm-row' + (tmSel.has(t) ? ' on' : '') + '">' +
+      '<label class="tm-ck"><input type="checkbox"' + (tmSel.has(t) ? ' checked' : '') + ' onchange="tmToggle(' + i + ')"></label>' +
+      '<button class="tm-name" onclick="tmFilter(' + i + ')" title="ดูนิยายที่มีแท็กนี้">' + esc(t) + '</button>' +
+      '<span class="tm-n">' + m[t] + '</span>' +
+      '<button class="tm-act" onclick="tmRename(' + i + ')" title="เปลี่ยนชื่อ">✎</button>' +
+      '<button class="tm-act del" onclick="tmDelete(' + i + ')" title="ลบแท็กนี้">🗑</button>' +
+    '</div>').join('');
+  const n = tmSel.size;
+  document.getElementById('tagm-card').innerHTML =
+    '<button class="ov-close" onclick="closeTagManager()">✕</button>' +
+    '<h3>🏷️ จัดการแท็ก <span class="tm-count">' + all.length + ' แท็ก</span></h3>' +
+    '<div class="tm-top"><input type="text" id="tm-q" placeholder="🔍 ค้นหาแท็ก…" value="' + esc(tmQ) + '" oninput="tmQ=this.value;tmRefreshRows()">' +
+      '<select class="sort-sel" onchange="tmSort=this.value;renderTagManager()"><option value="count"' + (tmSort === 'count' ? ' selected' : '') + '>ใช้มากสุด</option><option value="name"' + (tmSort === 'name' ? ' selected' : '') + '>ก-ฮ</option></select></div>' +
+    twinHtml +
+    '<div class="tm-list" id="tm-list">' + (rows || '<div class="sg-empty">ไม่พบแท็ก</div>') + '</div>' +
+    '<div class="tm-foot">' + (n >= 2 ? '<button class="btn btn-primary" onclick="tmMerge()">🔗 รวม ' + n + ' แท็กที่เลือก</button>' :
+      '<span class="f-note">ติ๊กตั้งแต่ 2 แท็กเพื่อรวมเป็นแท็กเดียว · ✎ เปลี่ยนชื่อ (ตั้งชื่อซ้ำแท็กที่มีอยู่ = รวมกัน) · 🗑 ลบออกจากทุกเรื่อง</span>') +
+      (n ? '<button class="btn btn-ghost btn-sm" onclick="tmSel=new Set();renderTagManager()">ล้างที่เลือก</button>' : '') + '</div>';
+}
+function tmRefreshRows() {   // typing in the search box keeps the focus
+  const pos = document.getElementById('tm-q').selectionStart;
+  renderTagManager();
+  const q = document.getElementById('tm-q');
+  q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) {}
+}
+function tmToggle(i) { const t = tmList[i]; if (tmSel.has(t)) tmSel.delete(t); else tmSel.add(t); renderTagManager(); }
+function tmFilter(i) {
+  const t = tmList[i];
+  closeTagManager();
+  if (currentTab() !== 'all') switchTab('all');
+  activeTags = new Set([t]); excludedTags.delete(t);
+  renderFilterStrip(); renderGrid();
+  window.scrollTo(0, 0);
+}
+function tmRename(i) {
+  const t = tmList[i];
+  const name = (prompt('เปลี่ยนชื่อแท็ก “' + t + '” เป็น\n(ถ้าตั้งชื่อเดียวกับแท็กที่มีอยู่ จะรวมเป็นแท็กเดียวกัน)', t) || '').trim().replace(/\|/g, '/');
+  if (!name || name === t) return;
+  const m = tagCounts();
+  if (m[name] && !confirm('มีแท็ก “' + name + '” อยู่แล้ว (' + m[name] + ' เรื่อง)\nรวม “' + t + '” เข้าไปเลยไหม?')) return;
+  tagEdit([t], name);
+}
+function tmDelete(i) {
+  const t = tmList[i];
+  const n = tagCounts()[t] || 0;
+  if (!confirm('ลบแท็ก “' + t + '” ออกจากนิยายทั้ง ' + n + ' เรื่อง?\n(ตัวนิยายไม่ถูกลบ)')) return;
+  tagEdit([t], '');
+}
+function tmMergeGroup(idxs) { tmSel = new Set(idxs.map(i => tmList[i]).filter(Boolean)); tmMerge(); }
+function tmMerge() {
+  const sel = [...tmSel];
+  if (sel.length < 2) return;
+  const m = tagCounts();
+  const top = sel.slice().sort((a, b) => (m[b] || 0) - (m[a] || 0))[0];
+  const name = (prompt('รวม ' + sel.map(t => '“' + t + '”').join(' + ') + '\nเป็นแท็กชื่อ:', top) || '').trim().replace(/\|/g, '/');
+  if (!name) return;
+  tagEdit(sel, name);
+}
+function applyTagEditLocal(from, to) {
+  let n = 0;
+  allBooks.forEach(b => {
+    if (!b.tags.some(t => from.indexOf(t) >= 0)) return;
+    const next = [];
+    b.tags.forEach(t => { const nt = from.indexOf(t) >= 0 ? to : t; if (nt && next.indexOf(nt) < 0) next.push(nt); });
+    b.tags = next; n++;
+  });
+  [activeTags, excludedTags].forEach(set => from.forEach(t => { if (set.has(t)) { set.delete(t); if (to) set.add(to); } }));
+  return n;
+}
+async function tagEdit(from, to) {
+  setBusy(true, to ? 'กำลังแก้แท็ก' : 'กำลังลบแท็ก');
+  try {
+    const res = await gasPost({ action: 'tag_edit', from: from, to: to });
+    const local = applyTagEditLocal(from, to);
+    const n = typeof res.changed === 'number' ? res.changed : local;
+    tmSel = new Set();
+    renderTagManager();
+    renderAll();
+    toast((to ? (from.length > 1 ? '🔗 รวมเป็น “' + to + '”' : '✎ เปลี่ยนเป็น “' + to + '”') : '🗑 ลบแท็ก “' + from[0] + '”') + ' ใน ' + n + ' เรื่องแล้ว');
+    refreshFromGas();
+  } catch (e) {
+    alert('แก้แท็กไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  } finally { setBusy(false); }
+}
+
+/* ===== ☑️ SELECT SEVERAL NOVELS (status / tags / delete at once) ===== */
+let selMode = false, selRows = new Set(), selVisible = [];
+function toggleSelMode() { if (selMode) selExit(); else { selMode = true; selRows = new Set(); document.body.classList.add('selmode'); renderFilterStrip(); renderGrid(); } }
+function selExit(quiet) {
+  selMode = false; selRows = new Set();
+  document.body.classList.remove('selmode');
+  const bar = document.getElementById('sel-bar'); if (bar) bar.remove();
+  if (!quiet) { renderFilterStrip(); renderGrid(); }
+}
+function selBooks() { return allBooks.filter(b => selRows.has(b.row)); }
+function selToggle(idx) {
+  const b = allBooks[idx];
+  if (!b) return;
+  const on = !selRows.has(b.row);
+  if (on) selRows.add(b.row); else selRows.delete(b.row);
+  const el = document.querySelector('.card[data-i="' + idx + '"]');
+  if (el) { el.classList.toggle('picked', on); const ck = el.querySelector('.sel-ck'); if (ck) ck.textContent = on ? '✓' : ''; }
+  renderSelBar();
+}
+function selAll() {
+  const allOn = selVisible.length && selVisible.every(b => selRows.has(b.row));
+  selVisible.forEach(b => { if (allOn) selRows.delete(b.row); else selRows.add(b.row); });
+  const y = window.scrollY; renderGrid(); window.scrollTo(0, y);
+}
+function renderSelBar() {
+  let bar = document.getElementById('sel-bar');
+  if (!selMode || currentTab() !== 'all') { if (bar) bar.remove(); return; }
+  if (!bar) { bar = document.createElement('div'); bar.id = 'sel-bar'; bar.className = 'sel-bar'; document.body.appendChild(bar); }
+  const n = selRows.size;
+  const allOn = selVisible.length && selVisible.every(b => selRows.has(b.row));
+  bar.innerHTML = '<div class="sel-row"><b class="sel-n">' + (n ? 'เลือกแล้ว ' + n + ' เรื่อง' : 'แตะการ์ดเพื่อเลือก') + '</b>' +
+      '<button class="btn btn-ghost btn-sm" onclick="selAll()" title="เลือกทุกเรื่องที่แสดงอยู่ (ตามตัวกรอง)">' + (allOn ? 'ไม่เลือกเลย' : 'เลือกทั้งหมด (' + selVisible.length + ')') + '</button>' +
+      '<button class="btn btn-ghost btn-sm sel-x" onclick="selExit()">✕ เสร็จ</button></div>' +
+    '<div class="sel-row sel-acts">' +
+      '<button class="btn btn-ghost btn-sm" onclick="selStatusPick()"' + (n ? '' : ' disabled') + '>📖 สถานะ</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="selTagPick(true)"' + (n ? '' : ' disabled') + '>🏷️ ＋ แท็ก</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="selTagPick(false)"' + (n ? '' : ' disabled') + '>🏷️ － แท็ก</button>' +
+      '<button class="btn btn-danger btn-sm" onclick="selDelete()"' + (n ? '' : ' disabled') + '>🗑 ลบ</button>' +
+    '</div>';
+}
+function openTools(html) {
+  document.getElementById('tools-card').innerHTML = '<button class="ov-close" onclick="closeTools()">✕</button>' + html;
+  document.getElementById('tools-bg').classList.add('open');
+}
+function closeTools() { document.getElementById('tools-bg').classList.remove('open'); }
+function selStatusPick() {
+  const n = selRows.size;
+  if (!n) return;
+  openTools('<h3>📖 เปลี่ยนสถานะ ' + n + ' เรื่อง</h3><div class="sel-st">' +
+    STATUS_ORDER.map(k => '<button class="stpick ' + STATUS_META[k].cls + '" onclick="closeTools();bulkEdit({status:\'' + k + '\'})">' + STATUS_META[k].label + '</button>').join('') +
+    '<button class="stpick" onclick="closeTools();bulkEdit({status:\'\'})">— ไม่ระบุ</button></div>');
+}
+let selTagAdd = true, selTagSet = new Set(), selTagChoices = [];
+function selTagPick(add) {
+  if (!selRows.size) return;
+  selTagAdd = add; selTagSet = new Set();
+  const m = {};
+  (add ? allBooks : selBooks()).forEach(b => b.tags.forEach(t => { m[t] = (m[t] || 0) + (add ? 0 : 1); }));
+  selTagChoices = Object.keys(m).sort((a, b) => add ? a.localeCompare(b, 'th') : (m[b] - m[a] || a.localeCompare(b, 'th')));
+  selTagCounts = m;
+  renderSelTags();
+}
+let selTagCounts = {};
+function renderSelTags() {
+  const n = selRows.size;
+  const chips = selTagChoices.map((t, i) => '<button type="button" class="tagpick' + (selTagSet.has(t) ? ' active' : '') + '" onclick="selTagToggle(' + i + ')">' + esc(t) +
+    (selTagAdd ? '' : ' <small>' + selTagCounts[t] + '</small>') + '</button>').join('');
+  openTools('<h3>🏷️ ' + (selTagAdd ? 'เพิ่มแท็กให้' : 'เอาแท็กออกจาก') + ' ' + n + ' เรื่อง</h3>' +
+    '<div class="f-tag-picker sel-tags">' + (chips || '<span class="f-note">เรื่องที่เลือกยังไม่มีแท็ก</span>') + '</div>' +
+    (selTagAdd ? '<div class="f-tag-add"><input type="text" id="sel-newtag" placeholder="แท็กใหม่… (คั่นด้วย ,)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();selTagNew();}"><button type="button" class="btn btn-ghost btn-sm" onclick="selTagNew()">＋ เพิ่ม</button></div>' : '') +
+    '<div class="f-actions"><button class="btn btn-primary" onclick="selTagGo()">' + (selTagAdd ? '＋ เพิ่ม' : '－ เอาออก') + (selTagSet.size ? ' ' + selTagSet.size + ' แท็ก' : '') + '</button><button class="btn btn-ghost" onclick="closeTools()">ยกเลิก</button></div>');
+}
+function selTagToggle(i) { const t = selTagChoices[i]; if (selTagSet.has(t)) selTagSet.delete(t); else selTagSet.add(t); renderSelTags(); }
+function selTagNew() {
+  const inp = document.getElementById('sel-newtag');
+  (inp.value || '').split(/[,|]/).map(s => s.trim()).filter(Boolean).forEach(t => { if (selTagChoices.indexOf(t) < 0) selTagChoices.unshift(t); selTagSet.add(t); });
+  renderSelTags();
+}
+function selTagGo() {
+  const inp = document.getElementById('sel-newtag');
+  if (inp && inp.value.trim()) selTagNew();
+  const tags = [...selTagSet];
+  if (!tags.length) { alert('เลือกแท็กก่อน'); return; }
+  closeTools();
+  bulkEdit(selTagAdd ? { add_tags: tags } : { remove_tags: tags });
+}
+async function bulkEdit(change) {
+  const books = selBooks();
+  if (!books.length) return;
+  setBusy(true, 'กำลังแก้ ' + books.length + ' เรื่อง');
+  try {
+    const res = await gasPost(Object.assign({ action: 'bulk_edit', items: books.map(b => ({ row: b.row, title: b.title })) }, change));
+    books.forEach(b => {   // show it straight away; the Sheet is re-read below
+      if (typeof change.status === 'string') {
+        if (change.status === 'finished' && b.status !== 'finished') b.finishedAt = todayYMD();
+        b.status = change.status;
+      }
+      if (change.add_tags) change.add_tags.forEach(t => { if (b.tags.indexOf(t) < 0) b.tags.push(t); });
+      if (change.remove_tags) b.tags = b.tags.filter(t => change.remove_tags.indexOf(t) < 0);
+    });
+    renderFilterStrip(); renderGrid();
+    const what = typeof change.status === 'string' ? 'สถานะ → ' + (STATUS_META[change.status] ? STATUS_META[change.status].label : 'ไม่ระบุ')
+      : change.add_tags ? '＋ แท็ก ' + change.add_tags.join(', ') : '－ แท็ก ' + change.remove_tags.join(', ');
+    toast('☑️ ' + what + ' · ' + (res.changed != null ? res.changed : books.length) + ' เรื่อง' + (res.missing ? ' (หาไม่เจอ ' + res.missing + ')' : ''), 3500);
+    refreshFromGas();
+  } catch (e) {
+    alert('แก้ไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  } finally { setBusy(false); }
+}
+async function selDelete() {
+  const books = selBooks();
+  if (!books.length) return;
+  const names = books.slice(0, 6).map(b => '• ' + b.title).join('\n') + (books.length > 6 ? '\n… และอีก ' + (books.length - 6) + ' เรื่อง' : '');
+  if (!confirm('🗑 ลบ ' + books.length + ' เรื่องนี้ออกจากชีตถาวร?\n\n' + names)) return;
+  if (books.length > 10 && !confirm('ยืนยันอีกครั้ง: ลบ ' + books.length + ' เรื่อง?')) return;
+  setBusy(true, 'กำลังลบ ' + books.length + ' เรื่อง');
+  try {
+    const res = await gasPost({ action: 'bulk_delete', items: books.map(b => ({ row: b.row, title: b.title })) });
+    selRows = new Set();
+    await refreshFromGas();
+    renderFilterStrip(); renderGrid();
+    toast('🗑 ลบแล้ว ' + res.deleted + ' เรื่อง' + (res.deleted < books.length ? ' (ข้าม ' + (books.length - res.deleted) + ' เรื่องที่แถวเปลี่ยนไป — ลองใหม่อีกครั้ง)' : ''), 4000);
+  } catch (e) {
+    alert('ลบไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  } finally { setBusy(false); }
+}
+
+/* ===== ⏩ SNOOZE A REMINDER ===== */
+function snoozeHtml(r) {
+  const id = jsq(String(r.id));
+  return '<div class="nf-snooze"><button onclick="snoozeReminder(\'' + id + '\',1)">⏩ +1 วัน</button><button onclick="snoozeReminder(\'' + id + '\',7)">+1 สัปดาห์</button></div>';
+}
+/* a reminder in the future moves by n days; one already due → n days from today, same time */
+function snoozeTime(ms, days) {
+  const old = new Date(Number(ms));
+  let base = old;
+  if (old.getTime() <= Date.now()) {
+    base = new Date();
+    base.setHours(old.getHours(), old.getMinutes(), 0, 0);
+  }
+  const t = new Date(base);
+  t.setDate(t.getDate() + days);
+  return t.getTime();
+}
+async function snoozeReminder(id, days, toMs) {
+  const r = reminders.find(x => String(x.id) === String(id));
+  if (!r) return;
+  const from = Number(r.remind_at);
+  const ms = toMs || snoozeTime(from, days);
+  setBusy(true, 'กำลังเลื่อน');
+  try {
+    let newId = id;
+    try { await gasPost({ action: 'remind_move', id: id, remind_at: ms }); }
+    catch (e) {
+      if (!/unknown action/i.test(e.message || '')) throw e;
+      // older Code.gs: add the new time, then remove the old one
+      const res = await gasWrite({ action: 'remind_add', title: r.title, url: r.url || '', remind_at: ms }, () => reminderSaved(String(r.title), String(r.url || ''), ms));
+      await gasPost({ action: 'remind_delete', id: id });
+      newId = res && res.id;
+    }
+    await loadReminders();
+    if (notifyView) renderNotify();
+    if (dayPopupKey) renderDayPopup();
+    if (toMs) toast('↩︎ กลับไปเวลาเดิมแล้ว');
+    else if (newId) toastAction('⏩ เลื่อนไป ' + fmtWhen(ms), 'เลิกทำ', () => snoozeReminder(newId, 0, from), 6000);
+    else toast('⏩ เลื่อนไป ' + fmtWhen(ms));
+  } catch (e) { alert('เลื่อนไม่ได้: ' + e.message); }
+  finally { setBusy(false); }
+}
+
+/* ===== 🔔 ↔ 🔖 ===== */
+function remBook(r) {   // the library novel of a reminder (by name, or by its ReadAWrite id)
+  const c = r && linkTitles[r.url];
+  const parent = c && c.parent ? (String(c.parent).match(/\/a\/([0-9a-z]+)/i) || [])[1] : '';
+  return r ? sgFindInLibrary({ name: r.title, guid: parent || '', uid: '' }) : null;
+}
+function remChapter(r) {
+  const c = r && linkTitles[r.url];
+  return c && c.status === 'ok' ? chapFromTitle(chapterTitle(c.title, r.title)) : '';
+}
+/* ✓ เสร็จ → 🔖 bookmark the chapter you just read (chapter + link filled in) */
+async function bookmarkFromReminder(r) {
+  if (!r || !isEditor()) return;
+  if (!bmLoaded) await loadBookmarks();
+  const b = remBook(r);
+  const title = b ? b.title : String(r.title || '').trim();
+  const source = b ? (b.source === 'raw' ? 'raw' : 'meb') : (r.url ? 'raw' : 'meb');   // read from a link → RAW
+  const g = bmGroups().find(g => g.key === bmKey(title));
+  const ch = remChapter(r) || bmNextCh(g ? g.items : [], b);
+  bmForm = { id: bmNewId(), edit: false, title: title, source: source, chapter: ch, hint: remChapter(r) ? 'เติมให้จากตอนที่เพิ่งอ่าน (✓ เสร็จ)' : bmHintFor(g ? g.items : [], ch),
+    note: '', url: source === 'raw' ? String(r.url || '') : '', other: !b, fixedTitle: true, autoCh: !remChapter(r) };
+  showBmSheet();
+  setTimeout(() => { const n = document.getElementById('bmk-note'); if (n) n.focus(); }, 80);
+}
+/* 🔖 → 🔔 a reminder for the next chapter (the link is pasted in the form) */
+function remindNext(title) {
+  if (!isEditor()) return;
+  const g = reminderGroups().find(g => nameMatch(g.title, title));
+  const t = new Date(); t.setDate(t.getDate() + 1); t.setMinutes(0, 0, 0);
+  nfDraft = { title: g ? g.title : title, url: '', when: msToWhenValue(t.getTime()) };
+  nfEditId = null;
+  closeBmGroup(); closeBmSheet(); closeModalBtn();
+  nfView = 'list';
+  switchTab('notify');
+  setTimeout(() => {
+    const u = document.getElementById('nf-url');
+    if (u) { u.scrollIntoView({ behavior: 'smooth', block: 'center' }); u.classList.add('nf-flash'); }
+    toast('วางลิงก์ตอนถัดไป (📋 วาง) · เลือกเวลา · แล้วกด ＋ เพิ่มการแจ้งเตือน', 4500);
+  }, 80);
+}
+
+/* ===== 📖 READING LOG (chapters finished with ✓ เสร็จ or bookmarked) ===== */
+let rlItems = [], rlLoaded = false, rlLoading = null;
+function loadReadLog() {
+  if (!isEditor()) return Promise.resolve();
+  if (rlLoading) return rlLoading;
+  rlLoading = gasPost({ action: 'log_list' }).then(d => { if (d && Array.isArray(d.items)) rlItems = d.items; })
+    .catch(() => {}).finally(() => { rlLoaded = true; rlLoading = null; });
+  return rlLoading;
+}
+function rlKey(title, chapter) { return sgNormName(title) + '|' + String(chapter || '').toLowerCase().replace(/\s+/g, ''); }
+function logRead(o) {
+  if (!isEditor() || !o || !o.title) return;
+  const date = todayYMD();
+  const k = rlKey(o.title, o.chapter || o.url);
+  if (!rlItems.some(x => rlKey(x.title, x.chapter || x.url) === k)) rlItems.push({ date: date, title: o.title, chapter: o.chapter || '', url: o.url || '', via: o.via || '' });
+  gasPost({ action: 'log_read', date: date, title: o.title, chapter: o.chapter || '', url: o.url || '', via: o.via || '' }).catch(() => {});
+}
+/* every chapter read: the log + your bookmarks (also the ones made before the log existed) */
+function readEvents() {
+  const seen = new Set(), out = [];
+  const add = (date, title, chapter) => {
+    if (!/^\d{4}-\d{2}/.test(date || '') || !title) return;
+    const k = rlKey(title, chapter);
+    if (chapter && seen.has(k)) return;
+    seen.add(k); out.push({ date: date, title: title, chapter: chapter });
+  };
+  rlItems.forEach(x => add(normAdded(x.date) || String(x.date || '').slice(0, 10), String(x.title || ''), String(x.chapter || x.url || '')));
+  bmItems.forEach(x => {
+    const d = new Date(x.created_at);
+    if (isNaN(d)) return;
+    add(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), x.title, x.chapter);
+  });
+  return out;
+}
+
+/* ===== 🗓️ YEAR IN REVIEW (📈 สถิติ) ===== */
+let yrSel = new Date().getFullYear();
+const yrCharts = {};
+function setYr(y) { yrSel = y; renderStats(); }
+function yrChart(id, vals, unit, cls) {
+  yrCharts[id] = { vals: vals, unit: unit };
+  const top = mcNiceMax(Math.max(...vals, 1));
+  const cur = yrSel === new Date().getFullYear() ? new Date().getMonth() : -1;
+  const cols = vals.map((n, i) => '<button class="mc-col' + (n ? '' : ' zero') + (i > cur && cur >= 0 ? ' future' : '') + '" onmouseenter="yrShow(\'' + id + '\',' + i + ')" onclick="yrShow(\'' + id + '\',' + i + ')" aria-label="' + TH_MON[i] + ': ' + n + ' ' + unit + '">' +
+    (n ? '<span class="mc-val">' + n + '</span>' : '') + '<span class="mc-bar ' + (cls || '') + '" style="height:' + Math.round(n / top * 100) + '%"></span></button>').join('');
+  return '<div class="yr-chart" id="' + id + '"><div class="mc-readout yr-readout"></div><div class="mc-chart">' +
+    '<div class="mc-axis"><span style="top:16px">' + top + '</span><span style="top:calc(16px + (100% - 16px) / 2)">' + (top / 2) + '</span><span style="top:100%">0</span></div>' +
+    '<div class="mc-plot">' + cols + '</div><div></div><div class="mc-labels">' + TH_MON.map(m => '<span>' + m + '</span>').join('') + '</div></div></div>';
+}
+function yrShow(id, i) {
+  const c = yrCharts[id], el = document.getElementById(id);
+  if (!c || !el) return;
+  el.querySelectorAll('.mc-col').forEach((x, j) => x.classList.toggle('sel', j === i));
+  el.querySelector('.yr-readout').innerHTML = '<b>' + TH_MON[i] + ' ' + yrSel + '</b> · <b>' + c.vals[i] + '</b> ' + c.unit;
+}
+function yearSection(books) {
+  const nowY = new Date().getFullYear();
+  const reads = readEvents();
+  const years = new Set([nowY]);
+  books.forEach(b => { if (b.finishedAt) years.add(+b.finishedAt.slice(0, 4)); if (b.added) years.add(+b.added.slice(0, 4)); });
+  reads.forEach(e => years.add(+e.date.slice(0, 4)));
+  const ys = [...years].filter(y => y > 2000 && y <= nowY).sort((a, b) => b - a);
+  if (ys.indexOf(yrSel) < 0) yrSel = nowY;
+  const Y = String(yrSel);
+  const fin = books.filter(b => b.finishedAt && b.finishedAt.slice(0, 4) === Y).sort((a, b) => a.finishedAt.localeCompare(b.finishedAt));
+  const added = books.filter(b => b.added && b.added.slice(0, 4) === Y);
+  const rd = reads.filter(e => e.date.slice(0, 4) === Y);
+  const perMon = (list, key) => { const a = new Array(12).fill(0); list.forEach(x => { const m = +String(x[key]).slice(5, 7); if (m >= 1 && m <= 12) a[m - 1]++; }); return a; };
+  const rated = fin.filter(b => b.star > 0);
+  const avg = rated.length ? (rated.reduce((s, b) => s + b.star, 0) / rated.length).toFixed(1) + '★' : '–';
+  const chips = ys.length > 1 ? '<div class="yr-chips">' + ys.map(y => '<button class="fb' + (y === yrSel ? ' active' : '') + '" onclick="setYr(' + y + ')">' + y + '</button>').join('') + '</div>' : '';
+  const tile = (num, lbl, cls) => '<div class="stat-tile' + (cls ? ' ' + cls : '') + '"><span class="num">' + num + '</span><span class="lbl">' + lbl + '</span></div>';
+  let body = '<div class="stat-tiles yr-tiles">' + tile(fin.length, '🏁 อ่านจบ (เรื่อง)') + tile(rd.length, '📖 ตอนที่อ่าน') + tile(added.length, '➕ เพิ่มเข้าคลัง') + tile(avg, '⭐ เฉลี่ยเรื่องที่จบ', 'star') + '</div>';
+  if (!fin.length && !rd.length && !added.length) {
+    body += '<div class="stat-empty">ยังไม่มีข้อมูลของปี ' + Y + '</div>';
+  } else {
+    if (rd.length) body += '<h4 class="yr-h">📖 ตอนที่อ่านแต่ละเดือน</h4>' + yrChart('yr-reads', perMon(rd, 'date'), 'ตอน', '');
+    if (fin.length) body += '<h4 class="yr-h">🏁 อ่านจบแต่ละเดือน</h4>' + yrChart('yr-fin', perMon(fin, 'finishedAt'), 'เรื่อง', 'fin');
+    // most-read novels (by chapters)
+    const byT = {};
+    rd.forEach(e => { const b = sgFindInLibrary({ name: e.title, guid: '', uid: '' }); const t = b ? b.title : e.title; byT[t] = (byT[t] || 0) + 1; });
+    const most = Object.entries(byT).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (most.length) {
+      const mx = most[0][1];
+      body += '<h4 class="yr-h">🔥 อ่านบ่อยที่สุด</h4>' + most.map(([t, n]) => '<div class="bar-row"><span class="bar-lbl" title="' + esc(t) + '">' + esc(t) + '</span><span class="bar-track"><span class="bar-fill" style="width:' + Math.round(n / mx * 100) + '%"></span></span><span class="bar-val">' + n + '</span></div>').join('');
+    }
+    // favourite tags of the novels finished (else added) this year
+    const tagPool = fin.length ? fin : added;
+    const tm = {};
+    tagPool.forEach(b => b.tags.forEach(t => { tm[t] = (tm[t] || 0) + 1; }));
+    const tt = Object.entries(tm).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (tt.length) {
+      const mx = tt[0][1];
+      body += '<h4 class="yr-h">🏷️ แท็กที่ชอบ' + (fin.length ? ' (เรื่องที่อ่านจบ)' : ' (เรื่องที่เพิ่ม)') + '</h4>' + tt.map(([t, n]) => '<div class="bar-row"><span class="bar-lbl" title="' + esc(t) + '">' + esc(t) + '</span><span class="bar-track"><span class="bar-fill raw" style="width:' + Math.round(n / mx * 100) + '%"></span></span><span class="bar-val">' + n + '</span></div>').join('');
+    }
+    if (fin.length) {
+      const best = rated.slice().sort((a, b) => b.star - a.star || b.finishedAt.localeCompare(a.finishedAt))[0];
+      if (best) body += '<div class="yr-best" onclick="openModal(' + allBooks.indexOf(best) + ')">🏆 เรื่องโปรดของปี: <b>' + esc(best.title) + '</b> ' + '★'.repeat(best.star) + '</div>';
+      body += '<h4 class="yr-h">📚 เรื่องที่อ่านจบปีนี้</h4><div class="yr-shelf">' + fin.slice().reverse().map(b =>
+        '<button class="yr-book" onclick="openModal(' + allBooks.indexOf(b) + ')" title="' + esc(b.title) + '"><span class="yr-cov">' +
+        (b.cover ? '<img src="' + esc(fixCoverUrl(b.cover)) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '<span class="yr-nc">📖</span></span>' +
+        '<span class="yr-bt">' + esc(b.title) + '</span><span class="yr-bd">' + esc(sgThaiDate(b.finishedAt)) + '</span></button>').join('') + '</div>';
+    }
+  }
+  const noDate = books.filter(b => b.status === 'finished' && !b.finishedAt).length;
+  const notes = [];
+  if (noDate) notes.push('อ่านจบแต่ไม่ทราบวันที่ ' + noDate + ' เรื่อง (ใส่ได้ที่ ✎ แก้ไข › 🏁 อ่านจบเมื่อ)');
+  if (isEditor()) notes.push('ตอนที่อ่าน = กด ✓ เสร็จในแจ้งเตือน + บุ๊กมาร์ก (ตอนเดิมนับครั้งเดียว)');
+  return '<div class="stat-sec yr-sec"><h3>🗓️ สรุปปี ' + Y + '</h3>' + chips + body +
+    (notes.length ? '<div class="mc-note">' + notes.map(esc).join('<br>') + '</div>' : '') + '</div>';
+}
+
+/* ===== 🧰 TOOLS (📈 สถิติ) ===== */
+function coverCandidates() { return allBooks.filter(b => !b.cover && /^https?:\/\//i.test(b.url || '')); }
+function toolsSection() {
+  if (!isEditor()) return '';
+  const nc = coverCandidates().length, nt = Object.keys(tagCounts()).length;
+  const tool = (ic, t, sub, fn, off) => '<button class="tool-btn"' + (off ? ' disabled' : '') + ' onclick="' + fn + '"><span class="tool-ic">' + ic + '</span><span class="tool-t">' + t + '</span><span class="tool-s">' + sub + '</span></button>';
+  return '<div class="stat-sec tools-sec"><h3>🧰 เครื่องมือ</h3><div class="tools-grid">' +
+    tool('💾', 'สำรองข้อมูล', esc(backupNoteText()), 'backupDownload()') +
+    tool('⬆️', 'กู้คืนจากไฟล์', 'ใช้ไฟล์สำรองที่ดาวน์โหลดไว้', 'backupPick()') +
+    tool('🏷️', 'จัดการแท็ก', nt + ' แท็ก · เปลี่ยนชื่อ / รวม / ลบ', 'openTagManager()') +
+    tool('🖼️', 'เติมปกที่ขาด', nc ? nc + ' เรื่องมีลิงก์แต่ยังไม่มีปก' : 'ทุกเรื่องที่มีลิงก์มีปกแล้ว ✓', 'fillCovers()', !nc) +
+  '</div></div>';
+}
+
+/* 🖼️ novels with a link but no cover → Google reads the cover from the page, a few at a time */
+async function fillCovers() {
+  const start = coverCandidates().length;
+  if (!start) { toast('ทุกเรื่องที่มีลิงก์มีปกแล้ว ✓'); return; }
+  let stop = false, filled = 0, tried = 0, plan = start;
+  busyCancel = () => { stop = true; };
+  setBusy(true, '🖼️ กำลังหาปก 0/' + start);
+  try {
+    for (let guard = 0; guard < 80 && !stop; guard++) {
+      const res = await gasPost({ action: 'fill_covers', limit: 8 });
+      (res.filled || []).forEach(f => {
+        const b = allBooks.find(b => b.row === f.row && b.title === f.title) || allBooks.find(b => b.title === f.title && !b.cover);
+        if (b) b.cover = f.cover;
+      });
+      filled += (res.filled || []).length;
+      tried += res.tried || 0;
+      plan = Math.max(plan, tried + (res.remaining || 0));
+      if (!res.tried || !res.remaining) break;
+      busyCancel = () => { stop = true; };
+      setBusy(true, '🖼️ กำลังหาปก ' + tried + '/' + plan + ' · เจอแล้ว ' + filled);
+    }
+    setBusy(false);
+    if (statsView) renderStats();
+    toast('🖼️ เติมปกแล้ว ' + filled + ' เรื่อง' + (tried > filled ? ' · หาไม่เจอ ' + (tried - filled) + ' เรื่อง (หน้าเว็บไม่มีรูป หรือเปิดไม่ได้)' : '') + (stop ? ' · หยุดแล้ว' : ''), 5000);
+    refreshFromGas();
+  } catch (e) {
+    setBusy(false);
+    alert('หาปกไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  }
+}
+
+/* ===== 💾 BACKUP / RESTORE =====
+   ⬇️ one .json file with every tab of the Sheet (library, notes, progress, 🔖, 🔔, 💡 marks…).
+   ⬆️ restore puts chosen tabs back; the Sheet keeps a copy of each tab first (backup_…). */
+const BK_LABEL = { reminders: '🔔 แจ้งเตือน', bookmarks: '🔖 บุ๊กมาร์ก', suggest_marks: '💡 เรื่องที่ทำเครื่องหมาย', suggest_list: '💡 รายการแนะนำ', chapter_watch: '🆕 ตอนใหม่',
+  read_log: '📖 บันทึกการอ่าน', link_titles: '🔗 ชื่อตอนจากลิงก์', push_subs: '📲 อุปกรณ์ที่รับแจ้งเตือน', push_queue: '📲 คิวแจ้งเตือน' };
+function bkLabel(name, s) { return s && s.library ? '📚 คลังนิยาย (' + name + ')' : (BK_LABEL[name] || name); }
+function backupNoteText() {
+  let t = 0; try { t = Number(localStorage.getItem('lastBackup')) || 0; } catch (e) {}
+  return t ? 'สำรองล่าสุด ' + sgThaiDate(new Date(t).toISOString()) : 'ยังไม่เคยสำรองบนเครื่องนี้';
+}
+let bkFile = null;
+async function backupDownload() {
+  if (!isEditor()) { openSettings(); return; }
+  setBusy(true, '💾 กำลังรวบรวมข้อมูล');
+  try {
+    const d = await gasPost({ action: 'backup_dump' });
+    if (!d || !d.sheets) throw new Error('unknown action');
+    delete d.ok;
+    const text = JSON.stringify(d);
+    const name = 'novel-backup-' + todayYMD() + '.json';
+    bkFile = { text: text, name: name };
+    const rows = Object.keys(d.sheets).filter(n => (d.sheets[n].values || []).length > 1).map(n =>
+      '<div class="bk-row"><span>' + esc(bkLabel(n, d.sheets[n])) + '</span><b>' + (d.sheets[n].values.length - 1) + '</b></div>').join('');
+    setBusy(false);
+    openTools('<h3>💾 ไฟล์สำรองพร้อมแล้ว</h3><div class="bk-list">' + rows + '</div>' +
+      '<p class="f-note">' + esc(name) + ' · ' + Math.max(1, Math.round(text.length / 1024)) + ' KB · รูปที่วางในเซลล์ (คอลัมน์ J) ไม่อยู่ในไฟล์ แต่ลิงก์รูปปกอยู่ครบ</p>' +
+      '<div class="f-actions"><button class="btn btn-primary" onclick="backupSave()">⬇️ บันทึกไฟล์</button><button class="btn btn-ghost" onclick="closeTools()">ปิด</button></div>');
+  } catch (e) {
+    setBusy(false);
+    alert('สำรองไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  }
+}
+async function backupSave() {   // runs from a tap, so iPhone allows the share sheet / download
+  if (!bkFile) return;
+  const blob = new Blob([bkFile.text], { type: 'application/json' });
+  const done = () => { try { localStorage.setItem('lastBackup', String(Date.now())); } catch (e) {} closeTools(); if (statsView) renderStats(); toast('💾 บันทึกไฟล์สำรองแล้ว — เก็บไว้ใน Files / iCloud / Google Drive', 4500); };
+  let file = null;
+  try { file = new File([blob], bkFile.name, { type: 'application/json' }); } catch (e) {}
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: bkFile.name }); done(); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = bkFile.name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+  done();
+}
+function backupPick() {
+  if (!isEditor()) { openSettings(); return; }
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      let d = null;
+      try { d = JSON.parse(rd.result); } catch (e) {}
+      if (!d || d.app !== 'novel' || !d.sheets) { alert('ไฟล์นี้ไม่ใช่ไฟล์สำรองของแอปนี้'); return; }
+      bkRestore = { data: d, pick: new Set(Object.keys(d.sheets).filter(n => (d.sheets[n].values || []).length)) };
+      renderRestore();
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+let bkRestore = null;
+function renderRestore() {
+  const d = bkRestore.data;
+  const names = Object.keys(d.sheets).filter(n => (d.sheets[n].values || []).length).sort((a, b) => (d.sheets[b].library ? 1 : 0) - (d.sheets[a].library ? 1 : 0));
+  bkRestore.names = names;
+  openTools('<h3>⬆️ กู้คืนข้อมูล</h3><p class="f-note">ไฟล์วันที่ ' + esc(sgThaiDate(d.created_at)) + ' · เลือกแท็บที่จะกู้คืน</p>' +
+    '<div class="bk-list">' + names.map((n, i) => '<label class="bk-row bk-pick"><input type="checkbox"' + (bkRestore.pick.has(n) ? ' checked' : '') + ' onchange="bkToggle(' + i + ')"><span>' + esc(bkLabel(n, d.sheets[n])) + '</span><b>' + Math.max(0, d.sheets[n].values.length - 1) + '</b></label>').join('') + '</div>' +
+    '<div class="bk-warn">⚠️ ข้อมูลตอนนี้ในแท็บที่เลือกจะถูกแทนที่ด้วยข้อมูลในไฟล์ — แต่ Sheet จะเก็บสำเนาของเดิมไว้ให้ก่อนเสมอ (แท็บชื่อ backup_…) ย้อนกลับได้ · รูปที่วางในเซลล์ (คอลัมน์ J) อยู่กับเรื่องเดิมของมัน (จับคู่ตามชื่อเรื่อง)</div>' +
+    '<div class="f-actions"><button class="btn btn-primary" onclick="backupRestoreRun()"' + (bkRestore.pick.size ? '' : ' disabled') + '>⬆️ กู้คืน ' + bkRestore.pick.size + ' แท็บ</button><button class="btn btn-ghost" onclick="closeTools()">ยกเลิก</button></div>');
+}
+function bkToggle(i) { const n = bkRestore.names[i]; if (bkRestore.pick.has(n)) bkRestore.pick.delete(n); else bkRestore.pick.add(n); renderRestore(); }
+async function backupRestoreRun() {
+  const d = bkRestore && bkRestore.data;
+  const names = bkRestore ? bkRestore.names.filter(n => bkRestore.pick.has(n)) : [];
+  if (!d || !names.length) return;
+  if (!confirm('กู้คืน ' + names.length + ' แท็บจากไฟล์วันที่ ' + sgThaiDate(d.created_at) + '?\n(ของเดิมจะถูกเก็บสำเนาไว้ใน Sheet ก่อน)')) return;
+  closeTools();
+  const done = [];
+  try {
+    for (let i = 0; i < names.length; i++) {
+      const n = names[i], sh = d.sheets[n];
+      setBusy(true, '⬆️ กำลังกู้คืน ' + bkLabel(n, sh) + ' (' + (i + 1) + '/' + names.length + ')');
+      await gasPost({ action: 'backup_restore', name: n, library: !!sh.library, values: sh.values });
+      done.push(n);
+    }
+    setBusy(true, '✨ กำลังโหลดข้อมูลใหม่');
+    bmLoaded = false; rlLoaded = false;
+    await Promise.all([refreshFromGas(), loadReminders(), loadBookmarks(), loadReadLog()]);
+    renderAll();
+    toast('⬆️ กู้คืนแล้ว ' + done.length + ' แท็บ · สำเนาของเดิมอยู่ใน Sheet (backup_…)', 5000);
+  } catch (e) {
+    alert('กู้คืนไม่ครบ (สำเร็จ ' + done.length + '/' + names.length + '): ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
+  } finally { setBusy(false); }
+}
+/* a gentle reminder once a day when the last backup is over 30 days old */
+function backupNag() {
+  if (!isEditor()) return;
+  try {
+    const now = Date.now();
+    const last = Number(localStorage.getItem('lastBackup')) || 0;
+    let first = Number(localStorage.getItem('bkFirstSeen')) || 0;
+    if (!first) { first = now; localStorage.setItem('bkFirstSeen', String(now)); }
+    if (last && now - last < 30 * 86400e3) return;
+    if (!last && now - first < 3 * 86400e3) return;   // just started using it: wait a few days
+    if (localStorage.getItem('bkNag') === todayYMD()) return;
+    localStorage.setItem('bkNag', todayYMD());
+  } catch (e) { return; }
+  toastAction(Number(localStorage.getItem('lastBackup')) ? '💾 ไม่ได้สำรองข้อมูลมาเกิน 30 วันแล้ว' : '💾 ยังไม่เคยสำรองข้อมูลเลย', 'สำรองเลย', backupDownload, 9000);
+}
+
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (nfDelId != null || nfDoneId != null) { closeNfDel(); return; }
+    if (document.getElementById('tools-bg').classList.contains('open')) { closeTools(); return; }
+    if (document.getElementById('tagm-bg').classList.contains('open')) { closeTagManager(); return; }
     if (bmForm) { closeBmSheet(); return; }
     if (bmGroupKey) { closeBmGroup(); return; }
     const cv = document.getElementById('cover-view');
     if (cv && cv.classList.contains('open')) { cv.classList.remove('open'); return; }
+    if (selMode && !document.querySelector('.overlay.open,.modal-bg.open')) { selExit(); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
     const help = document.getElementById('help-overlay');
     if (help.classList.contains('open')) { help.classList.remove('open'); document.body.style.overflow = ''; }
@@ -4989,6 +5809,7 @@ function handleShareTarget() {
 
 /* ===== INIT ===== */
 loadData();
+setTimeout(backupNag, 9000);
 handleShareTarget();
 handleHashRoute();
 </script>
