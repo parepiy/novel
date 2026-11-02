@@ -1,7 +1,8 @@
 /*** ห้องสมุดนิยาย — Apps Script backend (complete file) ***
  *
  * Everything the app needs, in one file: library (add / edit / delete, reading
- * status, date added), cover upload, 🔔 reminders + push, 💡 suggestions.
+ * status, date added, date finished), cover upload, 🔔 reminders + push,
+ * 💡 suggestions, 🔖 bookmarks, 💾 backup / restore, 🏷️ tag tools, ☑️ bulk edits.
  *
  * HOW TO INSTALL
  *  1. In the app: 🔑 → "📋 คัดลอก Code.gs" (this copies the file with YOUR secret filled in).
@@ -43,6 +44,8 @@ function addedText_(v) {
   return (v || '').toString().trim();
 }
 
+function today_() { return Utilities.formatDate(new Date(), ADDED_TZ, 'yyyy-MM-dd'); }
+
 // Write today's date as plain text into column I of a row
 function stampAdded_(sh, row) {
   if (!sh.getRange(1, 9).getValue()) sh.getRange(1, 9).setValue('added_at');
@@ -52,7 +55,7 @@ function stampAdded_(sh, row) {
 // 📖 progress (chapter read up to), last-read date and 📝 note live in their OWN
 // columns, found by their header name. The first time, they are added after your
 // last used column — the script never writes into a column you already use.
-const META_HEADERS = { progress: 'nv_progress', progress_at: 'nv_progress_at', note: 'nv_note' };
+const META_HEADERS = { progress: 'nv_progress', progress_at: 'nv_progress_at', note: 'nv_note', finished_at: 'nv_finished_at' };
 function metaCols_(sh, create) {
   const lastCol = Math.max(sh.getLastColumn(), 1);
   const head = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h == null ? '' : h).trim());
@@ -120,7 +123,8 @@ function readAll_() {
         added: addedText_(r[8]),
         progress: meta(r, 'progress'),
         progress_at: meta(r, 'progress_at'),
-        note: meta(r, 'note')
+        note: meta(r, 'note'),
+        finished_at: meta(r, 'finished_at')
       });
     });
   }
@@ -197,6 +201,8 @@ function doPost(e) {
     if (cr) return cr;
     const br = bookmarksRouter_(action, d);
     if (br) return br;
+    const tr = toolsRouter_(action, d);
+    if (tr) return tr;
 
     const sh = getSheet_();
 
@@ -205,6 +211,7 @@ function doPost(e) {
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
       sh.appendRow([d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']);
       stampAdded_(sh, sh.getLastRow());
+      if (d.status === 'finished' && d.finished_at === undefined) d.finished_at = today_();
       metaSet_(sh, sh.getLastRow(), d);
       return json_({ ok: true, row: sh.getLastRow(), cover: cover, meta: true });
     }
@@ -214,9 +221,12 @@ function doPost(e) {
       if (!row || row < 2) return json_({ ok: false, error: 'bad row' });
       let cover = d.cover || '';
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
+      // 🏁 set to Finished just now → remember the day (unless the app sent a date)
+      const wasStatus = String(sh.getRange(row, 8).getValue() || '').trim().toLowerCase();
+      if (d.status === 'finished' && wasStatus !== 'finished' && d.finished_at === undefined) d.finished_at = today_();
       // columns A..H only — the date added (column I) is kept as it is
       sh.getRange(row, 1, 1, 8).setValues([[d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']]);
-      metaSet_(sh, row, d);   // progress / note, only when sent
+      metaSet_(sh, row, d);   // progress / note / finished date, only when sent
       return json_({ ok: true, row: row, cover: cover, meta: true });
     }
 
@@ -311,6 +321,19 @@ function reminderRouter_(action, d) {
     let deleted = 0;
     for (let i = vals.length - 1; i >= 1; i--) if (ids.indexOf(String(vals[i][0])) >= 0) { sh.deleteRow(i + 1); deleted++; }
     return json_({ ok: true, deleted: deleted });
+  }
+
+  // ⏩ snooze: a new time for one reminder (it will be sent again at the new time)
+  if (action === 'remind_move') {
+    const sh = remindersSheet_();
+    const vals = sh.getDataRange().getValues();
+    const ms = Number(d.remind_at) || 0;
+    if (!ms) return json_({ ok: false, error: 'bad time' });
+    for (let i = 1; i < vals.length; i++) if (String(vals[i][0]) === String(d.id)) {
+      sh.getRange(i + 1, 4, 1, 2).setValues([[ms, 0]]);
+      return json_({ ok: true, moved: true, id: String(d.id), remind_at: ms });
+    }
+    return json_({ ok: false, error: 'ไม่พบการแจ้งเตือนนี้ (อาจถูกลบไปแล้ว)' });
   }
 
   if (action === 'remind_mark') {   // used by the GitHub Action after sending
@@ -497,8 +520,13 @@ function ltFetch_(urls) {
 
 function linkTitlesRouter_(action, d) {
   if (action !== 'link_titles') return null;
+  return json_({ ok: true, titles: ltLookup_(d.urls) });
+}
+
+// url → { title, status, page, og, parent, image, novel }; read from the sheet, fetched when new
+function ltLookup_(list) {
   const urls = [];
-  (Array.isArray(d.urls) ? d.urls : []).forEach(u => {
+  (Array.isArray(list) ? list : []).forEach(u => {
     u = String(u || '').trim();
     if (/^https?:\/\//i.test(u) && urls.indexOf(u) < 0 && urls.length < 30) urls.push(u);
   });
@@ -570,7 +598,7 @@ function linkTitlesRouter_(action, d) {
           g.status === 'ok' ? (info.image || 'none') : '', g.status === 'ok' && info.parent ? (info.novel || 'none') : ''].map(sgText_)]);
     });
   }
-  return json_({ ok: true, titles: out });
+  return out;
 }
 
 // ---------------- 🆕 new-chapter alerts ----------------
@@ -675,6 +703,217 @@ function bookmarksRouter_(action, d) {
     const vals = sh.getDataRange().getValues();
     for (let i = vals.length - 1; i >= 1; i--) if (String(vals[i][0]) === String(d.id)) sh.deleteRow(i + 1);
     return json_({ ok: true });
+  }
+  return null;
+}
+
+// ---------------- 💾 backup / 🏷️ tags / ☑️ bulk edits / 🖼️ covers / 📖 reading log ----------------
+const RL_COLS = ['id', 'date', 'title', 'chapter', 'url', 'via', 'created_at'];
+const BK_PREFIX = 'backup_';   // safety copies made before a restore
+const BK_KEEP = 3;             // safety copies kept per tab
+
+// a cell for the backup file: a date → text, a picture in a cell → '' (pictures can't go in a file)
+function bkCell_(v) {
+  if (v == null) return '';
+  if (v instanceof Date) {
+    const t = Utilities.formatDate(v, ADDED_TZ, 'HH:mm:ss');
+    return t === '00:00:00' ? Utilities.formatDate(v, ADDED_TZ, 'yyyy-MM-dd') : v.toISOString();
+  }
+  if (typeof v === 'object') return '';
+  return v;
+}
+
+// the library row of a novel: the given row if the title is still there, otherwise found by title
+function libRow_(titles, row, title) {
+  const want = String(title || '').trim();
+  if (!want) return 0;
+  row = parseInt(row, 10) || 0;
+  if (row >= 2 && row <= titles.length && String(titles[row - 1][0]).trim() === want) return row;
+  for (let i = 1; i < titles.length; i++) if (String(titles[i][0]).trim() === want) return i + 1;
+  return 0;
+}
+function splitTags_(s) { return String(s == null ? '' : s).split('|').map(t => t.trim()).filter(Boolean); }
+
+function toolsRouter_(action, d) {
+  // 💾 everything in the spreadsheet (every tab except the safety copies), as plain values
+  if (action === 'backup_dump') {
+    const ss = SpreadsheetApp.getActive();
+    const libId = getSheet_().getSheetId();
+    const sheets = {};
+    ss.getSheets().forEach(sh => {
+      const name = sh.getName();
+      if (name.indexOf(BK_PREFIX) === 0) return;
+      const vals = sh.getLastRow() ? sh.getDataRange().getValues().map(r => r.map(bkCell_)) : [];
+      sheets[name] = { library: sh.getSheetId() === libId, values: vals };
+    });
+    return json_({ ok: true, app: 'novel', version: 1, created_at: new Date().toISOString(), spreadsheet: ss.getName(), sheets: sheets });
+  }
+
+  // 💾 put one tab back from a backup file. A copy of the tab as it is now is kept first
+  // (backup_<tab>_<time>), so a restore can always be undone. In the library tab, pictures
+  // placed in cells (they can't be in the file) stay with their novel, matched by title.
+  if (action === 'backup_restore') {
+    const vals = Array.isArray(d.values) ? d.values.filter(r => Array.isArray(r)) : [];
+    const name = String(d.name || '').trim();
+    if (!vals.length || !name) return json_({ ok: false, error: 'ไฟล์สำรองไม่มีข้อมูลของแท็บนี้' });
+    if (name.indexOf(BK_PREFIX) === 0) return json_({ ok: false, error: 'skip' });
+    const ss = SpreadsheetApp.getActive();
+    const sh = d.library ? getSheet_() : (ss.getSheetByName(name) || ss.insertSheet(name));
+    let copyName = '';
+    if (sh.getLastRow() > 0) {
+      const stamp = Utilities.formatDate(new Date(), ADDED_TZ, 'yyyyMMdd_HHmmss');
+      const base = BK_PREFIX + sh.getName().slice(0, 60) + '_';
+      const copy = sh.copyTo(ss);
+      copyName = base + stamp;
+      copy.setName(copyName);
+      ss.getSheets().filter(s => s.getName().indexOf(base) === 0).map(s => s.getName()).sort().reverse()
+        .slice(BK_KEEP).forEach(n => ss.deleteSheet(ss.getSheetByName(n)));
+    }
+    const width = Math.max(1, ...vals.map(r => r.length));
+    const rows = vals.map(r => { const a = r.slice(0, width); while (a.length < width) a.push(''); return a.map(v => typeof v === 'string' ? sgText_(v) : (v == null ? '' : v)); });
+    const lastRow = Math.max(sh.getLastRow(), 1), lastCol = Math.max(sh.getLastColumn(), width);
+    const keep = {};   // picture columns (library only)
+    if (d.library && sh.getLastRow() > 0) {
+      const cur = sh.getRange(1, 1, lastRow, Math.max(sh.getLastColumn(), 1)).getValues();
+      cur.forEach(r => r.forEach((v, j) => { if (v && typeof v === 'object' && !(v instanceof Date)) keep[j + 1] = true; }));
+    }
+    let kept = 0, moved = 0;
+    const cur = Object.keys(keep).length ? sh.getRange(1, 1, lastRow, Math.max(sh.getLastColumn(), 1)).getValues() : [];
+    for (let c = 1; c <= lastCol; c++) {
+      if (keep[c]) {
+        // each picture goes with its novel (found by title), so pictures don't end up beside the wrong novel
+        try {
+          const pic = {};
+          cur.forEach((r, i) => { const t = String(r[0] || '').trim(), v = r[c - 1]; if (i && t && v && typeof v === 'object' && !(v instanceof Date) && !pic[t]) pic[t] = v; });
+          const col = rows.slice(1).map(r => [pic[String(r[0] || '').replace(/^'/, '').trim()] || '']);
+          if (col.length) sh.getRange(2, c, col.length, 1).setValues(col);
+          if (lastRow > rows.length) sh.getRange(rows.length + 1, c, lastRow - rows.length, 1).clearContent();
+          moved++;
+        } catch (e) { kept++; }   // couldn't move them: the column is left as it was (the safety copy has them)
+        continue;
+      }
+      if (lastRow > rows.length || c > width) sh.getRange(c > width ? 1 : rows.length + 1, c, lastRow - (c > width ? 0 : rows.length), 1).clearContent();
+      if (c <= width) sh.getRange(1, c, rows.length, 1).setNumberFormat('@').setValues(rows.map(r => [r[c - 1]]));
+    }
+    return json_({ ok: true, name: sh.getName(), rows: rows.length - 1, copy: copyName, picture_columns: moved, kept_picture_columns: kept });
+  }
+
+  // 🏷️ rename / merge / delete tags in every novel. from = the tags to change, to = the new name ('' = delete)
+  if (action === 'tag_edit') {
+    const from = (Array.isArray(d.from) ? d.from : [d.from]).map(t => String(t || '').trim()).filter(Boolean);
+    const to = String(d.to || '').trim();
+    if (!from.length) return json_({ ok: false, error: 'ไม่มีแท็กที่จะแก้' });
+    const sh = getSheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return json_({ ok: true, changed: 0 });
+    const rng = sh.getRange(2, 4, last - 1, 1);
+    const vals = rng.getValues();
+    let changed = 0;
+    const out = vals.map(r => {
+      const tags = splitTags_(r[0]);
+      if (!tags.some(t => from.indexOf(t) >= 0)) return [r[0]];
+      const next = [];
+      tags.forEach(t => {
+        const nt = from.indexOf(t) >= 0 ? to : t;
+        if (nt && next.indexOf(nt) < 0) next.push(nt);
+      });
+      changed++;
+      return [sgText_(next.join('|'))];
+    });
+    if (changed) rng.setValues(out);
+    return json_({ ok: true, changed: changed });
+  }
+
+  // ☑️ many novels at once: items = [{row, title}]; status and/or add_tags / remove_tags
+  if (action === 'bulk_edit') {
+    const sh = getSheet_();
+    const titles = sh.getRange(1, 1, Math.max(sh.getLastRow(), 1), 1).getValues();
+    const add = (Array.isArray(d.add_tags) ? d.add_tags : []).map(t => String(t || '').trim()).filter(Boolean);
+    const rem = (Array.isArray(d.remove_tags) ? d.remove_tags : []).map(t => String(t || '').trim()).filter(Boolean);
+    const setStatus = typeof d.status === 'string';
+    let changed = 0, missing = 0;
+    (Array.isArray(d.items) ? d.items : []).forEach(it => {
+      const row = libRow_(titles, it.row, it.title);
+      if (!row) { missing++; return; }
+      if (add.length || rem.length) {
+        const tags = splitTags_(sh.getRange(row, 4).getValue()).filter(t => rem.indexOf(t) < 0);
+        add.forEach(t => { if (tags.indexOf(t) < 0) tags.push(t); });
+        sh.getRange(row, 4).setValue(sgText_(tags.join('|')));
+      }
+      if (setStatus) {
+        const was = String(sh.getRange(row, 8).getValue() || '').trim().toLowerCase();
+        sh.getRange(row, 8).setValue(d.status);
+        if (d.status === 'finished' && was !== 'finished') metaSet_(sh, row, { finished_at: today_() });
+      }
+      changed++;
+    });
+    return json_({ ok: true, changed: changed, missing: missing });
+  }
+
+  // ☑️ delete many novels. Only rows that still hold that title are deleted (bottom first, so rows don't shift).
+  if (action === 'bulk_delete') {
+    const sh = getSheet_();
+    const titles = sh.getRange(1, 1, Math.max(sh.getLastRow(), 1), 1).getValues();
+    const rows = [];
+    (Array.isArray(d.items) ? d.items : []).forEach(it => {
+      const row = parseInt(it.row, 10) || 0;
+      if (row >= 2 && row <= titles.length && String(titles[row - 1][0]).trim() === String(it.title || '').trim() && rows.indexOf(row) < 0) rows.push(row);
+    });
+    rows.sort((a, b) => b - a).forEach(r => sh.deleteRow(r));
+    return json_({ ok: true, deleted: rows.length });
+  }
+
+  // 🖼️ library novels with a link but no cover: read the cover from the link's page (a few per call)
+  if (action === 'fill_covers') {
+    const sh = getSheet_();
+    const last = sh.getLastRow();
+    if (last < 2) return json_({ ok: true, filled: [], tried: 0, remaining: 0 });
+    const vals = sh.getRange(2, 1, last - 1, 6).getValues();
+    const lt = sgSheet_('link_titles', LT_COLS).getDataRange().getValues();
+    const seen = {};
+    for (let i = 1; i < lt.length; i++) if (lt[i][0]) seen[String(lt[i][0])] = lt[i];
+    // no use asking again: read fine but the page has no picture, or failed in the last 6 hours
+    const hopeless = u => {
+      const v = seen[u];
+      if (!v) return false;
+      if (String(v[2]) === 'ok') return String(v[7]) === 'none';
+      return Date.now() - new Date(v[3]).getTime() < LT_RETRY_MS;
+    };
+    const todo = [];
+    vals.forEach((r, i) => {
+      const title = String(r[0] || '').trim(), url = String(r[2] || '').trim(), cover = cellText_(r[5]).trim();
+      if (title && !cover && /^https?:\/\//i.test(url) && !hopeless(url)) todo.push({ row: i + 2, title: title, url: url });
+    });
+    const n = Math.min(Math.max(parseInt(d.limit, 10) || 8, 1), 15);
+    const batch = todo.slice(0, n);
+    const info = batch.length ? ltLookup_(batch.map(x => x.url)) : {};
+    const filled = [];
+    batch.forEach(x => {
+      const img = info[x.url] && info[x.url].status === 'ok' ? info[x.url].image : '';
+      if (!img) return;
+      sh.getRange(x.row, 6).setValue(img);
+      filled.push({ row: x.row, title: x.title, cover: img });
+    });
+    return json_({ ok: true, filled: filled, tried: batch.length, remaining: todo.length - batch.length });
+  }
+
+  // 📖 reading log: one row per chapter you finished (✓ เสร็จ) or bookmarked; the same chapter counts once
+  if (action === 'log_list') return json_({ ok: true, items: sgRead_('read_log', RL_COLS) });
+  if (action === 'log_read') {
+    const title = String(d.title || '').trim();
+    if (!title) return json_({ ok: false, error: 'missing title' });
+    const chapter = String(d.chapter || '').trim(), url = String(d.url || '').trim();
+    const sh = sgSheet_('read_log', RL_COLS);
+    const vals = sh.getDataRange().getValues();
+    const norm = s => String(s || '').toLowerCase().replace(/\s+/g, '');
+    const key = norm(title) + '|' + norm(chapter || url);
+    if (chapter || url) for (let i = 1; i < vals.length; i++) {
+      if (norm(vals[i][2]) + '|' + norm(vals[i][3] || vals[i][4]) === key) return json_({ ok: true, dup: true });
+    }
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d.date || '')) ? String(d.date) : today_();
+    const row = ['l' + Date.now() + Math.floor(Math.random() * 1000), date, title, chapter, url, String(d.via || ''), new Date().toISOString()];
+    sh.getRange(sh.getLastRow() + 1, 1, 1, RL_COLS.length).setNumberFormat('@').setValues([row.map(sgText_)]);
+    return json_({ ok: true, item: RL_COLS.reduce((o, c, j) => { o[c] = row[j]; return o; }, {}) });
   }
   return null;
 }
