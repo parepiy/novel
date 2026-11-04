@@ -62,7 +62,7 @@
   --fab-shadow:0 0 18px rgba(99,102,241,.45),0 8px 16px rgba(76,70,160,.25);
   --help-bg:rgba(255,255,255,.78);
   --overlay-bg:rgba(226,229,255,.55);
-  --panel-bg:linear-gradient(180deg,rgba(255,255,255,.98),rgba(247,247,255,.98));
+  --panel-bg:linear-gradient(180deg,rgba(255,255,255,.98),rgba(247,247,255,.98));--panel-solid:#fdfdff;
   --panel-bd:rgba(124,58,237,.22);--panel-shadow:0 0 30px rgba(139,92,246,.14),0 24px 50px rgba(76,70,160,.2);
   --mcover-glow:0 6px 18px rgba(124,58,237,.25);
   --gold:#d97706;--gold-glow:0 0 6px rgba(245,158,11,.35);
@@ -116,7 +116,7 @@
   --fab-shadow:0 0 22px rgba(99,102,241,.6),0 8px 18px rgba(0,0,0,.45);
   --help-bg:rgba(255,255,255,.085);
   --overlay-bg:rgba(8,11,30,.55);
-  --panel-bg:linear-gradient(180deg,rgba(32,37,76,.96),rgba(19,24,54,.97));
+  --panel-bg:linear-gradient(180deg,rgba(32,37,76,.96),rgba(19,24,54,.97));--panel-solid:#1f2450;
   --panel-bd:rgba(167,139,250,.35);--panel-shadow:0 0 40px rgba(139,92,246,.25),0 30px 60px rgba(0,0,0,.55);
   --mcover-glow:0 0 22px rgba(167,139,250,.35);
   --gold:#fcd34d;--gold-glow:0 0 8px rgba(252,211,77,.55);
@@ -584,6 +584,10 @@ body.editor .m-edit{display:inline-block;}
 .help-row:last-child{border-bottom:none;}
 .help-row span{color:var(--dim);}
 .help-row kbd{background:var(--s2);border:1px solid var(--bd);border-radius:5px;padding:2px 8px;font-family:'Sarabun','Cordia New',sans-serif;font-size:.82rem;color:var(--text);white-space:nowrap;}
+/* a popup's title + ✕ stay at the top while its list scrolls */
+.pop-head{position:sticky;top:-20px;z-index:6;margin:-20px -18px 12px;padding:16px 50px 12px 18px;background:var(--panel-solid,var(--s1));border-bottom:1px solid var(--line);border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0;}
+.f-card .pop-head h3{margin:0;}
+.pop-head .ov-close{top:50%;right:12px;transform:translateY(-50%);font-size:1.25rem;padding:6px 8px;}
 .ov-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
 
 /* FORM CONTROLS */
@@ -4946,8 +4950,7 @@ function renderDayPopup() {
   const editHint = editing ? '<div class="nf-edit-hint">✏️ กำลังแก้ไข</div>' : '';
 
   document.getElementById('day-card').innerHTML =
-    '<button class="ov-close" onclick="closeDayPopup()">✕</button>' +
-    '<h3>' + dateLabel + '</h3>' +
+    '<div class="pop-head"><h3>' + dateLabel + '</h3><button class="ov-close" onclick="closeDayPopup()">✕</button></div>' +
     '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
     '<div class="nf-form">' + editHint +
       nfTitlePickHtml('day') +
@@ -5094,8 +5097,7 @@ function renderTagManager() {
     '</div>').join('');
   const n = tmSel.size;
   document.getElementById('tagm-card').innerHTML =
-    '<button class="ov-close" onclick="closeTagManager()">✕</button>' +
-    '<h3>🏷️ จัดการแท็ก <span class="tm-count">' + all.length + ' แท็ก</span></h3>' +
+    '<div class="pop-head"><h3>🏷️ จัดการแท็ก <span class="tm-count">' + all.length + ' แท็ก</span></h3><button class="ov-close" onclick="closeTagManager()">✕</button></div>' +
     '<div class="tm-top"><input type="text" id="tm-q" placeholder="🔍 ค้นหาแท็ก…" value="' + esc(tmQ) + '" oninput="tmQ=this.value;tmRefreshRows()">' +
       '<select class="sort-sel" onchange="tmSort=this.value;renderTagManager()"><option value="count"' + (tmSort === 'count' ? ' selected' : '') + '>ใช้มากสุด</option><option value="name"' + (tmSort === 'name' ? ' selected' : '') + '>ก-ฮ</option></select></div>' +
     twinHtml +
