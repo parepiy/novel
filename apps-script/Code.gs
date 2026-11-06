@@ -203,6 +203,8 @@ function doPost(e) {
     if (br) return br;
     const tr = toolsRouter_(action, d);
     if (tr) return tr;
+    const nr = novelInfoRouter_(action, d);
+    if (nr) return nr;
 
     const sh = getSheet_();
 
@@ -916,6 +918,138 @@ function toolsRouter_(action, d) {
     return json_({ ok: true, item: RL_COLS.reduce((o, c, j) => { o[c] = row[j]; return o; }, {}) });
   }
   return null;
+}
+
+// ---------------- ✨ novel info from a link (the ＋ add form) ----------------
+// Paste a ReadAWrite link (the novel's page /a/… or any chapter /c/…) and Google reads
+// the novel's name, cover, synopsis, tags, pen name, category, chapter count and
+// whether it has ended — from its page and from ReadAWrite's own search.
+const NI_CAT = { 32: 'Lovely Room', 55: 'Party Room', 54: 'Secret Room' };
+
+// HTML → text that keeps line breaks (for the synopsis)
+function niText_(html) {
+  return String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h\d)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)))
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/[​-‍﻿]/g, '')
+    .replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+// "ชื่อเรื่อง : นิยาย Boy Love Lovely Room" / "… | ReadAWrite" → "ชื่อเรื่อง"
+function niName_(t) {
+  return String(t || '').trim()
+    .replace(/\s*:\s*นิยาย(?:\s|$).*$/, '')
+    .replace(/\s*[|\-–—:•]+\s*(read\s*a\s*write|readawrite)[^|\-–—]*$/i, '').trim();
+}
+function niNorm_(s) { return String(s || '').toLowerCase().replace(/[^฀-๿a-z0-9]/g, ''); }
+
+// the synopsis block of the page, when it holds more than the short og:description
+function niSynopsis_(html) {
+  const re = /<(div|p|section|span)[^>]*(?:class|id)=["'][^"']*(?:synopsis|abstract|article-detail|story-detail)[^"']*["'][^>]*>([\s\S]*?)<\/\1>/gi;
+  let best = '', m;
+  while ((m = re.exec(html))) { const t = niText_(m[2]); if (t.length > best.length) best = t; }
+  return best.slice(0, 4000);
+}
+// tag links on the page (…tag_name=xxx or /tag/xxx)
+function niTags_(html) {
+  const out = [];
+  const add = t => {
+    try { t = decodeURIComponent(String(t).replace(/\+/g, ' ')); } catch (e) {}
+    t = niText_(t).replace(/^#/, '').trim();
+    if (t && t.length <= 40 && out.indexOf(t) < 0 && out.length < 40) out.push(t);
+  };
+  let m;
+  const re1 = /[?&]tag_name=([^"'&#<>]+)/gi;
+  while ((m = re1.exec(html))) add(m[1]);
+  const re2 = /href=["'][^"']*\/tag\/([^"'\/?#<>]+)/gi;
+  while ((m = re2.exec(html))) add(m[1]);
+  return out;
+}
+
+// ReadAWrite's own search (what the 💡 bookmarklet uses): tags, pen name, chapters, ended
+function niApi_(name, id) {
+  const p = {
+    api_call: 'Search', method_call: 'userSearchArticlesBySearchService', token: '',
+    article_name: name, author_name: '', article_synopsis: '', publisher_name: '', category_name: '',
+    article_species: 'ALL', article_type: 'ALL', category_id_2: '', tag_name: '', is_end: '', is_yourname: '', is_fanfiction: '',
+    sort_by: 'view_count', sort_type: 'DESC', app_id: 'RAW', app_platform: 'WEB', result_per_page: 20,
+    more_than_one_chapter: 0, is_user_verified: 0, required_verify: 1, exact_search: 0, page_no: 1
+  };
+  const body = Object.keys(p).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(p[k]))
+    .concat(['CARTOON', 'TOPIC', 'CHAT'].map(x => encodeURIComponent('excluded_article_species[]') + '=' + x)).join('&');
+  const res = UrlFetchApp.fetch('https://www.readawrite.com/?action=ajax&ajax=1&ajax_case=CallWrapper', {
+    method: 'post', payload: body, muteHttpExceptions: true, followRedirects: true,
+    contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.readawrite.com/', 'Origin': 'https://www.readawrite.com',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36', 'Accept-Language': 'th,en;q=0.8' }
+  });
+  if (res.getResponseCode() !== 200) throw new Error('http_' + res.getResponseCode());
+  let j;
+  try { j = JSON.parse(res.getContentText('UTF-8')); } catch (e) { throw new Error('not json'); }
+  if (!j || !j.status || !j.status.success) throw new Error((j && j.status && j.status.message) || 'no success');
+  const list = (j.data && j.data.article_list) || [];
+  const want = String(id || '').toLowerCase(), wn = niNorm_(name);
+  let hit = list.filter(a => [a.article_guid, a.article_short_guid].some(g => g && String(g).toLowerCase() === want))[0];
+  if (!hit) hit = list.filter(a => niNorm_(niText_(a.article_name)) === wn)[0];
+  if (!hit) return null;
+  const path = hit.article_thumbnail_path ? String(hit.article_thumbnail_path) : '';
+  return {
+    name: niText_(hit.article_name), author: niText_(hit.author_name),
+    category: NI_CAT[parseInt(hit.category_id_v2, 10)] || niText_(hit.category_name_v2 || hit.category_name || ''),
+    chapters: parseInt(hit.chapter_count, 10) || 0, end: String(hit.is_end) === '1',
+    tags: (hit.tag_list || []).map(t => niText_(t && t.tag_name)).filter(Boolean),
+    synopsis: niText_(hit.article_synopsis || ''),
+    image: path ? path + 'large.gif?web_' + (hit.thumbnail_edition || '') : ''
+  };
+}
+
+function novelInfoRouter_(action, d) {
+  if (action !== 'novel_info') return null;
+  const url = String(d.url || '').trim();
+  if (!/readawrite\.com/i.test(url)) return json_({ ok: false, error: 'ตอนนี้ดึงข้อมูลได้เฉพาะลิงก์ ReadAWrite' });
+  const src = {};
+  let id = (url.match(/readawrite\.com\/a\/([0-9a-z]{6,})/i) || [])[1] || '';
+  if (!id) {   // a chapter link → the novel's own page
+    const r = ltFetch_([url])[0];
+    src.chapter = r ? r.getResponseCode() : 'error';
+    if (r && r.getResponseCode() === 200) id = ((ltExtract_(r.getContentText('UTF-8').slice(0, 300000)).parent || '').match(/\/a\/([0-9a-z]+)/i) || [])[1] || '';
+  }
+  if (!id) return json_({ ok: false, error: 'หาหน้านิยายจากลิงก์นี้ไม่เจอ — ลองใช้ลิงก์หน้าเรื่อง (readawrite.com/a/…)', src: src });
+  const novelUrl = 'https://www.readawrite.com/a/' + id;
+  const info = { url: novelUrl, id: id, name: '', synopsis: '', image: '', author: '', category: '', chapters: 0, end: null, tags: [] };
+  const res = ltFetch_([novelUrl])[0];
+  src.page = res ? res.getResponseCode() : 'error';
+  if (res && res.getResponseCode() === 200) {
+    const html = res.getContentText('UTF-8');
+    const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const name = niName_(ltMeta_(html, 'og:title') || (t ? ltDecode_(t[1]) : ''));
+    if (name && !ltBlocked_(name)) {
+      info.name = name;
+      info.image = ltAbs_(ltMeta_(html, 'og:image') || ltMeta_(html, 'twitter:image'), novelUrl);
+      const og = niText_(ltMeta_(html, 'og:description') || ltMeta_(html, 'description'));
+      const syn = niSynopsis_(html);
+      info.synopsis = syn.length > og.replace(/[.…]+$/, '').length ? syn : og;
+      info.tags = niTags_(html);
+      info.author = niText_(ltMeta_(html, 'author'));
+    } else src.page = 'blocked';
+  }
+  try {
+    const a = niApi_(info.name || d.name || '', id);
+    src.api = a ? 'ok' : 'not_found';
+    if (a) {
+      if (!info.name) info.name = a.name;
+      if (a.author) info.author = a.author;
+      info.category = a.category; info.chapters = a.chapters; info.end = a.end;
+      if (a.tags.length) info.tags = a.tags;
+      if (!info.image) info.image = a.image;
+      if (a.synopsis.replace(/[.…]+$/, '').length > info.synopsis.replace(/[.…]+$/, '').length) info.synopsis = a.synopsis;
+    }
+  } catch (e) { src.api = 'error: ' + (e && e.message ? e.message : e); }
+  if (!info.name) return json_({ ok: false, error: 'ReadAWrite ไม่ให้อ่านหน้านี้ตอนนี้ (' + src.page + ') — ลองใหม่อีกครั้งภายหลัง', src: src });
+  return json_({ ok: true, info: info, src: src });
 }
 
 // ---------------- run these by hand from the editor ----------------
