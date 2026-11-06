@@ -1053,6 +1053,18 @@ body.selmode .toast{bottom:136px;}
 .bk-warn{font-size:.78rem;color:var(--dim);background:rgba(240,169,77,.12);border:1px solid rgba(240,169,77,.4);border-radius:10px;padding:8px 10px;margin-bottom:6px;line-height:1.5;}
 .s-backup-btns{display:flex;gap:8px;flex-wrap:wrap;}
 .f-row input.f-date{max-width:200px;}
+
+/* ✨ add form: info from a link */
+.f-fetch{font-size:.78rem;color:var(--dim);margin-top:6px;line-height:1.5;}
+.f-fetch:empty{display:none;}
+.ni-ok{color:var(--mint2);font-weight:600;}
+.ni-meta{color:var(--dim);}
+.ni-spin{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--mdim);border-top-color:var(--mint);animation:spin .8s linear infinite;vertical-align:-1px;margin-right:4px;}
+.f-rwtags{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+.f-rwtags:empty{display:none;}
+.ni-tl{width:100%;font-size:.74rem;color:var(--mute);}
+.tagpick.ni-tag{border-style:dashed;}
+.tagpick.ni-tag.active{border-style:solid;}
 </style>
 <script>
 /* Theme: "dark" = 🌌 space (the default look), "light" = original mint.
@@ -1170,12 +1182,14 @@ body.selmode .toast{bottom:136px;}
         <input type="text" id="f-newtag" placeholder="เพิ่มแท็กใหม่..." onkeydown="if(event.key==='Enter'){event.preventDefault();addNewTag();}">
         <button type="button" class="btn btn-ghost btn-sm" onclick="addNewTag()">＋ เพิ่ม</button>
       </div>
+      <div class="f-rwtags" id="f-rwtags"></div>
     </div>
     <div class="f-row"><label>ลิงก์อ่านนิยาย</label>
       <div class="f-url-line">
-        <input type="text" id="f-url" placeholder="https://..." oninput="formDupHint()">
+        <input type="text" id="f-url" placeholder="https://... (ลิงก์ ReadAWrite = เติมข้อมูลให้)" oninput="formDupHint();niUrlChanged()">
         <button type="button" class="btn btn-ghost btn-sm" onclick="pasteUrl()" title="วางลิงก์ที่คัดลอก">📋 วาง</button>
       </div>
+      <div class="f-fetch" id="f-fetch"></div>
     </div>
     <div class="f-row"><label>เรื่องย่อ</label><textarea id="f-summary"></textarea></div>
     <div class="f-row"><label>📖 อ่านถึง</label><input type="text" id="f-progress" placeholder="เช่น ตอนที่ 25 (เติมให้อัตโนมัติเมื่อกด ✓ เสร็จ ในแจ้งเตือน)"></div>
@@ -2886,6 +2900,7 @@ function renderTagPicker() {
     `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${t.replace(/'/g, "\\'")}')">${esc(t)}</button>`
   ).join('');
   document.getElementById('f-tag-picker').innerHTML = html || '<span class="f-note">ยังไม่มีแท็ก — เพิ่มด้านล่าง</span>';
+  if (typeof niRenderTags === 'function') niRenderTags();
 }
 function toggleFormTag(t) {
   if (formTags.has(t)) formTags.delete(t); else formTags.add(t);
@@ -3565,6 +3580,7 @@ async function pasteUrl() {
     if (name) ti.value = name;
   }
   formDupHint();
+  niUrlChanged(true);
 }
 
 /* 📋 in the 🔔 forms (p = 'nf' list form, 'day' calendar popup). If no novel is
@@ -3708,6 +3724,8 @@ function openAdd() {
   document.getElementById('f-remove-line').style.display = 'none';
   document.getElementById('f-removecover').checked = false;
   document.getElementById('f-delete').style.display = 'none';
+  document.getElementById('f-cover-note').textContent = 'เลือกรูปเพื่ออัปโหลด (ไม่บังคับ) — หรือวางลิงก์ ReadAWrite แล้วแอปหาปกให้';
+  niReset('');
   openForm();
 }
 
@@ -3739,6 +3757,8 @@ function openEdit(idx) {
   document.getElementById('f-remove-line').style.display = b.cover ? 'block' : 'none';
   document.getElementById('f-removecover').checked = false;
   document.getElementById('f-delete').style.display = 'inline-block';
+  niReset(b.url || '');
+  if (!b.cover || !b.summary) { niLast = ''; niUrlChanged(); }   // offer ✨ when something is missing
   openForm();
 }
 
@@ -3799,9 +3819,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['remind_move', 'tag_edit', 'bulk_edit', 'bulk_delete', 'backup_dump', 'backup_restore', 'fill_covers', 'log_read', 'log_list', 'bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['novel_info', 'remind_move', 'tag_edit', 'bulk_edit', 'bulk_delete', 'backup_dump', 'backup_restore', 'fill_covers', 'log_read', 'log_list', 'bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['log_list', 'log_read', 'remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
+const GAS_QUIET = new Set(['novel_info', 'log_list', 'log_read', 'remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -5658,6 +5678,120 @@ function backupNag() {
   toastAction(Number(localStorage.getItem('lastBackup')) ? '💾 ไม่ได้สำรองข้อมูลมาเกิน 30 วันแล้ว' : '💾 ยังไม่เคยสำรองข้อมูลเลย', 'สำรองเลย', backupDownload, 9000);
 }
 
+/* ===== ✨ FILL THE ADD FORM FROM A LINK =====
+   Paste a ReadAWrite link (novel page or a chapter) → name, cover, synopsis, tags,
+   pen name, category, chapters, ended. Only empty boxes (or ones the app filled) are
+   filled; what you typed yourself is never replaced. */
+let niTimer = null, niLast = '', niAuto = {}, niTagList = [], niInfo = null;
+function niReset(url) {
+  clearTimeout(niTimer);
+  niLast = url || ''; niAuto = {}; niTagList = []; niInfo = null;
+  document.getElementById('f-fetch').innerHTML = '';
+  document.getElementById('f-rwtags').innerHTML = '';
+}
+function niIsRw(url) { return /readawrite\.com\/(a|c)\/[0-9a-z]/i.test(url || ''); }
+function niUrlChanged(now) {
+  clearTimeout(niTimer);
+  const url = fval('f-url').trim();
+  const el = document.getElementById('f-fetch');
+  if (!niIsRw(url)) { if (!niInfo) el.innerHTML = ''; return; }
+  if (url === niLast) return;
+  if (formMode === 'edit' && !now) {   // editing: only when you ask (fills empty boxes)
+    el.innerHTML = '<button type="button" class="sg-link" onclick="niFetch(fval(\'f-url\').trim())">✨ ดึงข้อมูลจากลิงก์นี้</button> <span class="f-note">เติมเฉพาะช่องที่ยังว่าง</span>';
+    return;
+  }
+  niTimer = setTimeout(() => niFetch(url), now ? 0 : 700);
+}
+async function niFetch(url) {
+  if (!isEditor()) return;
+  niLast = url;
+  const el = document.getElementById('f-fetch');
+  const id = ((url.match(/readawrite\.com\/a\/([0-9a-z]{6,})/i) || [])[1] || '').toLowerCase();
+  const sg = id && sgList.find(x => [x.guid, x.uid].some(g => g && String(g).toLowerCase() === id));
+  if (sg) niApply({ name: sg.name, synopsis: sg.syn, image: sg.thumb, author: sg.author, category: sg.cat, chapters: sg.ch, end: !!sg.end, tags: sg.tags }, true);
+  el.innerHTML = (sg ? niSummaryHtml() + '<br>' : '') + '<span class="ni-spin"></span> กำลังอ่านข้อมูลจาก ReadAWrite…';
+  try {
+    const r = await gasPost({ action: 'novel_info', url: url });
+    if (fval('f-url').trim() !== url) return;
+    niApply(r.info, false);
+  } catch (e) {
+    if (fval('f-url').trim() !== url) return;
+    if (/unknown action/i.test(e.message || '')) {
+      // an older Code.gs: just the name + cover, read from the page title
+      await fetchLinkTitles([url], true);
+      const c = linkTitles[url];
+      const name = c && c.status === 'ok' ? ltStripSite(/\/a\//i.test(url) ? c.title : (c.novel || '')) : '';
+      if (name || (c && c.image)) niApply({ name: name, image: c.image || '', tags: [] }, false);
+      el.innerHTML = (niInfo ? niSummaryHtml() + '<br>' : '') + '<span class="f-note">อัปเดต Code.gs เพื่อดึงเรื่องย่อ แท็ก และนามปากกาด้วย (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)</span>';
+      return;
+    }
+    el.innerHTML = (niInfo ? niSummaryHtml() + '<br>' : '') + '<span class="f-note">⚠️ ' + esc(e.message || 'อ่านข้อมูลไม่ได้') + '</span>';
+  }
+}
+function niApply(info, fromSuggest) {
+  if (!info) return;
+  niInfo = Object.assign({}, niInfo || {}, Object.fromEntries(Object.entries(info).filter(([k, v]) => v !== '' && v != null && !(Array.isArray(v) && !v.length))));
+  const filled = [];
+  const put = (id, key, val) => {
+    const inp = document.getElementById(id);
+    if (!val || !inp) return;
+    if (!inp.value.trim() || inp.value === niAuto[key]) { if (inp.value !== val) { inp.value = val; } niAuto[key] = val; filled.push(key); }
+  };
+  put('f-title', 'title', String(info.name || '').trim());
+  put('f-summary', 'summary', String(info.synopsis || '').trim());
+  if (formMode === 'add' && !niAuto.source) { document.getElementById('f-source').value = 'raw'; niAuto.source = 'raw'; }
+  // 🖼️ cover (unless you chose a picture or the novel already has one)
+  const file = document.getElementById('f-image');
+  if (info.image && !(file.files && file.files[0]) && (!formCover || formCover === niAuto.cover)) {
+    formCover = info.image; niAuto.cover = info.image;
+    const prev = document.getElementById('f-cover-prev');
+    prev.src = info.image; prev.style.display = 'block';
+    prev.onerror = () => { prev.style.display = 'none'; if (formCover === niAuto.cover) formCover = ''; };
+    document.getElementById('f-cover-note').innerHTML = '🖼️ ใช้ปกจาก ReadAWrite · <button type="button" class="sg-link" onclick="niNoCover()">ไม่ใช้รูปนี้</button> (หรือเลือกรูปเองด้านบน)';
+    filled.push('cover');
+  }
+  // 🏷️ tags: the ones you already use are ticked for you, the rest are offered
+  const tags = (info.tags || []).map(t => String(t).trim()).filter(Boolean);
+  if (tags.length) {
+    const mine = allTagList();
+    niTagList = [];
+    tags.forEach(t => {
+      const own = mine.find(m => sgNormName(m) === sgNormName(t));
+      const use = own || t;
+      if (niTagList.indexOf(use) < 0) niTagList.push(use);
+      if (own && !niAuto['tag:' + own]) { formTags.add(own); niAuto['tag:' + own] = 1; if (filled.indexOf('tags') < 0) filled.push('tags'); }
+    });
+    renderTagPicker();
+  }
+  niAuto.filled = [...new Set((niAuto.filled || []).concat(filled))];
+  niAuto.fromSuggest = fromSuggest;
+  document.getElementById('f-fetch').innerHTML = niSummaryHtml();
+  formDupHint();
+}
+function niSummaryHtml() {
+  const i = niInfo || {};
+  const lbl = { title: 'ชื่อเรื่อง', summary: 'เรื่องย่อ', cover: 'ปก', tags: 'แท็ก' };
+  const got = (niAuto.filled || []).map(k => lbl[k]).filter(Boolean);
+  const meta = [i.author ? '✍️ ' + esc(i.author) : '', i.category ? '📚 ' + esc(i.category) : '', i.chapters ? esc(String(i.chapters)) + ' ตอน' : '',
+    i.end === true ? '✅ จบแล้ว' : i.end === false ? '⏳ ยังไม่จบ' : ''].filter(Boolean).join(' · ');
+  return '<div class="ni-ok">✨ ' + (got.length ? 'เติมให้แล้ว: ' + got.join(' · ') : 'อ่านข้อมูลแล้ว (ช่องที่คุณพิมพ์เองไม่ถูกแทนที่)') + '</div>' +
+    (meta ? '<div class="ni-meta">' + meta + '</div>' : '');
+}
+function niNoCover() {
+  if (formCover === niAuto.cover) formCover = '';
+  niAuto.cover = '__off';
+  document.getElementById('f-cover-prev').style.display = 'none';
+  document.getElementById('f-cover-note').textContent = 'เลือกรูปเพื่ออัปโหลด (ไม่บังคับ)';
+}
+function niRenderTags() {
+  const el = document.getElementById('f-rwtags');
+  if (!el) return;
+  if (!niTagList.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="ni-tl">แท็กจาก ReadAWrite — แตะเพื่อเพิ่ม/เอาออก</div>' + niTagList.map((t, i) =>
+    '<button type="button" class="tagpick ni-tag' + (formTags.has(t) ? ' active' : '') + '" onclick="niTag(' + i + ')">' + (formTags.has(t) ? '✓ ' : '＋ ') + esc(t) + '</button>').join('');
+}
+function niTag(i) { const t = niTagList[i]; if (!t) return; if (formTags.has(t)) formTags.delete(t); else formTags.add(t); renderTagPicker(); }
+
 /* ===== KEYBOARD ===== */
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -5807,6 +5941,7 @@ function handleShareTarget() {
   if (url) document.getElementById('f-url').value = url;
   if (name) document.getElementById('f-title').value = name;
   formDupHint();
+  niUrlChanged(true);
 }
 
 /* ===== INIT ===== */
