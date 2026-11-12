@@ -5,14 +5,20 @@
  * 💡 suggestions, 🔖 bookmarks, 💾 backup / restore, 🏷️ tag tools, ☑️ bulk edits.
  *
  * HOW TO INSTALL
- *  1. In the app: 🔑 → "📋 คัดลอก Code.gs" (this copies the file with YOUR secret filled in).
+ *  1. In the app: 🔑 → "📋 คัดลอก Code.gs".
  *  2. Apps Script editor: open your script file, select ALL its text, paste, Save (💾).
  *  3. Deploy ▾ → Manage deployments → ✏️ → Version: New version → Deploy.
  *  4. Once: function dropdown → backfillAddedDates → ▶ Run (fills "date added" for old novels).
+ *
+ * THE SECRET lives in the script's own settings (Project Settings › Script properties ›
+ * SECRET), not in this file. The first time, the copy from the app has it filled in
+ * below; the script moves it into Script properties by itself. After that the app
+ * copies this file WITHOUT the secret, and a new secret is made with 🔑 › 🔄.
  */
 
 // ---------------- settings ----------------
-const SECRET = 'PASTE_YOUR_SECRET_HERE';   // must be the same secret as in the app (🔑)
+const SECRET = 'PASTE_YOUR_SECRET_HERE';   // first time only — then it's kept in Script properties (see above)
+const APP_URL = 'https://parepiy.github.io/novel/';   // where 🆕 push notices open (never taken from a request)
 const SHEET_GID = 1147646991;              // the tab the app reads / writes
 const IMG_FOLDER = 'novel-covers';         // Google Drive folder for uploaded covers
 // Optional: store covers on GitHub instead of Google Drive (avoids Drive permission errors).
@@ -171,25 +177,83 @@ function saveImageGitHub_(b64, type, name) {
   return JSON.parse(res.getContentText()).content.download_url;
 }
 
-// ---------------- endpoints ----------------
-function doGet(e) {
-  return json_({ ok: true, books: readAll_() });
+// ---------------- the secret ----------------
+// Kept in Script properties. A secret written in this file is only used to fill that
+// in the first time (so an older copy pasted later can't change the secret back).
+function secret_() {
+  const props = PropertiesService.getScriptProperties();
+  const saved = props.getProperty('SECRET');
+  if (saved) return saved;
+  if (SECRET && SECRET !== 'PASTE_YOUR_SECRET_HERE') { props.setProperty('SECRET', SECRET); return SECRET; }
+  return '';
+}
+// same length → compare every character, so the time taken doesn't hint at the secret
+function sameSecret_(a, b) {
+  a = String(a || ''); b = String(b || '');
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
+// ---------------- endpoints ----------------
+// Nothing is readable without the secret (the app reads the library with a POST).
+function doGet(e) {
+  return json_({ ok: false, error: 'unauthorized' });
+}
+
+// Changes run one at a time (iPhone + Mac + the bookmarklet + the reminder sender can
+// all write at once). Plain reads don't wait for the lock.
+const NO_LOCK = { list: 1, remind_list: 1, push_pull: 1, sg_state: 1, cw_state: 1, bm_list: 1, log_list: 1, backup_dump: 1, novel_info: 1 };
 function doPost(e) {
+  let action = '';
+  try { action = String(JSON.parse(e.postData.contents).action || ''); } catch (x) {}
+  if (NO_LOCK[action]) return doPost_(e);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) return json_({ ok: false, error: 'busy: มีการบันทึกอื่นกำลังทำงานอยู่ — ลองใหม่อีกครั้ง' });
+  try { return doPost_(e); } finally { lock.releaseLock(); }
+}
+
+// the row of a novel for edit / delete: the row the app sent, if that novel is still there.
+// Rows shift when a novel is added or deleted on another device; then the novel is found
+// by its title (only when exactly one row has it), never a different novel.
+function rowFor_(sh, row, expect) {
+  row = parseInt(row, 10);
+  if (!row || row < 2) return { error: 'bad row' };
+  if (expect === undefined || expect === null) return { row: row };   // an older app: as before
+  const want = String(expect).trim();
+  if (row <= sh.getLastRow() && String(sh.getRange(row, 1).getValue()).trim() === want) return { row: row };
+  const titles = sh.getRange(1, 1, Math.max(sh.getLastRow(), 1), 1).getValues();
+  const hits = [];
+  for (let i = 1; i < titles.length; i++) if (String(titles[i][0]).trim() === want) hits.push(i + 1);
+  if (hits.length === 1) return { row: hits[0], moved: true };
+  return { error: hits.length ? 'row_moved: มีหลายเรื่องชื่อนี้ — โหลดใหม่แล้วลองอีกครั้ง' : 'row_moved: ไม่พบเรื่องนี้ในชีตแล้ว (อาจถูกลบจากอีกเครื่อง) — โหลดใหม่แล้วลองอีกครั้ง' };
+}
+
+function doPost_(e) {
   try {
     let d;
     try { d = JSON.parse(e.postData.contents); }
     catch (err) { return json_({ ok: false, error: 'bad json' }); }
 
     const action = d.action;
-    if (action === 'list') return json_({ ok: true, books: readAll_() });
-
-    if (SECRET === 'PASTE_YOUR_SECRET_HERE') return json_({ ok: false, error: 'ยังไม่ได้ใส่รหัสลับ (SECRET) ในสคริปต์' });
+    const secret = secret_();
+    if (!secret) return json_({ ok: false, error: 'ยังไม่ได้ใส่รหัสลับ (SECRET) ในสคริปต์' });
     // everything below requires the secret
-    if (d.token !== SECRET) return json_({ ok: false, error: 'unauthorized' });
+    if (!sameSecret_(d.token, secret)) return json_({ ok: false, error: 'unauthorized' });
 
     ghToken_();   // remember the GitHub token (if this file has one) for future copies of the script
+
+    // secret_saved: the app may now copy this file without the secret in it
+    if (action === 'list') return json_({ ok: true, books: readAll_(), secret_saved: true });
+
+    // 🔄 a new secret (from 🔑 in the app). At least 24 characters.
+    if (action === 'secret_rotate') {
+      const nt = String(d.new_token || '');
+      if (nt.length < 24 || /\s/.test(nt)) return json_({ ok: false, error: 'รหัสใหม่ต้องยาวอย่างน้อย 24 ตัวอักษร และไม่มีช่องว่าง' });
+      PropertiesService.getScriptProperties().setProperty('SECRET', nt);
+      return json_({ ok: true, rotated: true });
+    }
 
     const rr = reminderRouter_(action, d);
     if (rr) return rr;
@@ -219,8 +283,9 @@ function doPost(e) {
     }
 
     if (action === 'edit') {
-      const row = parseInt(d.row, 10);
-      if (!row || row < 2) return json_({ ok: false, error: 'bad row' });
+      const at = rowFor_(sh, d.row, d.expect_title);
+      if (at.error) return json_({ ok: false, error: at.error });
+      const row = at.row;
       let cover = d.cover || '';
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
       // 🏁 set to Finished just now → remember the day (unless the app sent a date)
@@ -229,7 +294,7 @@ function doPost(e) {
       // columns A..H only — the date added (column I) is kept as it is
       sh.getRange(row, 1, 1, 8).setValues([[d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']]);
       metaSet_(sh, row, d);   // progress / note / finished date, only when sent
-      return json_({ ok: true, row: row, cover: cover, meta: true });
+      return json_({ ok: true, row: row, moved: !!at.moved, cover: cover, meta: true });
     }
 
     // 📖 "read up to": set after ✓ เสร็จ on a reminder. The title must still be on
@@ -249,10 +314,10 @@ function doPost(e) {
     }
 
     if (action === 'delete') {
-      const row = parseInt(d.row, 10);
-      if (!row || row < 2) return json_({ ok: false, error: 'bad row' });
-      sh.deleteRow(row);
-      return json_({ ok: true });
+      const at = rowFor_(sh, d.row, d.expect_title);
+      if (at.error) return json_({ ok: false, error: at.error });
+      sh.deleteRow(at.row);
+      return json_({ ok: true, row: at.row, moved: !!at.moved });
     }
 
     return json_({ ok: false, error: 'unknown action' });
@@ -669,7 +734,7 @@ function chapterWatchRouter_(action, d) {
       const body = fresh.map(f => f.title + ' +' + f.n + ' ตอน').join(' · ');
       const q = sgSheet_('push_queue', NOTICE_COLS);
       q.appendRow(['n' + Date.now() + Math.floor(Math.random() * 1000), fresh.length > 1 ? '🆕 มีตอนใหม่ ' + fresh.length + ' เรื่อง' : '🆕 มีตอนใหม่', body,
-        String(d.app_url || 'https://parepiy.github.io/novel/').split('#')[0] + '#newch', now].map(sgText_));
+        APP_URL + '#newch', now].map(sgText_));
     }
     return json_({ ok: true, items: sgRead_('chapter_watch', CW_COLS), fresh: fresh.length });
   }
@@ -1081,6 +1146,15 @@ function backfillAddedDates() {
     } else unknown++;
   });
   Logger.log('ใส่วันที่จากรูปปกแล้ว ' + filled + ' เรื่อง · มีวันที่อยู่แล้ว ' + kept + ' เรื่อง · ไม่ทราบวันที่ ' + unknown + ' เรื่อง');
+}
+
+// The app and the script disagree about the secret (e.g. it was changed in only one place)?
+// Put the secret into SECRET at the top of this file, then run this once: it replaces the
+// saved one. Afterwards you may set SECRET back to 'PASTE_YOUR_SECRET_HERE'.
+function useSecretFromThisFile() {
+  if (!SECRET || SECRET === 'PASTE_YOUR_SECRET_HERE') { Logger.log('ใส่รหัสลับใน SECRET ด้านบนก่อน'); return; }
+  PropertiesService.getScriptProperties().setProperty('SECRET', SECRET);
+  Logger.log('ใช้รหัสลับจากไฟล์นี้แล้ว (' + SECRET.length + ' ตัวอักษร)');
 }
 
 // If cover uploads to Drive ever say "not authorized": run this once and click Allow.
