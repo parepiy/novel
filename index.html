@@ -1390,10 +1390,7 @@ const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0s
 
 let allBooks = [];
 let activeSource = null;  // null = all novels, 'meb', or 'raw' (single-select source filter)
-let notifyView = false;   // true while the 🔔 Notification tab is showing
-let statsView = false;    // true while the 📈 Stats tab is showing
-let suggestView = false;  // true while the 💡 Suggestions tab is showing
-let bmView = false;       // true while the 🔖 Bookmarks tab is showing
+let view = 'all';   // the tab showing: 'all' (นิยาย) · 'stats' · 'notify' · 'suggest' · 'bookmarks'
 let activeTags = new Set();
 let excludedTags = new Set();   // 🚫 hide novels with these tags (long-press a tag)
 let activeStar = null;
@@ -1476,9 +1473,9 @@ function onResume() {
   if (!ed) return;
   const before = JSON.stringify(reminders);
   loadReminders().then(() => {
-    if (notifyView && JSON.stringify(reminders) !== before) renderNotify();
+    if ((view === 'notify') && JSON.stringify(reminders) !== before) renderNotify();
   });
-  if (suggestView && (!sgLoaded || sgError)) loadSuggest();
+  if ((view === 'suggest') && (!sgLoaded || sgError)) loadSuggest();
 }
 document.addEventListener('visibilitychange', onResume);
 window.addEventListener('focus', onResume);
@@ -1574,7 +1571,7 @@ async function loadData() {
     if (isEditor()) refreshFromGas();
   } catch(e) {
     if (allBooks.length) return;   // a newer load already succeeded — don't cover it with this error
-    if (notifyView || statsView || suggestView || bmView) return;
+    if (view !== 'all') return;
     document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${esc(e.message)}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
   }
 }
@@ -1604,10 +1601,10 @@ async function refreshFromGas() {
 
 /* ===== RENDER ===== */
 function renderAll() {
-  if (notifyView) return;   // don't let a background data refresh overwrite the Notification view
-  if (statsView) { renderStats(); return; }   // refresh stats when new data arrives
-  if (suggestView) { renderSuggest(); return; }   // library changed → refresh "in library" badges
-  if (bmView) { renderBookmarks(); return; }
+  if (view === 'notify') return;   // don't let a background data refresh overwrite the Notification view
+  if (view === 'stats') { renderStats(); return; }   // refresh stats when new data arrives
+  if (view === 'suggest') { renderSuggest(); return; }   // library changed → refresh "in library" badges
+  if (view === 'bookmarks') { renderBookmarks(); return; }
   renderFilterStrip();
   renderGrid();
 }
@@ -1665,7 +1662,7 @@ function afChip(label, onclick, cls) {
 function renderActiveFilters() {
   const el = document.getElementById('active-filters');
   if (!el) return;
-  if (notifyView || statsView || suggestView || bmView) { el.style.display = 'none'; return; }
+  if (view !== 'all') { el.style.display = 'none'; return; }
   const chips = [];
   if (activeSource) chips.push(afChip(activeSource === 'meb' ? 'MEB' : 'RAW', "setSource('" + activeSource + "')", activeSource === 'raw' ? 'raw' : 'meb'));
   if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
@@ -1745,7 +1742,7 @@ function continueRead(idx) {
   if (!b || !b.url) return;
   markRead(idx);
   window.open(b.url, '_blank', 'noopener');
-  setTimeout(() => { if (!notifyView && !statsView && !suggestView && !bmView) renderGrid(); }, 400);
+  setTimeout(() => { if (view === 'all') renderGrid(); }, 400);
 }
 /* ▶️ อ่านต่อ = your Reading novels + every novel that has a 🔔 reminder.
    A reminder's chapter link is what ▶ opens. Order: 🆕 new chapters, reminders
@@ -1867,7 +1864,7 @@ function shelfPlay(i) {
   if (it.b) markRead(allBooks.indexOf(it.b));
   else { const log = readLog(); log[it.title] = Date.now(); try { localStorage.setItem('lastRead', JSON.stringify(log)); } catch (e) {} }
   window.open(url, '_blank', 'noopener');
-  setTimeout(() => { if (!notifyView && !statsView && !suggestView && !bmView) renderGrid(); }, 400);
+  setTimeout(() => { if (view === 'all') renderGrid(); }, 400);
 }
 /* a novel that's only in 🔔 (not in your library) → its reminders */
 function shelfOpenReminders() { nfView = 'list'; switchTab('notify'); }
@@ -1921,13 +1918,13 @@ function switchTab(tab) {
   document.getElementById('filter-strip').style.display = hideFilters ? 'none' : '';
   document.querySelector('.search-box').style.display = (notify || stats || bm) ? 'none' : '';   // 💡 searches every suggested novel; 🔖 has its own search
   if (hideFilters) document.getElementById('active-filters').style.display = 'none';
-  notifyView = notify; statsView = stats; suggestView = suggest; bmView = bm;
+  view = tab === 'notify' || tab === 'stats' || tab === 'suggest' || tab === 'bookmarks' ? tab : 'all';
   applyScopeUI();
   if (!notify) nfDraft = null;   // leaving the tab drops a reminder pre-filled from a novel
   if (notify) {
     nfEditId = null;
     renderNotify();
-    loadReminders().then(() => { if (notifyView) renderNotify(); });
+    loadReminders().then(() => { if (view === 'notify') renderNotify(); });
     return;
   }
   if (stats) {
@@ -1942,7 +1939,7 @@ function switchTab(tab) {
   if (suggest) {
     renderSuggest();
     loadSuggest();
-    loadReminders().then(() => { if (suggestView) renderSuggest(); });
+    loadReminders().then(() => { if (view === 'suggest') renderSuggest(); });
     return;
   }
   renderFilterStrip();
@@ -1953,7 +1950,7 @@ function switchTab(tab) {
    Ignored when the swipe starts on things that already scroll sideways (filter
    chips, the อ่านต่อ shelf, the 💡 list tabs), on form fields, in popups, or at
    the very screen edges (iOS uses those for its own gestures). */
-function currentTab() { return notifyView ? 'notify' : statsView ? 'stats' : suggestView ? 'suggest' : bmView ? 'bookmarks' : 'all'; }
+function currentTab() { return view; }
 function tabOrder() { return isEditor() ? ['all', 'stats', 'notify', 'suggest', 'bookmarks'] : ['all', 'stats']; }
 (function swipeTabs() {
   const SKIP = 'input,textarea,select,.tag-strip,.active-filters,.shelf-row,.sg-tabs,.bmk-chips,.f-tag-picker,.modal-bg,.overlay,.busy-overlay';
@@ -1991,20 +1988,20 @@ function swipeToTab(tab, from) {
 }
 
 function setSource(s) {
-  if (notifyView || statsView || suggestView || bmView) switchTab('all');
+  if (view !== 'all') switchTab('all');
   activeSource = (activeSource === s) ? null : s;
   renderFilterStrip();
   renderGrid();
 }
 
 function setNewFilter() {
-  if (notifyView || statsView || suggestView || bmView) switchTab('all');
+  if (view !== 'all') switchTab('all');
   activeNew = !activeNew;
   renderFilterStrip();
   renderGrid();
 }
 function setStatus(s) {
-  if (notifyView || statsView || suggestView || bmView) switchTab('all');
+  if (view !== 'all') switchTab('all');
   activeStatus = (activeStatus === s) ? null : s;
   renderFilterStrip();
   renderGrid();
@@ -2022,7 +2019,7 @@ const SURPRISE_MIN_STAR = 3;
 const SURPRISE_SOURCE = 'meb';
 let lastSurprise = null;
 function surpriseMe() {
-  if (notifyView || statsView || suggestView || bmView) switchTab('all');
+  if (view !== 'all') switchTab('all');
   let list = getFilteredBooks().filter(b => b.source === SURPRISE_SOURCE && (b.star || 0) >= SURPRISE_MIN_STAR);
   if (!list.length) {
     const filtered = activeSource || activeStatus || activeStar !== null || activeTags.size || excludedTags.size || searchQ.trim();
@@ -2176,7 +2173,7 @@ function renderStats() {
 
   document.getElementById('main-content').innerHTML =
     '<div class="stats-view">' + tiles + yearSection(books) + monthlySection(books) + srcSec + statusSec + starSec + tagSec + toolsSection() + '</div>';
-  if (isEditor() && !rlLoaded && !rlLoading) loadReadLog().then(() => { if (statsView) renderStats(); });
+  if (isEditor() && !rlLoaded && !rlLoading) loadReadLog().then(() => { if (view === 'stats') renderStats(); });
 }
 
 /* ===== 💡 SUGGESTIONS (ReadAWrite, refreshed weekly by the rw-collect.js bookmarklet) =====
@@ -2367,7 +2364,7 @@ async function loadSuggest() {
    list from another tab/window), at most every 15 s. */
 let sgLastAutoLoad = 0;
 function sgAutoRefresh() {
-  if (!suggestView || !isEditor() || document.visibilityState !== 'visible') return;
+  if ((view !== 'suggest') || !isEditor() || document.visibilityState !== 'visible') return;
   if (Date.now() - sgLastAutoLoad < 15000) return;
   sgLastAutoLoad = Date.now();
   loadSuggest();
@@ -2568,7 +2565,7 @@ function sgEditReasonHit(i) { if (sgHits[i]) sgOpenReasons(sgHits[i].x); }
 function sgLibrarySearchHtml(q) {
   if (!isEditor() || !q) return '';
   if (!sgLoaded) {
-    loadSuggest().then(() => { if (!notifyView && !statsView && !suggestView && !bmView && searchQ.trim()) renderGrid(); });
+    loadSuggest().then(() => { if (view === 'all' && searchQ.trim()) renderGrid(); });
     return '<div class="sgs-sec"><div class="sgs-h">💡 กำลังค้นในนิยายที่เคยแนะนำ…</div></div>';
   }
   const hits = sgSearch(q);
@@ -2578,8 +2575,8 @@ function sgLibrarySearchHtml(q) {
 
 /* redraw whichever view shows suggestions */
 function sgRerender() {
-  if (suggestView) renderSuggest();
-  else if (!notifyView && !statsView && !bmView && searchQ.trim() && isEditor()) renderGrid();
+  if (view === 'suggest') renderSuggest();
+  else if ((view === 'all' || view === 'suggest') && searchQ.trim() && isEditor()) renderGrid();
 }
 
 function sgPanelHtml() {
@@ -2840,7 +2837,7 @@ async function sgEnableWeekly() {
     await loadReminders();
     toast('ตั้งเตือนทุกวันศุกร์ 21:00 แล้ว 🔔');
   } catch (e) { alert('ตั้งเตือนไม่ได้: ' + e.message); }
-  finally { setBusy(false); if (suggestView) renderSuggest(); }
+  finally { setBusy(false); if (view === 'suggest') renderSuggest(); }
 }
 async function sgDisableWeekly() {
   const r = sgWeeklyReminder();
@@ -2848,7 +2845,7 @@ async function sgDisableWeekly() {
   setBusy(true, 'กำลังปิดการเตือน');
   try { await gasPost({ action: 'remind_delete', id: r.id }); await loadReminders(); toast('ปิดการเตือนแล้ว'); }
   catch (e) { alert('ปิดไม่ได้: ' + e.message); }
-  finally { setBusy(false); if (suggestView) renderSuggest(); }
+  finally { setBusy(false); if (view === 'suggest') renderSuggest(); }
 }
 
 /* ---- handoff from rw-collect.js ----
@@ -3001,7 +2998,7 @@ function clearAll() {
   activeNew = false;
   document.getElementById('search-input').value = '';
   renderFilterStrip();
-  if (suggestView) { renderSuggest(); return; }
+  if (view === 'suggest') { renderSuggest(); return; }
   renderGrid();
 }
 
@@ -3018,15 +3015,15 @@ function filterBooks() {
   refreshSearchView();
 }
 function refreshSearchView() {
-  if (suggestView) renderSuggest();
-  else if (!notifyView && !statsView && !bmView) renderGrid();
+  if (view === 'suggest') renderSuggest();
+  else if ((view === 'all' || view === 'suggest')) renderGrid();
 }
 
 function applyScopeUI() {
   const btn = document.getElementById('scope-btn');
   const inp = document.getElementById('search-input');
-  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = suggestView ? 'ค้นหาเนื้อเรื่อง/แท็ก นิยายแนะนำ...' : 'ค้นหาเนื้อเรื่อง...'; }
-  else { btn.textContent = '🔍'; inp.placeholder = suggestView ? 'ค้นหานิยายแนะนำ...' : 'ค้นหาชื่อ...'; }
+  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = (view === 'suggest') ? 'ค้นหาเนื้อเรื่อง/แท็ก นิยายแนะนำ...' : 'ค้นหาเนื้อเรื่อง...'; }
+  else { btn.textContent = '🔍'; inp.placeholder = (view === 'suggest') ? 'ค้นหานิยายแนะนำ...' : 'ค้นหาชื่อ...'; }
 }
 
 function toggleScope() {
@@ -3036,7 +3033,7 @@ function toggleScope() {
 }
 
 function focusSearch(scope) {
-  if (notifyView || statsView || bmView) switchTab('all');
+  if (view !== 'all' && view !== 'suggest') switchTab('all');
   searchScope = scope;
   applyScopeUI();
   document.getElementById('search-input').focus();
@@ -3468,7 +3465,7 @@ async function bmProgress(item) {
   try {
     const res = await gasPost({ action: 'progress', row: b.row, title: b.title, progress: progress, progress_at: at });
     if (res && res.row && res.row !== b.row) b.row = res.row;
-    if (!notifyView && !statsView && !suggestView && !bmView) renderGrid();
+    if (view === 'all') renderGrid();
   } catch (e) { Object.assign(b, prev); }
 }
 async function deleteBookmark(id) {
@@ -3482,7 +3479,7 @@ async function deleteBookmark(id) {
   catch (e) { bmItems = prevList; bmRerender(); alert('ลบไม่ได้: ' + e.message); }
 }
 function bmRerender() {
-  if (bmView) renderBookmarks();
+  if (view === 'bookmarks') renderBookmarks();
   if (bmGroupKey) renderBmGroup();
   if (document.getElementById('modal-bg').classList.contains('open') && allBooks[window._mIdx]) renderModalBookmarks(allBooks[window._mIdx]);
 }
@@ -3500,7 +3497,7 @@ function loadChapterWatch() {
     if (d && Array.isArray(d.items)) {
       cwItems = d.items;
       if (cwOpenNew && allBooks.length) { cwOpenNew = false; if (allBooks.some(b => cwNew(b) > 0)) activeNew = true; }
-      if (!notifyView && !statsView && !suggestView && !bmView) { renderFilterStrip(); renderGrid(); }
+      if (view === 'all') { renderFilterStrip(); renderGrid(); }
     }
   }).catch(() => {}).finally(() => { cwLoading = null; });
   return cwLoading;
@@ -4159,7 +4156,7 @@ async function offerClearReminders(title) {
     const res = await gasPost({ action: 'remind_delete', ids: ids, id: ids[0] });
     if (!res || typeof res.deleted !== 'number') for (let i = 1; i < ids.length; i++) await gasPost({ action: 'remind_delete', id: ids[i] });
     await loadReminders();
-    if (notifyView) renderNotify();
+    if (view === 'notify') renderNotify();
     toast('ลบการแจ้งเตือนของ “' + title + '” ' + ids.length + ' รายการแล้ว');
   } catch (e) { alert('ลบการแจ้งเตือนไม่ครบ: ' + e.message); }
   finally { setBusy(false); }
@@ -4276,7 +4273,7 @@ async function loadReminders() {
     reminderError = '';
     remindersLoaded = true;
     // the อ่านต่อ shelf includes reminder novels: redraw it when they changed
-    if (before !== JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at])) && !notifyView && !statsView && !suggestView && !bmView && allBooks.length) renderGrid();
+    if (before !== JSON.stringify(reminders.map(r => [r.id, r.title, r.url, r.remind_at])) && view === 'all' && allBooks.length) renderGrid();
     fetchLinkTitles(reminders.map(r => r.url));   // 📖 chapter titles, in the background
   } catch(e) { reminderError = e.message || 'error'; }   // keep the list we already had
   updateNotifyBadge();
@@ -4440,7 +4437,7 @@ async function nfDonePick(next) {
   nfEditId = null;
   closeDayPopup();
   nfView = 'list';
-  if (!notifyView) switchTab('notify'); else renderNotify();
+  if (view !== 'notify') switchTab('notify'); else renderNotify();
   setTimeout(() => {
     const u = document.getElementById('nf-url');
     if (u) { u.scrollIntoView({ behavior: 'smooth', block: 'center' }); u.classList.add('nf-flash'); }
@@ -4570,8 +4567,8 @@ async function fetchLinkTitles(urls, force) {
   } finally {
     want.forEach(u => ltPending.delete(u));
     fillChapEls();
-    if (!notifyView && !statsView && !suggestView && !bmView && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
-    if (bmView && bmItems.some(x => x.url && want.indexOf(x.url) >= 0)) renderBmList();
+    if (view === 'all' && shelfItems.some(it => it.rem && want.indexOf(it.rem.url) >= 0)) renderGrid();
+    if ((view === 'bookmarks') && bmItems.some(x => x.url && want.indexOf(x.url) >= 0)) renderBmList();
     nfAutoName('nf'); nfAutoName('day');
   }
 }
@@ -5503,7 +5500,7 @@ async function snoozeReminder(id, days, toMs) {
       newId = res && res.id;
     }
     await loadReminders();
-    if (notifyView) renderNotify();
+    if (view === 'notify') renderNotify();
     if (dayPopupKey) renderDayPopup();
     if (toMs) toast('↩︎ กลับไปเวลาเดิมแล้ว');
     else if (newId) toastAction('⏩ เลื่อนไป ' + fmtWhen(ms), 'เลิกทำ', () => snoozeReminder(newId, 0, from), 6000);
@@ -5701,7 +5698,7 @@ async function fillCovers() {
       setBusy(true, '🖼️ กำลังหาปก ' + tried + '/' + plan + ' · เจอแล้ว ' + filled);
     }
     setBusy(false);
-    if (statsView) renderStats();
+    if (view === 'stats') renderStats();
     toast('🖼️ เติมปกแล้ว ' + filled + ' เรื่อง' + (tried > filled ? ' · หาไม่เจอ ' + (tried - filled) + ' เรื่อง (หน้าเว็บไม่มีรูป หรือเปิดไม่ได้)' : '') + (stop ? ' · หยุดแล้ว' : ''), 5000);
     refreshFromGas();
   } catch (e) {
@@ -5745,7 +5742,7 @@ async function backupDownload() {
 async function backupSave() {   // runs from a tap, so iPhone allows the share sheet / download
   if (!bkFile) return;
   const blob = new Blob([bkFile.text], { type: 'application/json' });
-  const done = () => { try { localStorage.setItem('lastBackup', String(Date.now())); } catch (e) {} closeTools(); if (statsView) renderStats(); toast('💾 บันทึกไฟล์สำรองแล้ว — เก็บไว้ใน Files / iCloud / Google Drive', 4500); };
+  const done = () => { try { localStorage.setItem('lastBackup', String(Date.now())); } catch (e) {} closeTools(); if (view === 'stats') renderStats(); toast('💾 บันทึกไฟล์สำรองแล้ว — เก็บไว้ใน Files / iCloud / Google Drive', 4500); };
   let file = null;
   try { file = new File([blob], bkFile.name, { type: 'application/json' }); } catch (e) {}
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -5975,8 +5972,8 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Digit4') { if (isEditor()) { e.preventDefault(); switchTab('suggest'); } return; }
   if (e.code === 'Digit5') { if (isEditor()) { e.preventDefault(); switchTab('bookmarks'); } return; }
   /* Notification sub-views: L = list, K = calendar (only in that tab) */
-  if (notifyView && e.code === 'KeyL') { e.preventDefault(); setNotifyView('list'); return; }
-  if (notifyView && e.code === 'KeyK') { e.preventDefault(); setNotifyView('calendar'); return; }
+  if ((view === 'notify') && e.code === 'KeyL') { e.preventDefault(); setNotifyView('list'); return; }
+  if ((view === 'notify') && e.code === 'KeyK') { e.preventDefault(); setNotifyView('calendar'); return; }
   if (e.code === 'KeyM') { setSource('meb'); }
   else if (e.code === 'KeyR') { setSource('raw'); }
   else if (e.code === 'KeyC') { clearAll(); }
