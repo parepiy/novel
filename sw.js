@@ -7,7 +7,7 @@
      refreshed in the background. That cache is kept across deploys.
    - Apps Script replies (they hold your notes) are never cached.
    - Everything else (the Sheet CSV, …): network-first with a cache fallback. */
-const CACHE = 'novel-v43';
+const CACHE = 'novel-v44';
 const IMG = 'novel-img-v1';   // covers: NOT tied to the app version, so a deploy keeps them
 const SHELL = ['./', './index.html', './manifest.json'];
 

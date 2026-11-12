@@ -1248,6 +1248,9 @@ body.editor .m-icons .m-edit{display:flex;}
 .off-banner>div{flex:1;}
 .ob-ic{font-size:1.3rem;}
 .ob-tech{margin:4px 18px 0;}
+
+/* 📅 the day's add / edit form popup: the form without its own box */
+#dayf-card .nf-form,:root[data-theme] #dayf-card .nf-form{background:none;border:none;box-shadow:none;padding:0;margin:0;}
 </style>
 <script>
 /* Theme: "dark" = 🌌 space (the default look), "light" = original mint.
@@ -1419,6 +1422,10 @@ body.editor .m-icons .m-edit{display:flex;}
 </div>
 
 <!-- CALENDAR DAY POPUP -->
+<!-- 📅 the add / edit form of a day: its own popup above the day -->
+<div class="overlay" id="dayf-bg" style="z-index:214" onclick="if(event.target===this)closeDayForm()">
+  <div class="f-card" id="dayf-card" style="max-width:440px;" role="dialog" aria-modal="true"></div>
+</div>
 <div class="overlay" id="day-bg" onclick="if(event.target===this)closeDayPopup()">
   <div class="f-card" id="day-card" role="dialog" aria-modal="true" style="max-width:460px;"></div>
 </div>
@@ -4458,7 +4465,7 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();   // 0-based
 let dayPopupKey = null;   // 'YYYY-MM-DD' of the open day popup (null = closed)
 let dayEditId = null;     // reminder being edited inside the day popup
-let dayFormOpen = false;  // the add form in the day popup is shown (tapped ＋ เพิ่มแจ้งเตือนตอนใหม่)
+let dayFormOpen = false;  // the day's add / edit form popup is open
 
 let busyCancel = null;   // set while a long job can be stopped (🖼️ covers)
 function busyCancelNow() { const f = busyCancel; busyCancel = null; if (f) f(); }
@@ -5302,12 +5309,13 @@ function openDayPopup(key) {
   document.getElementById('day-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
   renderDayPopup();
+  // nothing on that day yet → straight to the add form
+  if (!reminders.some(r => dkey(r.remind_at) === key)) openDayForm();
 }
 
 function closeDayPopup() {
+  closeDayForm();
   dayPopupKey = null;
-  dayEditId = null;
-  dayFormOpen = false;
   document.getElementById('day-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -5344,18 +5352,26 @@ function renderDayPopup() {
       '</div>';
   }).join('') : '<div class="nf-empty" style="padding:16px;">ยังไม่มีการแจ้งเตือนในวันนี้</div>';
 
-  // the add form stays behind a button, unless you're editing or the day is empty
-  const showForm = dayFormOpen || !!editing || !dayItems.length;
-  const addLabel = editing ? '💾 บันทึกการแก้ไข' : '＋ เพิ่มในวันนี้';
-  const cancelBtn = editing ? '<button class="btn btn-ghost" onclick="cancelDayEdit()">ยกเลิก</button>'
-    : dayItems.length ? '<button class="btn btn-ghost" onclick="closeDayForm()">ยกเลิก</button>' : '';
-  const editHint = editing ? '<div class="nf-edit-hint">✏️ กำลังแก้ไข</div>' : '';
-
+  // the day: its reminders and one ＋ button. The add / edit form opens in its own popup.
   document.getElementById('day-card').innerHTML =
-    '<div class="pop-head"><h3>' + dateLabel + '</h3><button class="ov-close" onclick="closeDayPopup()">✕</button></div>' +
+    '<div class="pop-head"><h3>' + dateLabel + '</h3><button class="ov-close" onclick="closeDayPopup()" aria-label="ปิด">✕</button></div>' +
     '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
-    (!showForm ? '<button class="btn btn-primary day-add-btn" onclick="openDayForm()">＋ เพิ่มแจ้งเตือนตอนใหม่</button>' :
-    '<div class="nf-form">' + editHint +
+    '<button class="btn btn-primary day-add-btn" onclick="openDayForm()">＋ เพิ่มแจ้งเตือนตอนใหม่</button>';
+}
+
+/* the add / edit form of the open day, in its own popup (drawn when it opens, so a
+   list refresh behind it never wipes what you're typing) */
+function renderDayForm() {
+  const key = dayPopupKey;
+  if (!key) return;
+  const parts = key.split('-').map(Number);
+  const y = parts[0], mo = parts[1], d = parts[2];
+  const dateShort = new Date(y, mo - 1, d).toLocaleDateString(TH_LOCALE, { weekday: 'short', day: 'numeric', month: 'short' });
+  const editing = dayEditId ? reminders.find(r => String(r.id) === String(dayEditId)) : null;
+  const addLabel = editing ? '💾 บันทึกการแก้ไข' : '＋ เพิ่มในวันนี้';
+  document.getElementById('dayf-card').innerHTML =
+    '<div class="pop-head"><h3>' + (editing ? '✏️ แก้ไขแจ้งเตือน' : '➕ เพิ่มแจ้งเตือน') + ' · ' + esc(dateShort) + '</h3><button class="ov-close" onclick="closeDayForm()" aria-label="ปิด">✕</button></div>' +
+    '<div class="nf-form day-form">' +
       nfTitlePickHtml('day') +
       '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
         '<button type="button" class="btn btn-ghost btn-sm" onclick="pasteRemindUrl(\'day\')" title="วางลิงก์ที่คัดลอก">📋 วาง</button></div>' +
@@ -5365,11 +5381,11 @@ function renderDayPopup() {
       '<select id="day-hour" class="nf-pick nf-hour" onchange="document.getElementById(\'day-time\').value=this.value"></select>' +
       '<div class="nf-dup" id="day-dup"></div>' +
       '<div class="nf-form-actions">' +
-        '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
+        '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' +
+        '<button class="btn btn-ghost" onclick="closeDayForm()">ยกเลิก</button>' +
       '</div>' +
-    '</div>');
+    '</div>';
 
-  if (!showForm) return;   // the form's boxes below don't exist while it is collapsed
   const p = n => String(n).padStart(2, '0');
   const tv = editing ? new Date(Number(editing.remind_at)) : new Date(y, mo - 1, d, 9, 0);
   document.getElementById('day-title').value = editing ? (editing.title || '') : '';
@@ -5397,8 +5413,7 @@ async function saveFromDay() {
   try {
     await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
     if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
-    dayEditId = null;
-    dayFormOpen = false;
+    closeDayForm();
     await loadReminders();
     renderNotify();
     renderDayPopup();
@@ -5406,15 +5421,24 @@ async function saveFromDay() {
   finally { setBusy(false); }
 }
 
-function editFromDay(id) { dayEditId = id; renderDayPopup(); }
-function cancelDayEdit() { dayEditId = null; dayFormOpen = false; renderDayPopup(); }
-function openDayForm() {
+function editFromDay(id) { dayEditId = id; showDayForm(); }
+function cancelDayEdit() { closeDayForm(); }
+function openDayForm() { dayEditId = null; showDayForm(); }
+function showDayForm() {
   dayFormOpen = true;
-  renderDayPopup();
-  const f = document.querySelector('#day-card .nf-form');   // no focus: that would pop the iOS picker
-  if (f) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  renderDayForm();   // no focus on the first box: that would pop the iOS picker
+  document.getElementById('dayf-bg').classList.add('open');
+  renderDayPopup();   // marks the reminder being edited
 }
-function closeDayForm() { dayFormOpen = false; renderDayPopup(); }
+function closeDayForm() {
+  const was = dayFormOpen || dayEditId;
+  dayFormOpen = false; dayEditId = null;
+  const bg = document.getElementById('dayf-bg');
+  if (bg) bg.classList.remove('open');
+  const card = document.getElementById('dayf-card');
+  if (card) card.innerHTML = '';   // no hidden copy of the form left behind
+  if (was && dayPopupKey) renderDayPopup();
+}
 
 /* ===== 💬 TOAST WITH A BUTTON ===== */
 function toastAction(msg, label, fn, ms) {
@@ -6227,6 +6251,7 @@ document.addEventListener('keydown', e => {
     const cv = document.getElementById('cover-view');
     if (cv && cv.classList.contains('open')) { cv.classList.remove('open'); return; }
     if (document.getElementById('filt-bg').classList.contains('open')) { closeFilterSheet(); return; }
+    if (document.getElementById('dayf-bg').classList.contains('open')) { closeDayForm(); return; }
     if (document.getElementById('modal-bg').classList.contains('open') && !document.querySelector('.overlay.open')) { closeModalBtn(); return; }
     if (selMode && !document.querySelector('.overlay.open,.modal-bg.open')) { selExit(); return; }
     closeModalBtn(); closeForm(); closeSettings(); closeDayPopup(); sgCloseReasons();
