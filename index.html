@@ -2,10 +2,10 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ห้องสมุดนิยาย</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2d9e7a">
+<meta name="theme-color" content="#10153a">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -20,12 +20,12 @@
 :root{
   --bg:#f3f4ff;--s1:#ffffff;--s2:#f2f3ff;--s3:#e8eafb;--bd:#dfe2f6;--bd2:#cbd0ef;
   --mint:#0891b2;--mint2:#0e7490;--mdim:rgba(8,145,178,0.11);
-  --text:#1b1f3b;--dim:#4b5378;--mute:#8a90b3;
+  --text:#1b1f3b;--dim:#4b5378;--mute:#5f6587;
   --raw:#7c3aed;--raw2:#6d28d9;--rdim:rgba(124,58,237,0.1);--rbd:#cdbdf5;
   --star:#b45309;--star-bd:#f3d48b;--star-dim:#92400e;--star-hover:#d97706;
   --summary:#2e3458;
   --scrim:rgba(243,244,255,0.75);
-  --overdue:#e0892b;
+  --overdue:#c2410c;
   --glass:rgba(255,255,255,.62);--line:rgba(99,102,241,.16);--line2:rgba(99,102,241,.28);
   --page-bg:#f3f4ff;
   --sky:radial-gradient(900px 560px at 88% -8%, rgba(167,139,250,.38), transparent 62%),
@@ -36,7 +36,7 @@
   --hdr-bg:rgba(255,255,255,.62);
   --title-grad:linear-gradient(90deg,#0891b2,#7c3aed 55%,#db2777);
   --soft-grad:linear-gradient(90deg,#0891b2,#7c3aed);
-  --grad:linear-gradient(90deg,#06b6d4,#8b5cf6);--on-grad:#ffffff;--grad-glow:0 4px 14px rgba(124,58,237,.28);
+  --grad:linear-gradient(90deg,#0e7490,#6d28d9);--on-grad:#ffffff;--grad-glow:0 4px 14px rgba(124,58,237,.28);
   --hover-bd:rgba(8,145,178,.45);--hover-glow:0 0 14px rgba(8,145,178,.22);
   --add-bg:linear-gradient(135deg,#22d3ee,#8b5cf6);--add-bd:transparent;--key-bd:rgba(217,119,6,.45);
   --seg-bg:rgba(255,255,255,.55);
@@ -45,7 +45,7 @@
   --wish:#b45309;--wish-bg:rgba(217,119,6,.09);--wish-bd:rgba(217,119,6,.36);
   --bought:#9333ea;--bought-bg:rgba(147,51,234,.08);--bought-bd:rgba(147,51,234,.32);
   --chip-meb-bd:rgba(8,145,178,.35);--chip-raw-bd:rgba(124,58,237,.32);--sfb-bd:rgba(217,119,6,.35);
-  --chip-act:linear-gradient(90deg,#06b6d4,#6366f1);--chip-act-fg:#fff;
+  --chip-act:linear-gradient(90deg,#0e7490,#4f46e5);--chip-act-fg:#fff;
   --chip-raw-act:linear-gradient(90deg,#8b5cf6,#d946ef);--chip-raw-act-fg:#fff;
   --chip-star-act:linear-gradient(90deg,#fbbf24,#f59e0b);--chip-star-act-fg:#3b2600;
   --opt-bg:#ffffff;--opt-fg:#1b1f3b;
@@ -74,7 +74,7 @@
 :root[data-theme="dark"]{
   --bg:#0d122d;--s1:#161c40;--s2:#1b224a;--s3:#232b57;--bd:#29316a;--bd2:#38418a;
   --mint:#3ad6ec;--mint2:#8eeefb;--mdim:rgba(58,214,236,0.15);
-  --text:#e9edff;--dim:#a7b0d8;--mute:#717aa6;
+  --text:#e9edff;--dim:#a7b0d8;--mute:#8a93c2;
   --raw:#a78bfa;--raw2:#c4b5fd;--rdim:rgba(167,139,250,0.18);--rbd:#4c3f86;
   --star:#fcd34d;--star-bd:#6b5a2a;--star-dim:#fde68a;--star-hover:#fcd34d;
   --summary:#cfd5f5;
@@ -125,11 +125,12 @@
   --num-gold:linear-gradient(90deg,#fde68a,#fbbf24);
   --track-bg:rgba(255,255,255,.06);--bar-dim:#4b5277;--dim-bg:rgba(255,255,255,.06);
 }
-html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-weight:400;min-height:100%;padding-bottom:60px;}
+html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Cordia New',sans-serif;font-weight:400;min-height:100%;padding-bottom:calc(60px + env(safe-area-inset-bottom));}
+body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}   /* iPhone sideways: clear of the notch */
 a{color:inherit;text-decoration:none;}
 
 /* STICKY HEADER */
-.sticky-header{position:sticky;top:0;z-index:100;background:var(--s1);}
+.sticky-header{position:sticky;top:0;z-index:100;background:var(--s1);padding-top:env(safe-area-inset-top);}
 
 /* HEADER — title + count + actions */
 header{padding:10px 16px 8px;border-bottom:none;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
@@ -262,7 +263,7 @@ body.editor .suggest-tab{display:inline-block;}
 .sg-warnbar .sg-sub{margin-top:3px;overflow-wrap:anywhere;}
 
 /* TOAST */
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:600;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2);}
+.toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:600;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2);}
 .toast.show{opacity:1;transform:translate(-50%,0);}
 .nf-badge{background:#d98c00;color:#fff;border-radius:10px;padding:0 6px;font-size:.68rem;font-weight:700;vertical-align:middle;}
 
@@ -433,7 +434,7 @@ body.editor .suggest-tab{display:inline-block;}
 .fb.raw-fb{color:var(--raw2);}
 /* reading-status filter chips */
 .fb.st-reading{color:#2f7db0;} .fb.st-reading:hover{border-color:#2f7db0;color:#2f7db0;} .fb.st-reading.active{background:rgba(47,125,176,.16);border-color:#2f7db0;color:#2f7db0;}
-.fb.st-toread{color:#b07d00;} .fb.st-toread:hover{border-color:#c98a00;color:#a06f00;} .fb.st-toread.active{background:rgba(200,138,0,.16);border-color:#c98a00;color:#a06f00;}
+.fb.st-toread{color:#9a6700;} .fb.st-toread:hover{border-color:#c98a00;color:#a06f00;} .fb.st-toread.active{background:rgba(200,138,0,.16);border-color:#c98a00;color:#a06f00;}
 .fb.st-finished{color:#2e9e6a;} .fb.st-finished:hover{border-color:#2e9e6a;color:#25805a;} .fb.st-finished.active{background:rgba(46,158,106,.16);border-color:#2e9e6a;color:#25805a;}
 .fb.st-dropped{color:var(--mute);} .fb.st-dropped:hover{border-color:var(--mute);color:var(--dim);} .fb.st-dropped.active{background:rgba(140,140,140,.16);border-color:var(--mute);color:var(--dim);}
 /* sort dropdown pill */
@@ -580,12 +581,12 @@ body.editor .m-edit{display:inline-block;}
 .empty{padding:50px 20px;text-align:center;color:var(--mute);font-size:.9rem;}
 
 /* SCROLL BUTTON */
-.scroll-btn{position:fixed;bottom:24px;right:20px;z-index:150;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
+.scroll-btn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:calc(20px + env(safe-area-inset-right));z-index:150;width:44px;height:44px;background:var(--mint);color:#fff;border:none;border-radius:50%;font-size:1.25rem;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 14px rgba(45,158,122,0.45);transition:transform .2s;}
 .scroll-btn.visible{display:flex;}
 .scroll-btn:hover{transform:translateY(-2px);}
 
 /* HELP / SHORTCUTS */
-.help-btn{position:fixed;bottom:24px;left:20px;z-index:150;width:32px;height:32px;background:var(--s1);color:var(--dim);border:1px solid var(--bd2);border-radius:50%;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:color .15s,border-color .15s;}
+.help-btn{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:calc(20px + env(safe-area-inset-left));z-index:150;width:32px;height:32px;background:var(--s1);color:var(--dim);border:1px solid var(--bd2);border-radius:50%;font-size:.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:color .15s,border-color .15s;}
 .help-btn:hover{color:var(--mint2);border-color:var(--mint);}
 
 /* OVERLAYS (help / form / settings) */
@@ -883,11 +884,11 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .card{border-radius:16px;overflow:hidden;background:var(--card-bg);border:1px solid var(--line);box-shadow:var(--card-shadow);transition:transform .2s,box-shadow .2s,border-color .2s;}
 :root[data-theme] .card:hover{transform:translateY(-4px);border-color:var(--card-hover-bd);box-shadow:var(--card-hover-shadow);}
 :root[data-theme] .cover::after{content:'';position:absolute;left:0;right:0;bottom:0;height:35%;background:linear-gradient(180deg,transparent,var(--cover-fade));pointer-events:none;}
-:root[data-theme] .src-badge{top:8px;left:8px;z-index:2;font-family:'Kanit','Sarabun',sans-serif;font-weight:500;font-size:.62rem;letter-spacing:.6px;padding:2px 8px;border-radius:999px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+:root[data-theme] .src-badge{top:8px;left:8px;z-index:2;font-family:'Kanit','Sarabun',sans-serif;font-weight:500;font-size:.62rem;letter-spacing:.6px;padding:2px 8px;border-radius:999px;}
 :root[data-theme] .src-badge.meb{background:var(--meb-bg);color:var(--meb-fg);border:1px solid var(--meb-bd);box-shadow:var(--meb-glow);}
 :root[data-theme] .src-badge.raw{background:var(--rawb-bg);color:var(--rawb-fg);border:1px solid var(--rawb-bd);box-shadow:var(--rawb-glow);}
-:root[data-theme] .star-badge{top:8px;right:8px;z-index:2;padding:2px 8px;border-radius:999px;background:var(--starb-bg);color:var(--starb-fg);border:1px solid var(--starb-bd);box-shadow:var(--starb-glow);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
-:root[data-theme] .edit-btn{z-index:2;background:var(--edit-bg);border:1px solid var(--line2);color:var(--dim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+:root[data-theme] .star-badge{top:8px;right:8px;z-index:2;padding:2px 8px;border-radius:999px;background:var(--starb-bg);color:var(--starb-fg);border:1px solid var(--starb-bd);box-shadow:var(--starb-glow);}
+:root[data-theme] .edit-btn{z-index:2;background:var(--edit-bg);border:1px solid var(--line2);color:var(--dim);}
 :root[data-theme] .edit-btn:hover{background:var(--edit-bg-h);color:var(--mint2);}
 :root[data-theme] .card-body{padding:10px 11px 12px;}
 :root[data-theme] .title{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;line-height:1.4;}
@@ -1013,9 +1014,9 @@ body.editor .m-edit{display:inline-block;}
 .card.picked .sel-ck{background:var(--mint);border-color:#fff;}
 .card.picked,:root[data-theme] .card.picked{outline:3px solid var(--mint);outline-offset:-3px;}
 body.selmode .edit-btn{display:none !important;}
-body.selmode #main-content{padding-bottom:120px;}
-body.selmode .toast{bottom:136px;}
-.sel-bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:205;width:min(620px,calc(100vw - 20px));display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:16px;
+body.selmode #main-content{padding-bottom:calc(120px + env(safe-area-inset-bottom));}
+body.selmode .toast{bottom:calc(136px + env(safe-area-inset-bottom));}
+.sel-bar{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:205;width:min(620px,calc(100vw - 20px));display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:16px;
   background:var(--panel-bg,var(--s1));border:1px solid var(--panel-bd,var(--bd));box-shadow:0 10px 30px rgba(0,0,0,.3);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);}
 .sel-row{display:flex;align-items:center;gap:6px;}
 .sel-row .btn{white-space:nowrap;padding:6px 10px;}
@@ -1081,6 +1082,37 @@ body.selmode .toast{bottom:136px;}
 .ni-tl{width:100%;font-size:.74rem;color:var(--mute);}
 .tagpick.ni-tag{border-style:dashed;}
 .tagpick.ni-tag.active{border-style:solid;}
+
+/* ==================== 📱 iPhone ergonomics (review ranks 5, 17, 22, 24, 25, 26) ==================== */
+@media (pointer:coarse){
+  /* 44px to tap. Header buttons stay 36px to look at (5 of them must fit a phone), the rest is invisible */
+  :root[data-theme] .hdr-btn{width:36px;height:36px;position:relative;}
+  :root[data-theme] .hdr-btn::after{content:'';position:absolute;inset:-4px;}
+  .nav-tab,:root[data-theme] .nav-tab{min-height:40px;padding:8px 12px;}
+  .fb,.sfb,.sort-sel,:root[data-theme] .fb,:root[data-theme] .sfb{min-height:36px;padding:7px 14px;}
+  .mq-star{min-width:44px;min-height:44px;}
+  .nf-snooze button{min-height:36px;padding:6px 12px;}
+  .tm-act{width:40px;height:40px;}
+  .scope-btn,.clear-btn{position:relative;}   /* (.ov-close and .sh-play are already positioned) */
+  .ov-close::after,.sh-play::after{content:'';position:absolute;inset:-10px;}
+  .scope-btn::after,.clear-btn::after{content:'';position:absolute;inset:-16px -3px;}   /* taller, not wider: the search text sits right beside them */
+  /* 16px boxes: iPhone no longer zooms in when you tap one, so pinch-zoom could be switched back on */
+  input,select,textarea{font-size:16px !important;}
+}
+/* touch screens: no hover effects that stay stuck after a tap, but a quick press effect instead */
+@media (hover:none){
+  :root[data-theme] .card:hover{transform:none;border-color:var(--line);box-shadow:var(--card-shadow);}
+  :root[data-theme] .hdr-btn:hover{color:var(--dim);border-color:var(--line);box-shadow:none;}
+  .mq-star:hover{transform:none;}
+  .help-btn{display:none !important;}   /* keyboard shortcuts: 🔑 › ⌨️ คีย์ลัด & ท่าทาง */
+}
+:root[data-theme] .card:active{transform:scale(.97);transition:transform .08s;}
+button:active{filter:brightness(.92);}
+@media (prefers-reduced-motion:reduce){:root[data-theme] .card:active{transform:none;}}
+/* the twinkling stars pause while you scroll (smoother on iPhone) */
+body.scrolling .space-stars,body.scrolling .space-shoot{animation-play-state:paused;}
+/* cards far off screen aren't drawn until you scroll near them */
+.grid .card{content-visibility:auto;contain-intrinsic-size:auto 300px;}
 </style>
 <script>
 /* Theme: "dark" = 🌌 space (the default look), "light" = original mint.
@@ -1127,7 +1159,7 @@ body.selmode .toast{bottom:136px;}
     </div>
     <div class="search-box">
       <button class="scope-btn" id="scope-btn" onclick="toggleScope()" title="สลับค้นหา ชื่อเรื่อง / เนื้อเรื่อง">🔍</button>
-      <input type="text" id="search-input" placeholder="ค้นหาชื่อ..." oninput="filterBooks()">
+      <input type="text" id="search-input" placeholder="ค้นหาชื่อ..." oninput="filterBooksSoon(event)" oncompositionend="filterBooksSoon()">
       <button class="clear-btn dim" id="clear-btn" onclick="clearAll()" title="ล้างตัวกรอง">✕</button>
     </div>
   </div>
@@ -1296,6 +1328,9 @@ body.selmode .toast{bottom:136px;}
       <p class="f-note">เปิด Apps Script › คลิกในไฟล์สคริปต์ › เลือกทั้งหมด (⌘A) › วางทับ (⌘V) › Save › Deploy ▾ › Manage deployments › ✏️ › New version › Deploy</p>
       <textarea id="s-code" class="s-code" readonly style="display:none"></textarea>
     </div>
+    <div class="s-script">
+      <button class="btn btn-ghost" onclick="closeSettings();toggleHelp()">⌨️ คีย์ลัด & ท่าทาง</button>
+    </div>
     <div class="s-script s-backup">
       <label>💾 สำรอง / กู้คืนข้อมูล</label>
       <div class="s-backup-btns">
@@ -1315,7 +1350,7 @@ body.selmode .toast{bottom:136px;}
 <div class="overlay" id="help-overlay" onclick="if(event.target===this)toggleHelp()">
   <div class="help-card">
     <button class="ov-close" onclick="toggleHelp()">✕</button>
-    <h3>⌨️ คีย์ลัด</h3>
+    <h3>⌨️ คีย์ลัด & ท่าทาง</h3>
     <div class="help-row"><span>แท็บนิยาย</span><kbd>1</kbd></div>
     <div class="help-row"><span>แท็บสถิติ</span><kbd>2</kbd></div>
     <div class="help-row"><span>แท็บแจ้งเตือน (เมื่อปลดล็อก)</span><kbd>3</kbd></div>
@@ -1342,7 +1377,6 @@ body.selmode .toast{bottom:136px;}
 
 <script>
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
-const SHEET_EDIT = 'https://docs.google.com/spreadsheets/d/12IGONJXyjANgMlRt44ERP4yVNoe8aypDC7mXXH30VaU/edit#gid=1147646991&range=A';
 
 let allBooks = [];
 let activeSource = null;  // null = all novels, 'meb', or 'raw' (single-select source filter)
@@ -1531,7 +1565,7 @@ async function loadData() {
   } catch(e) {
     if (allBooks.length) return;   // a newer load already succeeded — don't cover it with this error
     if (notifyView || statsView || suggestView || bmView) return;
-    document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${e.message}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
+    document.getElementById('main-content').innerHTML = `<div class="error-msg">โหลดข้อมูลไม่ได้ 😢<br><small>${esc(e.message)}</small><br><br><button onclick="loadData()" style="padding:8px 16px;border:1px solid var(--bd2);border-radius:8px;background:var(--s1);cursor:pointer;font-family:inherit;">ลองใหม่</button></div>`;
   }
 }
 
@@ -1541,6 +1575,7 @@ async function refreshFromGas() {
   try {
     const books = await gasGetBooks();
     const prev = allBooks;
+    const before = JSON.stringify(prev);
     allBooks = books.map(fromGas);
     // an older Code.gs doesn't send the nv_ columns yet: keep what the published sheet had
     const has = books[0] || {};
@@ -1550,7 +1585,8 @@ async function refreshFromGas() {
       if (!('progress' in has)) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
       if (!('finished_at' in has)) b.finishedAt = o.finishedAt;
     });
-    renderAll();
+    // same as what the Sheet CSV already showed → don't redraw (covers would flicker)
+    if (JSON.stringify(allBooks) !== before) renderAll();
     loadChapterWatch();
     loadBookmarks();
   } catch(e) { /* keep CSV data on failure */ }
@@ -1677,7 +1713,7 @@ function renderGrid() {
   const noFilter = !activeSource && !activeStatus && !activeNew && activeStar === null && !activeTags.size && !excludedTags.size && !searchQ.trim();
   selVisible = filtered;
   document.getElementById('main-content').innerHTML = (noFilter && !selMode ? shelfHtml() : '') +
-    `<div class="grid">${filtered.map(b => buildCard(b, allBooks.indexOf(b))).join('')}</div>` + sgSec;
+    `<div class="grid">${(pos => filtered.map(b => buildCard(b, pos.get(b))).join(''))(new Map(allBooks.map((b, i) => [b, i])))}</div>` + sgSec;
   updateScrollBtns();
   renderSelBar();
 }
@@ -1752,7 +1788,7 @@ function shelfHtml() {
     const b = it.b;
     const idx = b ? allBooks.indexOf(b) : -1;
     const cov = shelfCover(it);
-    const img = cov ? `<img src="${esc(cov)}" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">` : '';
+    const img = cov ? `<img src="${esc(cov)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">` : '';
     const url = (it.rem && it.rem.url) || (b && b.url) || '';
     const play = url ? `<button class="sh-play" onclick="shelfPlay(${i});event.stopPropagation()" title="${it.rem && it.rem.url ? 'อ่านตอนที่ตั้งเตือนไว้' : 'อ่านต่อ'}">▶</button>` : '';
     const prog = b && b.progress ? `<div class="sh-prog" title="${esc(b.progress)}">📖 ${esc(b.progress)}</div>` : '';
@@ -1828,7 +1864,7 @@ function shelfOpenReminders() { nfView = 'list'; switchTab('notify'); }
 
 function buildCard(b, idx) {
   const coverHtml = b.cover
-    ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    ? `<img src="${esc(fixCoverUrl(b.cover))}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
   const ncStyle = b.cover ? 'display:none' : '';
   const tagHtml = b.tags.slice(0,3).map(t => `<span class="tag">${esc(t)}</span>`).join('');
@@ -1853,6 +1889,9 @@ function fixCoverUrl(url) {
   if (!url) return "";
   const m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (m) return "https://lh3.googleusercontent.com/d/" + m[1];
+  // a file in this site ("#สมพรปาก Make a Wish.png", "12%.png"): # and % must be encoded,
+  // or the browser reads "#…" as a page anchor. Names that are already encoded stay as they are.
+  if (!/^(https?:|data:|blob:|\/\/)/i.test(url)) return url.split('/').map(seg => { try { seg = decodeURIComponent(seg); } catch (e) {} return encodeURIComponent(seg); }).join('/');
   return url;
 }
 
@@ -2955,7 +2994,14 @@ function clearAll() {
   renderGrid();
 }
 
+let searchTimer = null;
+function filterBooksSoon(e) {   // redraw once you pause typing, not on every key
+  if (e && e.isComposing) return;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(filterBooks, 120);
+}
 function filterBooks() {
+  clearTimeout(searchTimer);
   searchQ = document.getElementById('search-input').value;
   updateClearBtn();
   refreshSearchView();
@@ -5909,6 +5955,12 @@ function updateScrollBtns() {
   btn.classList.toggle('down', scrollDir === 'down');   // space theme turns the 🚀 to match
 }
 window.addEventListener('scroll', updateScrollBtns, {passive: true});
+let scrollingTimer = null;
+window.addEventListener('scroll', () => {
+  document.body.classList.add('scrolling');
+  clearTimeout(scrollingTimer);
+  scrollingTimer = setTimeout(() => document.body.classList.remove('scrolling'), 150);
+}, {passive: true});
 window.addEventListener('resize', updateScrollBtns, {passive: true});
 window.addEventListener('scrollend', releaseScroll);
 
@@ -5958,10 +6010,22 @@ if ('serviceWorker' in navigator) {
     // page picks up the fresh code instead of the previously-cached version.
     if (navigator.serviceWorker.controller) {
       var refreshing = false;
+      /* busy = a form or popup is open, you're typing, or a save is running: wait for a quiet moment */
+      var busyNow = function () {
+        var a = document.activeElement;
+        return !!(document.querySelector('.overlay.open, .modal-bg.open, .busy-overlay.show') ||
+          (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (typeof selMode !== 'undefined' && selMode));
+      };
+      var reloadWhenQuiet = function () {
+        if (refreshing) return;
+        if (!busyNow()) { refreshing = true; window.location.reload(); return; }
+        setTimeout(reloadWhenQuiet, 3000);
+      };
       navigator.serviceWorker.addEventListener('controllerchange', function () {
         if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
+        if (busyNow() && typeof toastAction === 'function')
+          toastAction('✨ มีเวอร์ชันใหม่ — จะรีเฟรชเมื่อคุณบันทึก/ปิดหน้าต่างแล้ว', 'รีเฟรชเลย', function () { refreshing = true; window.location.reload(); }, 8000);
+        reloadWhenQuiet();
       });
     }
   });

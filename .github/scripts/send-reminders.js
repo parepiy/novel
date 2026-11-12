@@ -33,7 +33,7 @@ async function gas(body) {
 (async () => {
   const data = await gas({ action: 'push_pull', token: SECRET });
   if (!data || !data.ok) {
-    console.error('push_pull failed:', JSON.stringify(data));
+    console.error('push_pull failed:', (data && data.error) || 'no data');   // never dump the reply: it holds your reminders
     process.exit(1);
   }
 
@@ -57,7 +57,7 @@ async function gas(body) {
         delivered = true;
       } catch (err) {
         const code = err && err.statusCode;
-        console.error(`push failed (${code || '?'}) for ${String(s.endpoint).slice(0, 40)}...`);
+        console.error(`push failed (${code || '?'}) via ${(() => { try { return new URL(s.endpoint).host; } catch (_) { return '?'; } })()}`);
         if (code === 404 || code === 410) {
           try { await gas({ action: 'sub_remove', token: SECRET, endpoint: s.endpoint }); } catch (_) {}
         }
@@ -70,7 +70,7 @@ async function gas(body) {
     const ok = await sendAll(JSON.stringify({
       title: n.title || '🆕 มีตอนใหม่', body: n.body || '', url: n.url || DEFAULT_URL + '#newch', tag: 'notice-' + n.id
     }));
-    if (ok) { await gas({ action: 'notice_done', token: SECRET, ids: [n.id] }); console.log('sent notice:', n.id, '-', n.body); }
+    if (ok) { await gas({ action: 'notice_done', token: SECRET, ids: [n.id] }); console.log('sent notice:', n.id); }   // ids only: this repo's Actions logs are public
     else console.log('notice not delivered, will retry:', n.id);
   }
 
@@ -92,7 +92,7 @@ async function gas(body) {
       console.log('sent weekly:', rem.id, '- next at', new Date(next).toISOString());
     } else if (delivered) {
       await gas({ action: 'remind_mark', token: SECRET, id: rem.id });
-      console.log('sent + marked:', rem.id, '-', rem.title);
+      console.log('sent + marked:', rem.id);   // no titles in the public log
     } else {
       console.log('not delivered, leaving unmarked:', rem.id);
     }

@@ -25,7 +25,7 @@ jobs:
           node-version: '20'
       - name: Install dependencies
         working-directory: .github/scripts
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund   # exact versions from package-lock.json
       - name: Send due reminders
         working-directory: .github/scripts
         env:
