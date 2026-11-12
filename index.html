@@ -519,6 +519,21 @@ body.editor .edit-btn{display:flex;}
 .m-nc{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:1.8rem;}
 .m-info{flex:1;display:flex;flex-direction:column;gap:7px;padding-right:24px;}
 .m-title{font-family:'Sarabun','Cordia New',sans-serif;font-weight:700;font-size:1.05rem;line-height:1.5;color:var(--text);}
+/* the cover, title and ✕ stay at the top while the rest scrolls; they shrink once you scroll down */
+.m-top{position:sticky;top:-22px;z-index:6;margin:-22px -18px 14px;padding:22px 18px 12px;
+       background:var(--panel-solid,var(--s1));border-bottom:1px solid transparent;
+       border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0;
+       transition:padding .18s ease;}
+.m-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}   /* (was an inline style, which the compact rule couldn't hide) */
+.m-top .m-close{position:absolute;top:10px;right:6px;min-width:44px;min-height:44px;}
+.m-top .m-info{padding-right:46px;}   /* keep long titles clear of the 44px ✕ */
+.modal{overflow-anchor:none;}         /* stop scroll anchoring from fighting the shrink */
+.m-top .m-cover{transition:width .18s ease;}
+.modal.m-compact .m-top{padding-top:12px;padding-bottom:10px;border-bottom-color:var(--line);}
+.modal.m-compact .m-cover{width:44px;}
+.modal.m-compact .m-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.modal.m-compact .m-meta,.modal.m-compact #m-tags,.modal.m-compact #m-added,.modal.m-compact #m-prog{display:none;}
+@media (prefers-reduced-motion:reduce){.m-top,.m-top .m-cover{transition:none;}}
 .m-src{display:inline-block;font-size:.72rem;padding:2px 7px;border-radius:4px;font-weight:500;}
 .m-src.meb{background:rgba(45,158,122,.12);color:var(--mint2);border:1px solid rgba(45,158,122,.25);}
 .m-src.raw{background:rgba(122,94,160,.12);color:var(--raw2);border:1px solid rgba(122,94,160,.25);}
@@ -587,6 +602,7 @@ body.editor .m-edit{display:inline-block;}
 /* a popup's title + ✕ stay at the top while its list scrolls */
 .pop-head{position:sticky;top:-20px;z-index:6;margin:-20px -18px 12px;padding:16px 50px 12px 18px;background:var(--panel-solid,var(--s1));border-bottom:1px solid var(--line);border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0;}
 .f-card .pop-head h3{margin:0;}
+.day-add-btn{display:block;width:100%;min-height:44px;}
 .pop-head .ov-close{top:50%;right:12px;transform:translateY(-50%);font-size:1.25rem;padding:6px 8px;}
 .ov-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
 
@@ -1127,12 +1143,11 @@ body.selmode .toast{bottom:136px;}
 <!-- VIEW MODAL -->
 <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
   <div class="modal" id="modal">
-    <button class="m-close" onclick="closeModalBtn()">✕</button>
     <div class="m-top">
       <div class="m-cover" id="m-cover"><div class="m-nc">📖</div></div>
       <div class="m-info">
         <div class="m-title" id="m-title"></div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="m-meta">
           <span class="m-src" id="m-src"></span>
           <span class="m-stars" id="m-stars"></span>
         </div>
@@ -1140,6 +1155,7 @@ body.selmode .toast{bottom:136px;}
         <div class="m-added" id="m-added"></div>
         <div class="m-prog" id="m-prog"></div>
       </div>
+      <button class="m-close" onclick="closeModalBtn()">✕</button>
     </div>
     <div class="m-summary" id="m-summary"></div>
     <div class="m-note" id="m-note"></div>
@@ -3005,9 +3021,24 @@ function openModal(idx) {
   }
   document.getElementById('m-quick-msg').textContent = '';
   renderModalQuick(b);
+  const modal = document.getElementById('modal');
+  modal.classList.remove('m-compact');   // every novel opens with the full header, at the top
   document.getElementById('modal-bg').classList.add('open');
+  modal.scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
+/* the novel popup's header shrinks once you scroll down and grows back at the top.
+   The two thresholds are far apart (the header shrinks by ~96px) so it never flickers. */
+(function modalCompactHeader() {
+  const modal = document.getElementById('modal');
+  if (!modal) return;
+  modal.addEventListener('scroll', () => {
+    const st = modal.scrollTop;
+    if (!modal.classList.contains('m-compact')) {
+      if (st > 120 && modal.scrollHeight - modal.clientHeight > 160) modal.classList.add('m-compact');
+    } else if (st < 8) modal.classList.remove('m-compact');
+  }, { passive: true });
+})();
 
 /* ===== 🔖 BOOKMARKS =====
    Saved in the Sheet ("bookmarks" tab): id, title, source (meb/raw), chapter (any
@@ -4084,6 +4115,7 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();   // 0-based
 let dayPopupKey = null;   // 'YYYY-MM-DD' of the open day popup (null = closed)
 let dayEditId = null;     // reminder being edited inside the day popup
+let dayFormOpen = false;  // the add form in the day popup is shown (tapped ＋ เพิ่มแจ้งเตือนตอนใหม่)
 
 let busyCancel = null;   // set while a long job can be stopped (🖼️ covers)
 function busyCancelNow() { const f = busyCancel; busyCancel = null; if (f) f(); }
@@ -4921,6 +4953,7 @@ document.addEventListener('input', e => {
 function openDayPopup(key) {
   dayPopupKey = key;
   dayEditId = null;
+  dayFormOpen = false;
   document.getElementById('day-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
   renderDayPopup();
@@ -4929,6 +4962,7 @@ function openDayPopup(key) {
 function closeDayPopup() {
   dayPopupKey = null;
   dayEditId = null;
+  dayFormOpen = false;
   document.getElementById('day-bg').classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -4965,13 +4999,17 @@ function renderDayPopup() {
       '</div>';
   }).join('') : '<div class="nf-empty" style="padding:16px;">ยังไม่มีการแจ้งเตือนในวันนี้</div>';
 
+  // the add form stays behind a button, unless you're editing or the day is empty
+  const showForm = dayFormOpen || !!editing || !dayItems.length;
   const addLabel = editing ? '💾 บันทึกการแก้ไข' : '＋ เพิ่มในวันนี้';
-  const cancelBtn = editing ? '<button class="btn btn-ghost" onclick="cancelDayEdit()">ยกเลิก</button>' : '';
+  const cancelBtn = editing ? '<button class="btn btn-ghost" onclick="cancelDayEdit()">ยกเลิก</button>'
+    : dayItems.length ? '<button class="btn btn-ghost" onclick="closeDayForm()">ยกเลิก</button>' : '';
   const editHint = editing ? '<div class="nf-edit-hint">✏️ กำลังแก้ไข</div>' : '';
 
   document.getElementById('day-card').innerHTML =
     '<div class="pop-head"><h3>' + dateLabel + '</h3><button class="ov-close" onclick="closeDayPopup()">✕</button></div>' +
     '<div class="nf-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
+    (!showForm ? '<button class="btn btn-primary day-add-btn" onclick="openDayForm()">＋ เพิ่มแจ้งเตือนตอนใหม่</button>' :
     '<div class="nf-form">' + editHint +
       nfTitlePickHtml('day') +
       '<div class="f-url-line"><input id="day-url" type="url" placeholder="ลิงก์นิยาย (https://...)">' +
@@ -4984,8 +5022,9 @@ function renderDayPopup() {
       '<div class="nf-form-actions">' +
         '<button class="btn btn-primary" onclick="saveFromDay()">' + addLabel + '</button>' + cancelBtn +
       '</div>' +
-    '</div>';
+    '</div>');
 
+  if (!showForm) return;   // the form's boxes below don't exist while it is collapsed
   const p = n => String(n).padStart(2, '0');
   const tv = editing ? new Date(Number(editing.remind_at)) : new Date(y, mo - 1, d, 9, 0);
   document.getElementById('day-title').value = editing ? (editing.title || '') : '';
@@ -5014,6 +5053,7 @@ async function saveFromDay() {
     await gasWrite({ action: 'remind_add', title: title, url: url, remind_at: ms }, () => reminderSaved(title, url, ms));
     if (editingId) await gasPost({ action: 'remind_delete', id: editingId });
     dayEditId = null;
+    dayFormOpen = false;
     await loadReminders();
     renderNotify();
     renderDayPopup();
@@ -5022,7 +5062,14 @@ async function saveFromDay() {
 }
 
 function editFromDay(id) { dayEditId = id; renderDayPopup(); }
-function cancelDayEdit() { dayEditId = null; renderDayPopup(); }
+function cancelDayEdit() { dayEditId = null; dayFormOpen = false; renderDayPopup(); }
+function openDayForm() {
+  dayFormOpen = true;
+  renderDayPopup();
+  const f = document.querySelector('#day-card .nf-form');   // no focus: that would pop the iOS picker
+  if (f) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function closeDayForm() { dayFormOpen = false; renderDayPopup(); }
 
 /* ===== 💬 TOAST WITH A BUTTON ===== */
 function toastAction(msg, label, fn, ms) {
