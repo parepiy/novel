@@ -2,7 +2,7 @@
 
    Runs inside a readawrite.com tab, started from the "💡 อัปเดตนิยายแนะนำ"
    bookmarklet (or pasted into DevTools › Console). The app wraps this file
-   with window.__NV = { u: <Apps Script URL>, t: <secret> }.
+   with a local __NV = { u: <Apps Script URL>, t: <secret> } (older ones: window.__NV).
 
    Lists: ① แก้แค้น · ② จีนโบราณ + เกิดใหม่ · ③ ไทยย้อนยุค (not เกิดใหม่) ·
           ④ เกิดใหม่ + ไทยย้อนยุค — all BL, no ดราม่า tag, 10 per list,
@@ -25,7 +25,7 @@
    Written with block comments and explicit semicolons only, so it still
    runs if a browser strips newlines from the bookmarklet. */
 (async function () {
-  var CFG = window.__NV || {};
+  var CFG = (typeof __NV !== 'undefined' && __NV) || window.__NV || {};   /* new bookmarklets: a local __NV (not readable by other scripts on the page) */
   var LIMIT = 10;
   var TABS = ['t1', 't2', 't3', 't4'];
   var CATS = [32, 55, 54];

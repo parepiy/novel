@@ -1113,6 +1113,11 @@ button:active{filter:brightness(.92);}
 body.scrolling .space-stars,body.scrolling .space-shoot{animation-play-state:paused;}
 /* cards far off screen aren't drawn until you scroll near them */
 .grid .card{content-visibility:auto;contain-intrinsic-size:auto 300px;}
+
+/* 🔄 new secret */
+.rot-key{display:flex;gap:8px;align-items:center;margin:10px 0;}
+.rot-key code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:.8rem;padding:8px 10px;border-radius:10px;background:var(--glass);border:1px solid var(--line2);color:var(--text);}
+.rot-list{margin:8px 0 8px 18px;font-size:.84rem;line-height:1.7;color:var(--text);}
 </style>
 <script>
 /* Theme: "dark" = 🌌 space (the default look), "light" = original mint.
@@ -1324,9 +1329,14 @@ body.scrolling .space-stars,body.scrolling .space-shoot{animation-play-state:pau
     <p class="f-note" id="s-status" style="margin-top:10px;"></p>
     <div class="s-script">
       <label>สคริปต์ Apps Script ฉบับเต็ม (Code.gs)</label>
-      <button class="btn btn-ghost" onclick="copyCodeGs()">📋 คัดลอก Code.gs (ใส่รหัสลับให้แล้ว)</button>
+      <button class="btn btn-ghost" id="s-copy-gs" onclick="copyCodeGs()">📋 คัดลอก Code.gs (ใส่รหัสลับให้แล้ว)</button>
       <p class="f-note">เปิด Apps Script › คลิกในไฟล์สคริปต์ › เลือกทั้งหมด (⌘A) › วางทับ (⌘V) › Save › Deploy ▾ › Manage deployments › ✏️ › New version › Deploy</p>
       <textarea id="s-code" class="s-code" readonly style="display:none"></textarea>
+    </div>
+    <div class="s-script s-rotate">
+      <label>🔄 รหัสลับใหม่ (แข็งแรงกว่า)</label>
+      <button class="btn btn-ghost" onclick="rotateSecret()">🔄 สร้างรหัสลับใหม่</button>
+      <p class="f-note" id="s-rotate-note">สร้างรหัสยาว 48 ตัวแบบสุ่ม แล้วเปลี่ยนในสคริปต์ให้เลย</p>
     </div>
     <div class="s-script">
       <button class="btn btn-ghost" onclick="closeSettings();toggleHelp()">⌨️ คีย์ลัด & ท่าทาง</button>
@@ -2608,7 +2618,8 @@ function sgCollectorCode() {
   const c = cfg();
   const src = sgCollectorSrc.replace(/^\/\*[\s\S]*?\*\/\s*/, '').replace(/^[ \t]+/gm, '');
   const app = location.origin + location.pathname;
-  return '(function(){window.__NV=' + JSON.stringify({ u: c.url, t: c.token, a: app }) + ';\n' + src + '\n})();';
+  // a local variable, not window.__NV: other scripts on readawrite.com can't read the secret
+  return '(function(){var __NV=' + JSON.stringify({ u: c.url, t: c.token, a: app }) + ';\n' + src + '\n})();';
 }
 async function sgPrepareBookmarklet() {
   const a = document.getElementById('sg-bm');
@@ -2786,7 +2797,7 @@ async function sgSyncLibrary(x, status) {
     setBusy(true, 'กำลังอัปเดตคลัง');
     try {
       await gasPost({
-        action: 'edit', row: dup.row, title: dup.title, summary: dup.summary, url: dup.url,
+        action: 'edit', row: dup.row, expect_title: dup.title, title: dup.title, summary: dup.summary, url: dup.url,
         tags: (dup.tags || []).join('|'), source: dup.source, star: dup.star || 0, status: status, cover: dup.cover || ''
       });
       dup.status = status;
@@ -2846,7 +2857,7 @@ async function sgDisableWeekly() {
    app → nv-ready, collector → nv-hello (Sheet URL/secret from the bookmark),
    app → nv-state (saved list + marks), collector merges + fetches synopses →
    nv-save, app saves to the Sheet → nv-done. */
-const RA_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)?readawrite\.com$/;
+const RA_ORIGIN_RE = /^https:\/\/(www\.)?readawrite\.com$/;   // only ReadAWrite itself, not any subdomain
 function sgStartBridge() {
   const src = window.opener;
   const fail = msg => { setBusy(false); alert(msg + '\n\nกลับไปที่แท็บ readawrite แล้วกด “ดาวน์โหลดไฟล์แทน” จากนั้นอัปโหลดในแท็บ 💡 แนะนำ'); };
@@ -3618,7 +3629,7 @@ async function quickSave(field, value) {
   msg.style.opacity = '1'; msg.textContent = 'กำลังบันทึก…';
   try {
     await gasPost({
-      action: 'edit', row: b.row,
+      action: 'edit', row: b.row, expect_title: b.title,
       title: b.title, summary: b.summary, url: b.url,
       tags: (b.tags || []).join('|'), source: b.source,
       star: b.star || 0, status: b.status || '', cover: b.cover || ''
@@ -3706,6 +3717,12 @@ function openSettings() {
   document.getElementById('s-code').style.display = 'none';
   document.getElementById('s-backup-note').textContent = backupNoteText();
   document.querySelector('.s-backup').style.display = isEditor() ? '' : 'none';
+  document.querySelector('.s-rotate').style.display = isEditor() ? '' : 'none';
+  document.getElementById('s-copy-gs').textContent = secretSavedOnServer()
+    ? '📋 คัดลอก Code.gs (ไม่มีรหัสลับในไฟล์ — สคริปต์จำไว้แล้ว)' : '📋 คัดลอก Code.gs (ใส่รหัสลับให้แล้ว)';
+  document.getElementById('s-rotate-note').textContent = (cfg().token || '').length < 24
+    ? '⚠️ รหัสลับตอนนี้สั้นไป — กดเพื่อสร้างรหัสยาว 48 ตัวแบบสุ่ม แล้วเปลี่ยนในสคริปต์ให้เลย'
+    : 'สร้างรหัสยาว 48 ตัวแบบสุ่ม แล้วเปลี่ยนในสคริปต์ให้เลย';
   document.getElementById('settings-bg').classList.add('open');
   document.body.style.overflow = 'hidden';
   loadCodeGs();   // fetch now, so the copy button can copy straight away (Safari needs that)
@@ -3725,15 +3742,17 @@ async function loadCodeGs() {
 function codeGsWithSecret(src, token) {
   return src.replace("const SECRET = 'PASTE_YOUR_SECRET_HERE';", 'const SECRET = ' + JSON.stringify(token) + ';');
 }
+function secretSavedOnServer() { try { const u = localStorage.getItem('secretSaved'); return !!u && u === cfg().url; } catch (e) { return false; } }
 async function copyCodeGs() {
   const token = (document.getElementById('s-token').value || cfg().token || '').trim();
-  if (!token) { alert('ใส่รหัสลับ (SECRET) ในช่องด้านบนก่อน'); return; }
+  const plain = secretSavedOnServer();   // the script already keeps the secret → copy the file as it is
+  if (!token && !plain) { alert('ใส่รหัสลับ (SECRET) ในช่องด้านบนก่อน'); return; }
   const src = codeGsSrc || await loadCodeGs();
   if (!src) { alert('โหลดสคริปต์ไม่ได้ — ลองใหม่อีกครั้ง'); return; }
-  const code = codeGsWithSecret(src, token);
+  const code = plain ? src : codeGsWithSecret(src, token);
   try {
     await navigator.clipboard.writeText(code);
-    toast('คัดลอก Code.gs แล้ว ✓ — ไปวางทับในไฟล์สคริปต์ แล้ว Deploy เวอร์ชันใหม่', 6000);
+    toast('คัดลอก Code.gs แล้ว ✓' + (plain ? ' (ไม่มีรหัสลับในไฟล์ — สคริปต์จำไว้เองแล้ว)' : '') + ' — ไปวางทับในไฟล์สคริปต์ แล้ว Deploy เวอร์ชันใหม่', 6000);
   } catch (e) {
     // clipboard blocked → show it so it can be selected and copied by hand
     const ta = document.getElementById('s-code');
@@ -3742,6 +3761,35 @@ async function copyCodeGs() {
     ta.focus();
     ta.select();
     toast('กด ⌘C เพื่อคัดลอกข้อความที่เลือกไว้', 6000);
+  }
+}
+/* 🔄 a new random secret: the script switches to it at once, this device too.
+   Other places that hold the old one are listed afterwards (they stop working). */
+function newSecret() {
+  const a = new Uint8Array(36);
+  crypto.getRandomValues(a);
+  return btoa(String.fromCharCode.apply(null, a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');   // 48 characters
+}
+async function rotateSecret() {
+  if (!isEditor()) return;
+  if (!confirm('🔄 สร้างรหัสลับใหม่?\n\nหลังเปลี่ยน ต้องอัปเดตรหัสใหม่ใน:\n• แอปบนเครื่องอื่น (เช่น iPhone / Mac) — 🔑\n• GitHub › Settings › Secrets › GAS_SECRET (ตัวส่งแจ้งเตือน)\n• บุ๊กมาร์ก 💡 (สร้างใหม่ในแท็บแนะนำ)\n\nจนกว่าจะอัปเดต ที่เหล่านั้นจะใช้ไม่ได้')) return;
+  const nt = newSecret();
+  setBusy(true, 'กำลังเปลี่ยนรหัสลับ');
+  try {
+    await gasPost({ action: 'secret_rotate', new_token: nt });
+    try { localStorage.setItem('gasToken', nt); localStorage.setItem('secretSaved', cfg().url); } catch (e) {}
+    document.getElementById('s-token').value = nt;
+    setBusy(false);
+    openTools('<h3>🔄 เปลี่ยนรหัสลับแล้ว</h3><p class="f-note">เครื่องนี้ใช้รหัสใหม่แล้ว คัดลอกไปใส่ที่อื่นตามรายการด้านล่าง</p>' +
+      '<div class="rot-key"><code id="rot-key">' + esc(nt) + '</code><button class="btn btn-primary btn-sm" onclick="sgCopyText(document.getElementById(\'rot-key\').textContent, \'คัดลอกรหัสใหม่แล้ว ✓\')">📋 คัดลอก</button></div>' +
+      '<ol class="rot-list"><li>แอปบนเครื่องอื่น: 🔑 › ช่องรหัสลับ › วาง › บันทึก</li>' +
+      '<li>GitHub › repo novel › Settings › Secrets and variables › Actions › <b>GAS_SECRET</b> › Update › วาง</li>' +
+      '<li>แท็บ 💡 แนะนำ › ลากปุ่มบุ๊กมาร์กใหม่ไปแทนอันเดิม</li></ol>' +
+      '<p class="f-note">⚠️ อย่าส่งรหัสนี้ในแชตหรือที่สาธารณะ</p>' +
+      '<div class="f-actions"><button class="btn btn-ghost" onclick="closeTools()">เสร็จ</button></div>');
+  } catch (e) {
+    setBusy(false);
+    alert('เปลี่ยนรหัสไม่ได้ (รหัสเดิมยังใช้ได้): ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
   }
 }
 function closeSettings() {
@@ -3896,9 +3944,9 @@ async function fetchT(url, opts, ms) {
     if (timer) clearTimeout(timer);
   }
 }
-const GAS_REPEATABLE = new Set(['novel_info', 'remind_move', 'tag_edit', 'bulk_edit', 'bulk_delete', 'backup_dump', 'backup_restore', 'fill_covers', 'log_read', 'log_list', 'bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
+const GAS_REPEATABLE = new Set(['list', 'novel_info', 'remind_move', 'tag_edit', 'bulk_edit', 'bulk_delete', 'backup_dump', 'backup_restore', 'fill_covers', 'log_read', 'log_list', 'bm_list', 'bm_save', 'bm_delete', 'cw_state', 'cw_ack', 'cw_save', 'progress', 'link_titles', 'sg_state', 'sg_mark', 'sg_save', 'sg_reasons', 'remind_list', 'remind_delete', 'remind_mark', 'edit', 'sub_save', 'sub_remove', 'push_pull']);
 const GAS_RETRY_WAITS = [1500, 3500, 7000];
-const GAS_QUIET = new Set(['novel_info', 'log_list', 'log_read', 'remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
+const GAS_QUIET = new Set(['list', 'novel_info', 'log_list', 'log_read', 'remind_list', 'sg_state', 'push_pull', 'link_titles', 'cw_state', 'bm_list']);
 const gasSleep = ms => new Promise(r => setTimeout(r, ms));
 function gasRetryNotice(text) {
   const b = document.getElementById('busy-overlay');
@@ -3918,7 +3966,13 @@ async function gasPostWith(c, payload) {
       let data = null;
       try { data = JSON.parse(text); } catch (e) { /* HTML error page */ }
       if (data) {
-        if (!data.ok) throw Object.assign(new Error(data.error || 'error'), { fromScript: true });
+        if (!data.ok && /^busy/.test(String(data.error || '')) && attempt < GAS_RETRY_WAITS.length) {
+          // another save was running (the script does one at a time) — this one didn't run yet
+          if (!GAS_QUIET.has(payload.action)) gasRetryNotice('รอการบันทึกอื่นให้เสร็จก่อน…');
+          await gasSleep(GAS_RETRY_WAITS[attempt]);
+          continue;
+        }
+        if (!data.ok) throw Object.assign(new Error(friendlyGasError(data.error)), { fromScript: true, code: data.error });
         return data;
       }
       problem = 'Google ขัดข้องชั่วคราว' + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : '') + ': ' + gasErrorText(text);
@@ -3953,20 +4007,14 @@ async function gasWrite(payload, happened) {
     return await gasPost(payload);
   }
 }
-/* Library rows straight from the script (GET), with the same retries. */
+/* Library rows straight from the script. It's a POST with the secret: the script
+   no longer hands out your library (notes included) to anyone with its URL. */
 async function gasGetBooks() {
-  const c = cfg();
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const { text } = await fetchT(c.url, { method: 'GET' }, 25000);
-      const data = JSON.parse(text);
-      if (data && data.ok && Array.isArray(data.books)) return data.books;
-      throw new Error((data && data.error) || 'bad response');
-    } catch (e) {
-      if (attempt >= GAS_RETRY_WAITS.length) throw e;
-      await gasSleep(GAS_RETRY_WAITS[attempt]);
-    }
-  }
+  const data = await gasPost({ action: 'list' });
+  if (!data || !Array.isArray(data.books)) throw new Error((data && data.error) || 'bad response');
+  // this Code.gs keeps the secret in its own settings → 📋 can copy it without the secret
+  try { if (data.secret_saved) localStorage.setItem('secretSaved', cfg().url); } catch (e) {}
+  return data.books;
 }
 async function reminderSaved(title, url, ms) {
   const d = await gasPost({ action: 'remind_list' });
@@ -3985,6 +4033,15 @@ function gasErrorText(html) {
   } catch (e) { return String(html || '').slice(0, 200); }
 }
 function gasPost(payload) { return gasPostWith(cfg(), payload); }
+/* the script's short error codes → what to do */
+function friendlyGasError(err) {
+  err = String(err || 'error');
+  if (/^row_moved:/.test(err)) {
+    setTimeout(() => refreshFromGas(), 0);   // reload the list so the next try uses the right row
+    return err.replace(/^row_moved:\s*/, '');
+  }
+  return err;
+}
 
 function setSaving(on, msg, emoji) {
   const card = document.getElementById('form-card');
@@ -4022,6 +4079,7 @@ async function saveForm() {
   };
   if (formMode === 'edit') payload.row = formRow;
   const before = formMode === 'edit' ? allBooks.find(b => b.row === formRow) : null;
+  if (before) payload.expect_title = before.title;   // the script checks it's still this novel's row
   if (payload.progress && (!before || before.progress !== payload.progress)) payload.progress_at = todayYMD();
   const fin = fval('f-finished');
   if (formMode === 'add' ? fin : fin !== ((before && before.finishedAt) || '')) payload.finished_at = fin;
@@ -4136,11 +4194,10 @@ async function deleteBook() {
   const cur = allBooks.find(b => b.row === row);
   const title = cur ? cur.title : fval('f-title').trim();
   try {
-    // deleting shifts the rows below, so never re-send blindly: check the row first
-    await gasWrite({ action: 'delete', row: row }, async () => {
-      const b = (await gasGetBooks()).find(x => Number(x.row) === Number(row));
-      return !b || String(b.title || '').trim() !== title.trim();
-    });
+    // deleting shifts the rows below, so never re-send blindly: count that title first
+    const had = allBooks.filter(b => b.title.trim() === title.trim()).length;
+    await gasWrite({ action: 'delete', row: row, expect_title: title }, async () =>
+      (await gasGetBooks()).filter(x => String(x.title || '').trim() === title.trim()).length < had);
     setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
