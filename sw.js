@@ -1,12 +1,14 @@
 /* ห้องสมุดนิยาย — service worker
 
-   App-shell model:
-   - Navigations (opening the app) are served instantly from cache, then the
-     cached page is refreshed in the background. Cold launches never wait on
-     the network, so the PWA no longer shows "A problem repeatedly occurred".
-   - Data (the Google Sheet CSV) and images use network-first with a cache
-     fallback, so content stays fresh but still works offline. */
-const CACHE = 'novel-v40';
+   - Navigations (opening the app): network-first with a 3.5 s timeout, then the
+     cached page. Fresh code on every online launch, and still opens offline /
+     on a slow network (no more "A problem repeatedly occurred").
+   - Cover images from this site: shown straight from their own cache (IMG) and
+     refreshed in the background. That cache is kept across deploys.
+   - Apps Script replies (they hold your notes) are never cached.
+   - Everything else (the Sheet CSV, …): network-first with a cache fallback. */
+const CACHE = 'novel-v41';
+const IMG = 'novel-img-v1';   // covers: NOT tied to the app version, so a deploy keeps them
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -17,7 +19,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== IMG).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -50,7 +52,21 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* Everything else (CSV data, cover images): network-first, cache fallback. */
+  const url = new URL(req.url);
+  /* Apps Script (your library with notes, reminders, …): straight to the network, never stored. */
+  if (/(^|\.)script\.google(usercontent)?\.com$/.test(url.hostname)) return;
+
+  /* Covers from this site: from the cover cache at once, refreshed in the background. */
+  if (req.destination === 'image' && url.origin === self.location.origin) {
+    e.respondWith(caches.open(IMG).then(c => c.match(req).then(hit => {
+      const net = fetch(req).then(res => { if (res && res.ok) c.put(req, res.clone()); return res; });
+      if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
+      return net;
+    })));
+    return;
+  }
+
+  /* Everything else (the Sheet CSV, …): network-first, cache fallback. */
   e.respondWith(
     fetch(req).then(res => {
       if (res && res.ok) {

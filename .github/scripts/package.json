@@ -4,6 +4,6 @@
   "private": true,
   "description": "Scheduled Web Push sender for reading reminders",
   "dependencies": {
-    "web-push": "^3.6.7"
+    "web-push": "3.6.7"
   }
 }
