@@ -70,6 +70,7 @@
   --glass-panel:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.72));
   --num-gold:linear-gradient(90deg,#f59e0b,#b45309);
   --track-bg:rgba(99,102,241,.1);--bar-dim:#c7cbe6;--dim-bg:rgba(99,102,241,.07);
+  --overdue-bg:rgba(194,65,12,.07);--wk-now:#be185d;--wk-now-glow:rgba(219,39,119,.22);
 }
 :root[data-theme="dark"]{
   --bg:#0d122d;--s1:#161c40;--s2:#1b224a;--s3:#232b57;--bd:#29316a;--bd2:#38418a;
@@ -124,6 +125,7 @@
   --glass-panel:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
   --num-gold:linear-gradient(90deg,#fde68a,#fbbf24);
   --track-bg:rgba(255,255,255,.06);--bar-dim:#4b5277;--dim-bg:rgba(255,255,255,.06);
+  --overdue-bg:rgba(240,169,77,.1);--wk-now:#f9a8d4;--wk-now-glow:rgba(249,168,212,.3);
 }
 html,body{background:var(--bg);color:var(--text);font-family:'Sarabun','Thonburi','Noto Sans Thai',-apple-system,sans-serif;font-weight:400;min-height:100%;padding-bottom:calc(60px + env(safe-area-inset-bottom));}
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}   /* iPhone sideways: clear of the notch */
@@ -356,12 +358,12 @@ body.editor .suggest-tab{display:inline-block;}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .cal-title{font-weight:700;color:var(--mint2);font-size:.98rem;}
 .cal-mid{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;}
-.cal-today{background:none;border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:3px 12px;font-family:inherit;font-size:.78rem;cursor:pointer;transition:all .12s;}
+.cal-today{background:none;border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:3px 14px;min-height:36px;font-family:inherit;font-size:.78rem;cursor:pointer;transition:all .12s;}
 .cal-today:hover{border-color:var(--mint);color:var(--mint2);}
 :root[data-theme] .cal-today{background:var(--glass);border-color:var(--line2);color:var(--text);}
 .cal-flash{animation:calFlash .55s ease 3;}
 @keyframes calFlash{50%{transform:scale(1.12);box-shadow:0 0 0 4px rgba(34,211,238,.35),0 0 18px rgba(34,211,238,.55);}}
-.cal-nav{background:none;border:1px solid var(--bd2);border-radius:8px;width:34px;height:34px;font-size:1.15rem;color:var(--dim);cursor:pointer;line-height:1;}
+.cal-nav{background:none;border:1px solid var(--bd2);border-radius:10px;width:40px;height:40px;flex:none;font-size:1.2rem;color:var(--dim);cursor:pointer;line-height:1;}
 .cal-nav:hover{border-color:var(--mint);color:var(--mint2);}
 .cal-nav:disabled,.cal-nav:disabled:hover{opacity:.3;cursor:default;border-color:var(--bd2);color:var(--dim);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -378,6 +380,108 @@ body.editor .suggest-tab{display:inline-block;}
 .cal-badge.overdue{background:var(--overdue);}
 .cal-hint{text-align:center;font-size:.74rem;color:var(--mute);margin-top:10px;}
 
+/* 📅 สัปดาห์ / เดือน switch: a pill with a sliding thumb */
+.cal-seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:var(--seg-bg);border:1px solid var(--line2);border-radius:999px;padding:3px;margin-bottom:12px;}
+.cal-seg::before{content:'';position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--chip-act);box-shadow:var(--grad-glow);transition:transform .28s cubic-bezier(.3,1.3,.5,1);}
+.cal-seg.month::before{transform:translateX(100%);}
+.cal-seg button{position:relative;background:none;border:none;border-radius:999px;min-height:38px;font-family:'Kanit','Sarabun',sans-serif;font-size:.92rem;color:var(--dim);cursor:pointer;transition:color .2s;}
+.cal-seg button[aria-selected="true"]{color:var(--chip-act-fg);font-weight:500;}
+/* 📅 week view: one markup; phone = agenda, ≥1000px = 7 columns */
+.wk-sub{text-align:center;font-size:.8rem;color:var(--mute);margin:-4px 0 10px;}
+.wk-sub b{color:var(--overdue);font-weight:600;}
+.wk-strip{position:sticky;top:var(--wk-top,0px);z-index:20;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin:0 -12px 12px;padding:6px 8px 7px;background:var(--glass-panel),var(--page-bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line2);}
+.pl{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;border-radius:12px;cursor:pointer;padding:2px 0;min-height:58px;font:inherit;color:var(--dim);}
+.pl-wd{font-size:.7rem;color:var(--mute);line-height:1;}
+.pl-orb,.wk-orb{position:relative;width:32px;height:32px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--dim-bg);border:1px solid var(--line2);font-family:'Kanit','Sarabun',sans-serif;font-size:.88rem;color:var(--text);transition:transform .15s;}
+.pl.has .pl-orb{background:var(--mdim);border-color:var(--hover-bd);}
+.pl.od .pl-orb,.wk-orb.od{background:var(--overdue-bg);border-color:var(--overdue);}
+.pl.past:not(.od) .pl-orb,.wk-day.past .wk-orb{opacity:.6;}
+.pl.today .pl-orb,.wk-day.today .wk-orb{opacity:1;background:var(--grad);color:var(--on-grad);border:none;box-shadow:var(--grad-glow);font-weight:600;}
+.pl.today .pl-orb::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1.5px dashed var(--hover-bd);animation:wkOrbit 9s linear infinite;}
+@keyframes wkOrbit{to{transform:rotate(360deg);}}
+.pl:active .pl-orb{transform:scale(.9);}
+.pl-dots{display:flex;gap:2px;height:6px;align-items:center;}
+.pl-dots i{width:5px;height:5px;border-radius:50%;background:var(--mint);}
+.pl-dots i.o{background:var(--overdue);}
+.pl-dots i.w{background:var(--raw);}
+.pl-dots em{font-style:normal;font-size:.6rem;line-height:6px;color:var(--mute);}
+.wk-body.slide-l{animation:wkSlideL .26s ease;}
+.wk-body.slide-r{animation:wkSlideR .26s ease;}
+@keyframes wkSlideL{from{opacity:0;transform:translateX(24px);}}
+@keyframes wkSlideR{from{opacity:0;transform:translateX(-24px);}}
+.wk-list{display:flex;flex-wrap:wrap;gap:10px 6px;align-items:flex-start;}
+.wk-day{position:relative;flex:1 1 100%;min-width:0;scroll-margin-top:calc(var(--wk-top,0px) + 84px);border-radius:16px;}
+.wk-day.wk-free{flex:0 0 auto;}
+.wk-day.today:not(.wk-free){background:var(--mdim);border:1.5px solid var(--mint);padding:2px 5px 6px;}
+.wk-flash::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 4px var(--hover-bd),0 0 18px var(--hover-bd);opacity:0;pointer-events:none;animation:wkFlash .6s ease 2;}
+@keyframes wkFlash{50%{opacity:1;}}
+.wk-dh{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:4px 6px;background:none;border:none;border-radius:12px;color:var(--text);cursor:pointer;text-align:left;font:inherit;}
+.wk-dh:hover{background:var(--dim-bg);}
+.wk-dh:hover .wk-go{text-decoration:underline;}
+.wk-orb{font-size:.9rem;transition:none;}
+.wk-dn{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;font-size:1rem;white-space:nowrap;}
+.wk-day.past .wk-dn{color:var(--dim);}
+.wk-mon{font-family:'Sarabun',sans-serif;font-weight:400;font-size:.8rem;color:var(--dim);margin-left:4px;}
+.wk-pill{background:var(--grad);color:var(--on-grad);border-radius:999px;padding:1px 9px;font-size:.72rem;font-weight:700;white-space:nowrap;}
+.wk-od{font-size:.78rem;color:var(--overdue);font-weight:600;white-space:nowrap;}
+.wk-go{margin-left:auto;font-size:.8rem;color:var(--mint2);white-space:nowrap;}
+.wk-wd,.wk-num,.wk-plus,.wk-cnt,.wk-empty-l,.wk-add{display:none;}
+.wk-day.wk-free .wk-dh{width:auto;min-height:40px;padding:0 13px 0 12px;gap:6px;border:1px dashed var(--line2);border-radius:999px;background:var(--glass);color:var(--dim);font-size:.86rem;}
+.wk-day.wk-free .wk-dh:hover{border-color:var(--mint);}
+.wk-day.wk-free .wk-orb,.wk-day.wk-free .wk-dn,.wk-day.wk-free .wk-go{display:none;}
+.wk-day.wk-free .wk-wd,.wk-day.wk-free .wk-num,.wk-day.wk-free .wk-plus{display:inline;}
+.wk-num{font-weight:600;color:var(--text);}
+.wk-plus{color:var(--mint2);font-weight:700;font-size:1rem;}
+.wk-day.wk-free.past .wk-dh{opacity:.6;}
+.wk-day.wk-free.today .wk-dh{border:1.5px solid var(--mint);background:var(--mdim);}
+.wk-cards{display:flex;flex-direction:column;gap:6px;margin-top:2px;}
+.wk-card{position:relative;display:grid;grid-template-columns:36px minmax(0,1fr) 84px;gap:10px;align-items:start;padding:9px;border-radius:14px;background:var(--card-bg);border:1px solid var(--line2);overflow:hidden;}
+.wk-cov{position:relative;width:36px;height:52px;border-radius:6px;overflow:hidden;background:var(--grad);color:var(--on-grad);display:flex;align-items:center;justify-content:center;font-family:'Kanit','Sarabun',sans-serif;font-size:1rem;box-shadow:var(--sh-shadow);}
+.wk-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.wk-main{min-width:0;display:flex;flex-direction:column;gap:2px;}
+.wk-when{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 6px;line-height:1.35;}
+.wk-time{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;font-size:1rem;color:var(--text);}
+.wk-u{font-size:.72rem;color:var(--mute);margin-left:-3px;}
+.wk-flag{font-size:.76rem;font-weight:600;color:var(--overdue);white-space:nowrap;}
+.wk-rep{font-size:.72rem;font-weight:600;color:var(--raw2);border:1px solid var(--rbd);border-radius:999px;padding:0 7px;white-space:nowrap;}
+.wk-t{font-weight:600;font-size:.9rem;line-height:1.4;color:var(--text);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wk-main .nf-chap{font-size:.8rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wk-main .nf-chap:empty{display:none;}
+.wk-acts{display:flex;flex-direction:column;gap:6px;}
+.wk-read,.wk-done{min-height:40px;border-radius:10px;cursor:pointer;white-space:nowrap;padding:0 6px;font-family:inherit;}
+.wk-read{border:none;background:var(--grad);color:var(--on-grad);font-family:'Kanit','Sarabun',sans-serif;font-weight:500;font-size:.9rem;box-shadow:var(--grad-glow);}
+.wk-read.weekly{background:var(--rdim);color:var(--raw2);border:1px solid var(--rbd);box-shadow:none;font-size:.84rem;}
+.wk-read.nolink{background:none;border:1px dashed var(--line2);color:var(--dim);box-shadow:none;font-family:inherit;font-size:.82rem;}
+.wk-done{border:1.5px solid var(--mint);background:var(--mdim);color:var(--mint2);font-weight:700;font-size:.86rem;}
+.wk-done:hover{background:var(--mint);color:var(--on-grad);}
+.wk-card.overdue{border-color:var(--overdue);background:linear-gradient(var(--overdue-bg),var(--overdue-bg)),var(--card-bg);box-shadow:inset 3px 0 0 var(--overdue);}
+.wk-card.overdue .wk-time{color:var(--overdue);}
+.wk-card.weekly{border-style:dashed;border-color:var(--rbd);}
+.wk-card.weekly .wk-cov{background:var(--rdim);color:var(--raw2);font-size:1.3rem;box-shadow:none;}
+/* ✓ → an "อ่านแล้ว ✓" stamp, then the card fades out (only after remind_delete succeeded) */
+.wk-stamp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .15s;}
+.wk-stamp span{font-family:'Kanit','Sarabun',sans-serif;font-weight:600;font-size:1.1rem;color:var(--mint2);border:2.5px solid var(--mint);border-radius:10px;padding:4px 14px;transform:rotate(-8deg) scale(1.8);opacity:0;transition:transform .3s cubic-bezier(.3,1.6,.5,1),opacity .2s;}
+.wk-card.stamped .wk-stamp,.wk-card.stamped .wk-stamp span{opacity:1;}
+.wk-card.stamped .wk-stamp span{transform:rotate(-8deg) scale(1);}
+.wk-card.leaving{opacity:0;transform:translateX(30px);transition:opacity .3s,transform .3s;}
+.wk-now{display:flex;align-items:center;gap:8px;color:var(--wk-now);font-size:.74rem;font-weight:600;padding:1px 2px;white-space:nowrap;}
+.wk-now::before{content:'';width:9px;height:9px;flex:none;border-radius:50%;background:var(--wk-now);box-shadow:0 0 0 3px var(--wk-now-glow);}
+.wk-now::after{content:'';flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--wk-now),transparent);}
+.wk-back{border:1px solid var(--overdue);border-radius:16px;background:var(--overdue-bg);padding:2px 6px 6px;margin-bottom:12px;}
+.wk-back-h{display:flex;align-items:center;gap:8px;min-height:38px;padding:0 4px;color:var(--overdue);font-weight:600;font-size:.88rem;}
+.wk-back-h small{font-weight:500;font-size:.78rem;}
+.wk-back .wk-cards{margin:0;}
+.wk-msg{border:1px dashed var(--line2);border-radius:14px;padding:12px 14px 8px;margin-bottom:12px;text-align:center;font-size:.88rem;color:var(--dim);line-height:1.55;}
+.wk-msg .moon{display:block;font-size:1.8rem;animation:wkFloat 3.5s ease-in-out infinite;}
+@keyframes wkFloat{50%{transform:translateY(-5px);}}
+.wk-msg .sg-link{min-height:36px;}
+.wk-err{border:1px solid var(--overdue);border-radius:14px;padding:16px;text-align:center;color:var(--text);font-size:.88rem;line-height:1.6;}
+.wk-err b{color:var(--overdue);}
+@media(prefers-reduced-motion:reduce){
+  .cal-seg::before,.cal-seg button,.pl-orb,.wk-stamp,.wk-stamp span,.wk-card.leaving{transition:none;}
+  .pl.today .pl-orb::after,.wk-body.slide-l,.wk-body.slide-r,.wk-flash::after,.wk-msg .moon{animation:none;}
+}
+
 /* larger, roomier notification view on tablet/desktop */
 @media(min-width:700px){
   .notify-view{max-width:860px;padding:24px 16px;gap:18px;}
@@ -388,10 +492,47 @@ body.editor .suggest-tab{display:inline-block;}
   .cal-title{font-size:1.15rem;}
   .cal-wdc{font-size:.85rem;padding:4px 0;}
   .cal-badge{min-width:20px;height:20px;font-size:.75rem;top:4px;right:4px;}
-  .cal-nav{width:38px;height:38px;font-size:1.25rem;}
   .cal-hint{font-size:.82rem;}
   .nf-item-title{font-size:1rem;}
   .nf-vt{font-size:.95rem;padding:10px;}
+  .cal-seg{max-width:320px;margin:0 auto 14px;}
+  .wk-strip{margin:0 -18px 14px;padding:6px 18px 8px;}
+  .wk-card{grid-template-columns:40px minmax(0,1fr) 96px;}
+  .wk-cov{width:40px;height:58px;}
+}
+/* 📅 desktop: the week is a 7-column board; the page widens for this view only */
+@media(min-width:1000px){
+  .notify-view.wide{max-width:1240px;}
+  .notify-view.wide>:not(.cal-wrap){width:100%;max-width:828px;margin-left:auto;margin-right:auto;}
+  .notify-view.wide .cal-header{justify-content:center;gap:28px;}
+  .wk-strip{display:none;}
+  .wk-list{display:grid;grid-template-columns:var(--wk-cols,repeat(7,minmax(0,1fr)));gap:8px;align-items:stretch;}
+  .wk-day,.wk-day.today:not(.wk-free){display:flex;flex-direction:column;gap:6px;min-height:320px;padding:6px;background:var(--quick-bg);border:1px solid var(--line);}
+  .wk-day.today,.wk-day.today:not(.wk-free){background:var(--mdim);border:1.5px solid var(--mint);box-shadow:var(--hover-glow);}
+  .wk-dh,.wk-day.wk-free .wk-dh{flex-direction:column;align-items:center;gap:4px;width:100%;padding:8px 4px 10px;border:none;border-bottom:1px solid var(--line);border-radius:10px;background:none;color:var(--text);opacity:1;}
+  .wk-day.wk-free .wk-dh{flex:1;border-bottom:none;}
+  .wk-orb,.wk-day.wk-free .wk-orb{display:inline-flex;width:40px;height:40px;font-size:1.05rem;}
+  .wk-dn,.wk-day.wk-free .wk-dn{display:block;order:-1;font-family:'Sarabun',sans-serif;font-weight:500;font-size:.86rem;color:var(--dim);}
+  .wk-mon,.wk-day.wk-free .wk-wd,.wk-day.wk-free .wk-num,.wk-day.wk-free .wk-plus,.wk-go{display:none;}
+  .wk-cnt{display:block;font-size:.78rem;color:var(--mute);min-height:1.2em;}
+  .wk-day.today .wk-cnt{display:none;}
+  .wk-od{font-size:.74rem;}
+  .wk-empty-l{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;margin-top:8px;border:1px dashed var(--line2);border-radius:10px;color:var(--mute);font-size:.82rem;}
+  .wk-empty-l b{font-size:1.4rem;font-weight:400;color:var(--mint2);}
+  .wk-day.wk-free .wk-dh:hover .wk-empty-l{border-color:var(--mint);color:var(--mint2);}
+  .wk-add{display:block;margin-top:auto;min-height:40px;border-radius:10px;border:1px dashed var(--line2);background:none;color:var(--mute);font:inherit;font-size:.82rem;cursor:pointer;}
+  .wk-add:hover{border-color:var(--mint);color:var(--mint2);}
+  .wk-list .wk-card{grid-template-columns:28px minmax(0,1fr);grid-template-areas:"cov when" "t t" "chap chap" "acts acts";gap:6px 8px;padding:8px;}
+  .wk-list .wk-main{display:contents;}
+  .wk-list .wk-cov{grid-area:cov;width:28px;height:40px;}
+  .wk-list .wk-when{grid-area:when;align-self:center;}
+  .wk-list .wk-t{grid-area:t;-webkit-line-clamp:3;font-size:.88rem;}
+  .wk-list .wk-main .nf-chap{grid-area:chap;font-size:.78rem;}
+  .wk-list .wk-acts{grid-area:acts;flex-direction:row;}
+  .wk-list .wk-read{flex:1;min-width:0;white-space:normal;line-height:1.2;font-size:.86rem;}
+  .wk-list .wk-done{width:40px;flex:none;padding:0;}
+  .wk-list .wk-done .lbl{display:none;}
+  .wk-back .wk-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;}
 }
 .nf-empty{text-align:center;color:var(--mute);padding:28px 20px;font-size:.86rem;}
 .btn-sm{padding:6px 13px;font-size:.82rem;}
@@ -4701,6 +4842,7 @@ async function finishReminder(id, announce) {
   setBusy(true, 'กำลังทำเครื่องหมายเสร็จ');
   try {
     await gasPost({ action: 'remind_delete', id: id });
+    await wkStamp(id);
     recordProgress(done);   // 📖 in the background
     const weekly = done && String(done.url || '').indexOf(SG_REMIND_MARK) >= 0;
     const ch = done ? remChapter(done) : '';
@@ -5126,7 +5268,183 @@ function listBodyHtml() {
     '<div class="nf-list">' + (items || empty) + '</div>';
 }
 
+/* 📅 สัปดาห์ / เดือน. The calendar opens in the week view (all 7 days, every
+   reminder visible with ✓ and อ่านต่อ); the last pick is remembered. */
+let calMode = (function(){ try { return localStorage.getItem('calMode') || 'week'; } catch(e){ return 'week'; } })();
+let calSegShown = calMode;   // the switch is drawn as it was, then its thumb slides
+const WK_WD = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const WK_WDL = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสฯ', 'ศุกร์', 'เสาร์'];
+const WK_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+function wkSunday(ms) { const d = new Date(Number(ms)); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); return d.getTime(); }
+function wkAdd(ms, n) { const d = new Date(ms); d.setDate(d.getDate() + n); return d.getTime(); }
+const wkHm = ms => { const d = new Date(Number(ms)); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+let wkStart = wkSunday(Date.now());
+
 function calendarHtml() {
+  const seg = '<div class="cal-seg' + (calSegShown === 'month' ? ' month' : '') + '" role="tablist" aria-label="มุมมองปฏิทิน">' +
+    '<button role="tab" aria-selected="' + (calMode === 'week') + '" onclick="setCalMode(\'week\')">สัปดาห์</button>' +
+    '<button role="tab" aria-selected="' + (calMode === 'month') + '" onclick="setCalMode(\'month\')">เดือน</button></div>';
+  const body = reminderError && !reminders.length
+    ? '<div class="wk-err"><b>โหลดการแจ้งเตือนไม่ได้</b><br>เช็กเน็ต แล้วลองอีกครั้งนะ<br><br><button class="btn btn-primary" onclick="loadReminders().then(renderNotify)">ลองใหม่</button></div>'
+    : calMode === 'week' ? weekHtml() : monthHtml();
+  return '<div class="cal-wrap">' + seg + body + '</div>';
+}
+function setCalMode(m) {
+  if (m === calMode) return;
+  calMode = m;
+  try { localStorage.setItem('calMode', m); } catch(e) {}
+  // keep your place: week → its month; month → the week of its 1st (or this week)
+  const n = new Date();
+  if (m === 'month') { const d = new Date(Math.max(wkStart, n.getTime())); calYear = d.getFullYear(); calMonth = d.getMonth(); }
+  else wkStart = calYear === n.getFullYear() && calMonth === n.getMonth() ? wkSunday(n) : Math.max(wkSunday(new Date(calYear, calMonth, 1)), wkSunday(n));
+  renderNotify();
+  const seg = document.querySelector('.cal-seg');
+  calSegShown = m;
+  if (seg) requestAnimationFrame(() => requestAnimationFrame(() => seg.classList.toggle('month', m === 'month')));
+}
+/* "22 – 28 พ.ย. 2026", "29 พ.ย. – 5 ธ.ค. 2026", "27 ธ.ค. 2026 – 2 ม.ค. 2027" */
+function wkTitle(s) {
+  const a = new Date(s), b = new Date(wkAdd(s, 6));
+  const y = a.getFullYear() !== b.getFullYear(), m = y || a.getMonth() !== b.getMonth();
+  return a.getDate() + (m ? ' ' + WK_MON[a.getMonth()] : '') + (y ? ' ' + a.getFullYear() : '') + ' – ' + b.getDate() + ' ' + WK_MON[b.getMonth()] + ' ' + b.getFullYear();
+}
+function wkCardHtml(r, now, back) {
+  const t = Number(r.remind_at), d = new Date(t), od = t <= now, wk = String(r.url || '').indexOf(SG_REMIND_MARK) >= 0;
+  const late = od ? Math.round((new Date(now).setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / 864e5) : 0;
+  const flag = od ? '<span class="wk-flag">⏰ ' + (back ? d.getDate() + ' ' + WK_MON[d.getMonth()] + ' · ' : '') + (late >= 1 ? 'ค้าง ' + late + ' วัน' : 'เลยเวลาแล้ว') + '</span>' : '';
+  const read = wk ? '<button class="wk-read weekly" data-wk="read" title="เปิดแท็บ 💡 แนะนำ">💡 ดูแนะนำ</button>'
+    : r.url ? '<button class="wk-read" data-wk="read" title="เปิดลิงก์ตอนนี้">อ่านต่อ ›</button>'
+    : '<button class="wk-read nolink" data-wk="link" title="ยังไม่มีลิงก์ตอน">🔗 ใส่ลิงก์</button>';
+  let cov = '💡';
+  if (!wk) {   // the library novel's cover, else a picture read from its links; the first letter shows behind it
+    const src = shelfCover({ b: remBook(r), title: r.title, rem: r });
+    cov = esc([...String(r.title || '').replace(/^[\[\(#]*(E-Book\])?/i, '').trim()][0] || '📖') +
+      (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">' : '');
+  }
+  return '<article class="wk-card' + (od ? ' overdue' : '') + (wk ? ' weekly' : '') + '" data-id="' + esc(r.id) + '" data-at="' + t + '">' +
+    '<div class="wk-cov" aria-hidden="true">' + cov + '</div>' +
+    '<div class="wk-main"><div class="wk-when"><span><b class="wk-time">' + wkHm(t) + '</b> <span class="wk-u">น.</span></span>' + flag +
+      (wk ? '<span class="wk-rep">🔁 ทุกศุกร์</span>' : '') + '</div>' +
+      '<div class="wk-t" title="' + esc(r.title) + '">' + esc(r.title) + '</div>' + chapHtml(r.url, r.title) + '</div>' +
+    '<div class="wk-acts">' + read + '<button class="wk-done" data-wk="done" aria-label="อ่านแล้ว: ' + esc(r.title) + '">✓<span class="lbl"> เสร็จ</span></button></div></article>';
+}
+function weekHtml() {
+  const now = Date.now(), thisSun = wkSunday(now);
+  if (wkStart < thisSun) wkStart = thisSun;   // e.g. the app was left open into a new week
+  const s = wkStart, e = wkAdd(s, 7), thisWeek = s === thisSun, tKey = dkey(now), today0 = new Date(now).setHours(0, 0, 0, 0);
+  const vis = nfVisible(), byDay = {};
+  const inWeek = vis.filter(r => Number(r.remind_at) >= s && Number(r.remind_at) < e);
+  const back = thisWeek ? vis.filter(r => Number(r.remind_at) < s) : [];   // overdue from before this week
+  inWeek.forEach(r => { const k = dkey(r.remind_at); (byDay[k] = byDay[k] || []).push(r); });
+  const days = [0, 1, 2, 3, 4, 5, 6].map(i => { const ms = wkAdd(s, i), key = dkey(ms); return { i, ms, key, today: key === tKey, past: ms < today0, items: byDay[key] || [] }; });
+  const due = inWeek.filter(r => Number(r.remind_at) <= now).length + back.length;
+  const n = Math.round((s - thisSun) / 6048e5);
+  const sub = (thisWeek ? 'สัปดาห์นี้' : n === 1 ? 'สัปดาห์หน้า' : 'อีก ' + n + ' สัปดาห์') + ' · ' + (inWeek.length ? inWeek.length + ' รายการ' : 'ยังว่าง') + (due ? ' · <b>⏰ เลยกำหนด ' + due + '</b>' : '');
+
+  const strip = '<div class="wk-strip" role="group" aria-label="ภาพรวมสัปดาห์">' + days.map(d => {
+    const od = d.items.some(r => Number(r.remind_at) <= now);
+    const dots = d.items.slice(0, 3).map(r => '<i class="' + (Number(r.remind_at) <= now ? 'o' : String(r.url || '').indexOf(SG_REMIND_MARK) >= 0 ? 'w' : '') + '"></i>').join('') + (d.items.length > 3 ? '<em>+' + (d.items.length - 3) + '</em>' : '');
+    return '<button class="pl' + (d.items.length ? ' has' : '') + (od ? ' od' : '') + (d.today ? ' today' : '') + (d.past ? ' past' : '') + '" data-wk="jump" data-k="' + d.key + '" aria-label="ไปที่ ' + WK_WDL[d.i] + ' ' + new Date(d.ms).getDate() + ' · ' + (d.items.length ? d.items.length + ' รายการ' : 'ว่าง') + '">' +
+      '<span class="pl-wd">' + WK_WD[d.i] + '</span><span class="pl-orb">' + new Date(d.ms).getDate() + '</span><span class="pl-dots">' + dots + '</span></button>';
+  }).join('') + '</div>';
+
+  const backHtml = back.length ? '<section class="wk-back" aria-label="ค้างจากก่อนหน้านี้"><div class="wk-back-h">⏰ ค้างจากก่อนหน้านี้ <small>· ' + back.length + ' รายการ</small></div>' +
+    '<div class="wk-cards">' + back.map(r => wkCardHtml(r, now, true)).join('') + '</div></section>' : '';
+  let msg = '';
+  if (!inWeek.length && !back.length) {
+    const nx = vis.find(r => Number(r.remind_at) >= e), nd = nx && new Date(Number(nx.remind_at));
+    msg = '<div class="wk-msg">' + (nfFilter ? '📚 เรื่องนี้ไม่มีแจ้งเตือนในสัปดาห์นี้' : '<span class="moon">🌙</span>' + (thisWeek ? 'สัปดาห์นี้ยังว่าง' : 'สัปดาห์นี้ว่าง') + ' — แตะวันไหนก็ได้เพื่อตั้งเตือน') +
+      (nx ? '<br><button class="sg-link" data-wk="next" data-k="' + nd.getTime() + '">ถัดไป: ' + nd.getDate() + ' ' + WK_MON[nd.getMonth()] + ' · ' + esc(nx.title) + ' ›</button>' : '') + '</div>';
+  }
+  const list = days.map(d => {
+    const dt = new Date(d.ms), od = d.items.filter(r => Number(r.remind_at) <= now).length;
+    const label = WK_WDL[d.i] + ' ' + dt.getDate() + ' ' + WK_MON[dt.getMonth()];
+    const head = '<section class="wk-day' + (d.items.length ? '' : ' wk-free') + (d.today ? ' today' : '') + (d.past ? ' past' : '') + '" id="wk-' + d.key + '">' +
+      '<button class="wk-dh" data-wk="day" data-k="' + d.key + '" aria-label="' + label + ' · ' + (d.items.length ? d.items.length + ' รายการ · แก้ไข เลื่อน หรือเพิ่ม' : 'ว่าง · แตะเพื่อตั้งเตือน') + '">' +
+      '<span class="wk-orb' + (od ? ' od' : '') + '">' + dt.getDate() + '</span><span class="wk-dn">' + WK_WDL[d.i] + '<small class="wk-mon">' + WK_MON[dt.getMonth()] + '</small></span>' +
+      '<span class="wk-wd">' + WK_WD[d.i] + '</span><span class="wk-num">' + dt.getDate() + '</span>' + (d.today ? '<span class="wk-pill">วันนี้</span>' : '');
+    if (!d.items.length) return head + '<span class="wk-plus" aria-hidden="true">＋</span><span class="wk-empty-l"><b>＋</b>ว่าง · ตั้งเตือน</span></button></section>';
+    let cards = '', placed = !d.today;   // ☄️ the now-line sits between "already due" and "later today"
+    const line = '<div class="wk-now" role="note" data-day="' + d.key + '">ตอนนี้ ' + wkHm(now) + ' น.</div>';
+    d.items.forEach(r => { if (!placed && Number(r.remind_at) > now) { cards += line; placed = true; } cards += wkCardHtml(r, now); });
+    return head + '<span class="wk-cnt">' + d.items.length + ' รายการ</span>' + (od ? '<span class="wk-od">⏰ เลย ' + od + '</span>' : '') +
+      '<span class="wk-go">แก้ไข/เพิ่ม ›</span></button><div class="wk-cards">' + cards + (placed ? '' : line) + '</div>' +
+      '<button class="wk-add" data-wk="add" data-k="' + d.key + '">＋ เพิ่ม</button></section>';
+  }).join('');
+  return '<div class="cal-header">' +
+      '<button class="cal-nav" onclick="wkShift(-1)" aria-label="สัปดาห์ก่อน"' + (thisWeek ? ' disabled title="ไม่มีการแจ้งเตือนย้อนหลัง"' : '') + '>‹</button>' +
+      '<div class="cal-mid"><span class="cal-title">' + wkTitle(s) + '</span><button class="cal-today" onclick="wkToday()" title="กลับไปสัปดาห์นี้">วันนี้</button></div>' +
+      '<button class="cal-nav" onclick="wkShift(1)" aria-label="สัปดาห์หน้า">›</button></div>' +
+    '<div class="wk-sub">' + sub + '</div>' + strip +
+    '<div class="wk-body" id="wk-body">' + backHtml + msg +
+      '<div class="wk-list" style="--wk-cols:' + days.map(d => d.past && !d.items.length ? 'minmax(0,.6fr)' : 'minmax(0,1fr)').join(' ') + '">' + list + '</div></div>' +
+    '<div class="cal-hint">แตะหัววันเพื่อแก้ไข เลื่อน หรือเพิ่มการแจ้งเตือน</div>';
+}
+function wkGo(s) {
+  const was = wkStart;
+  wkStart = s;
+  renderNotify();
+  const b = document.getElementById('wk-body');
+  if (b && s !== was) b.classList.add(s > was ? 'slide-l' : 'slide-r');
+}
+function wkShift(n) {
+  const min = wkSunday(Date.now());
+  if (n < 0 && wkStart <= min) return;
+  wkGo(Math.max(wkAdd(wkStart, 7 * n), min));
+}
+function wkToday() { wkGo(wkSunday(Date.now())); wkJumpDay(dkey(Date.now())); }
+/* a planet in the strip (or วันนี้): scroll to that day and make it blink */
+function wkJumpDay(key) {
+  const el = document.getElementById('wk-' + key);
+  if (!el) return;
+  const t = el.classList.contains('wk-free') ? el.firstChild : el;
+  if (!matchMedia('(min-width:1000px)').matches) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  t.classList.remove('wk-flash'); void t.offsetWidth; t.classList.add('wk-flash');
+}
+/* the 🪐 strip sticks right under what is left of the (shrinking) top bar */
+function wkTop() {
+  const hdr = document.querySelector('.sticky-header');
+  if (hdr) document.documentElement.style.setProperty('--wk-top', Math.max(0, hdr.offsetHeight - (hdrCompact ? hdr.querySelector('header').offsetHeight : 0) - 1) + 'px');
+}
+window.addEventListener('resize', () => { if (view === 'notify') wkTop(); }, { passive: true });
+/* ✓ in the week, once remind_delete has worked: an "อ่านแล้ว ✓" stamp, then the card fades away */
+function wkStamp(id) {
+  const el = !dayPopupKey && document.querySelector('.wk-card[data-id="' + CSS.escape(String(id)) + '"]');
+  if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
+  setBusy(false);
+  el.insertAdjacentHTML('beforeend', '<div class="wk-stamp" aria-hidden="true"><span>อ่านแล้ว ✓</span></div>');
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('stamped')));
+  return new Promise(res => setTimeout(() => { el.classList.add('leaving'); setTimeout(res, 300); }, 700));
+}
+/* one listener for every button in the week */
+document.getElementById('main-content').addEventListener('click', e => {
+  const b = e.target.closest('[data-wk]');
+  if (!b) return;
+  const a = b.dataset.wk, k = b.dataset.k, card = b.closest('.wk-card'), id = card ? card.dataset.id : null;
+  const r = id != null ? reminders.find(x => String(x.id) === id) : null;
+  if (a === 'day') openDayPopup(k);
+  else if (a === 'add') { openDayPopup(k); openDayForm(); }
+  else if (a === 'jump') wkJumpDay(k);
+  else if (a === 'next') wkGo(wkSunday(Number(k)));
+  else if (a === 'done') completeReminder(id);
+  else if (!r) return;
+  else if (a === 'link') {   // no chapter link yet → the day's edit form, ready for the link
+    openDayPopup(dkey(r.remind_at));
+    editFromDay(r.id);
+    setTimeout(() => { const u = document.getElementById('day-url'); if (u) u.focus(); }, 60);
+  } else if (String(r.url || '').indexOf(SG_REMIND_MARK) >= 0) switchTab('suggest');
+  else { const bk = remBook(r); if (bk) markRead(allBooks.indexOf(bk)); window.open(r.url, '_blank', 'noopener'); }
+});
+/* ☄️ the now-line follows the clock while the week is open (redrawn only when a reminder falls due or the day changes) */
+setInterval(() => {
+  const el = document.querySelector('.wk-now');
+  if (!el || document.hidden) return;
+  const now = Date.now(), next = [...el.parentNode.children].find(c => Number(c.dataset.at) > now) || null;
+  if (dkey(now) === el.dataset.day && next === el.nextElementSibling) el.textContent = 'ตอนนี้ ' + wkHm(now) + ' น.';
+  else if (!document.querySelector('.overlay.open')) renderNotify();
+}, 60000);
+
+function monthHtml() {
   calClamp();   // e.g. the app was left open into a new month
   const now = Date.now();
   const tKey = dkey(now);
@@ -5140,7 +5458,6 @@ function calendarHtml() {
     counts[k] = (counts[k] || 0) + 1;
     if (Number(r.remind_at) <= now) overdueMap[k] = true;
   });
-  const wd = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
   let cells = '';
   for (let d = 1; d <= daysInMonth; d++) {
     const key = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -5150,17 +5467,15 @@ function calendarHtml() {
     cells += '<div class="cal-cell' + (key === tKey ? ' today' : '') + (cnt ? ' has' : '') + '"' + style + ' onclick="openDayPopup(\'' + key + '\')">' +
       '<span class="cal-day">' + d + '</span>' + badge + '</div>';
   }
-  return '<div class="cal-wrap">' +
-      '<div class="cal-header">' +
-        '<button class="cal-nav" onclick="calShift(-1)"' + (calAtStart() ? ' disabled title="ไม่มีการแจ้งเตือนย้อนหลัง"' : '') + '>‹</button>' +
+  return '<div class="cal-header">' +
+        '<button class="cal-nav" onclick="calShift(-1)" aria-label="เดือนก่อน"' + (calAtStart() ? ' disabled title="ไม่มีการแจ้งเตือนย้อนหลัง"' : '') + '>‹</button>' +
         '<div class="cal-mid"><span class="cal-title">' + monthLabel + '</span>' +
           '<button class="cal-today" onclick="calToday()" title="กลับไปวันนี้">วันนี้</button></div>' +
-        '<button class="cal-nav" onclick="calShift(1)">›</button>' +
+        '<button class="cal-nav" onclick="calShift(1)" aria-label="เดือนหน้า">›</button>' +
       '</div>' +
-      '<div class="cal-grid cal-wd">' + wd.map(w => '<div class="cal-wdc">' + w + '</div>').join('') + '</div>' +
+      '<div class="cal-grid cal-wd">' + WK_WD.map(w => '<div class="cal-wdc">' + w + '</div>').join('') + '</div>' +
       '<div class="cal-grid cal-days">' + cells + '</div>' +
-      '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>' +
-    '</div>';
+      '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>';
 }
 
 function renderNotify() {
@@ -5170,9 +5485,11 @@ function renderNotify() {
     '<button class="nf-vt' + (nfView === 'list' ? ' active' : '') + '" onclick="setNotifyView(\'list\')">📋 รายการ</button>' +
     '<button class="nf-vt' + (nfView === 'calendar' ? ' active' : '') + '" onclick="setNotifyView(\'calendar\')">📅 ปฏิทิน</button>' +
   '</div>';
-  const body = nfView === 'calendar' ? nfFilterBarHtml() + calendarHtml() : listBodyHtml();
+  const cal = nfView === 'calendar';
+  if (cal) wkTop();   // read the top bar before writing
+  const body = cal ? nfFilterBarHtml() + calendarHtml() : listBodyHtml();
   document.getElementById('main-content').innerHTML =
-    '<div class="notify-view"><div class="nf-status" id="nf-status">…</div>' + toggle + body + '</div>';
+    '<div class="notify-view' + (cal && calMode === 'week' ? ' wide' : '') + '"><div class="nf-status" id="nf-status">…</div>' + toggle + body + '</div>';
   document.getElementById('header-count').textContent = nfFilter
     ? '🔔 ' + nfFilter + ' · ' + nfVisible().length + ' รายการ'
     : 'การแจ้งเตือน ' + reminders.length + ' รายการ';
@@ -6327,6 +6644,7 @@ function setHeaderCompact(on) {
     hdr.style.setProperty('--hdr-hide', head.offsetHeight + 'px');
     hdr.style.setProperty('--hdr-clip', below + 'px');
   }
+  if (view === 'notify') wkTop();
   hdr.classList.toggle('compact', on);
 }
 var hdrLastY = window.scrollY;
