@@ -9,6 +9,8 @@
  *  2. Apps Script editor: open your script file, select ALL its text, paste, Save (💾).
  *  3. Deploy ▾ → Manage deployments → ✏️ → Version: New version → Deploy.
  *  4. Once: function dropdown → backfillAddedDates → ▶ Run (fills "date added" for old novels).
+ *  5. Once: function dropdown → makePublicTab → ▶ Run, then File › Share › Publish to web:
+ *     publish ONLY the tab "public" (CSV) — never the library tab, which holds your 📝 notes.
  *
  * THE SECRET lives in the script's own settings (Project Settings › Script properties ›
  * SECRET), not in this file. The first time, the copy from the app has it filled in
@@ -20,6 +22,7 @@
 const SECRET = 'PASTE_YOUR_SECRET_HERE';   // first time only — then it's kept in Script properties (see above)
 const APP_URL = 'https://parepiy.github.io/novel/';   // where 🆕 push notices open (never taken from a request)
 const SHEET_GID = 1147646991;              // the tab the app reads / writes
+const PUBLIC_TAB = 'public';               // the only tab published to the web: columns A–I, no 📝 notes (makePublicTab)
 const IMG_FOLDER = 'novel-covers';         // Google Drive folder for uploaded covers
 // Optional: store covers on GitHub instead of Google Drive (avoids Drive permission errors).
 // Put a GitHub token here once; it's then remembered in the script's own settings
@@ -275,11 +278,13 @@ function doPost_(e) {
     if (action === 'add') {
       let cover = d.cover || '';
       if (d.imageB64) cover = saveImage_(d.imageB64, d.imageType, d.imageName);
-      sh.appendRow([d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']);
-      stampAdded_(sh, sh.getLastRow());
+      const row = nextRow_(sh);
+      plain_(sh.getRange(row, 1, 1, 6), [[d.title, d.summary, d.url, d.tags, d.source || 'meb', cover]]);
+      sh.getRange(row, 7, 1, 2).setValues([[d.star || 0, d.status || '']]);
+      stampAdded_(sh, row);
       if (d.status === 'finished' && d.finished_at === undefined) d.finished_at = today_();
-      metaSet_(sh, sh.getLastRow(), d);
-      return json_({ ok: true, row: sh.getLastRow(), cover: cover, meta: true });
+      metaSet_(sh, row, d);
+      return json_({ ok: true, row: row, cover: cover, meta: true });
     }
 
     if (action === 'edit') {
@@ -292,7 +297,8 @@ function doPost_(e) {
       const wasStatus = String(sh.getRange(row, 8).getValue() || '').trim().toLowerCase();
       if (d.status === 'finished' && wasStatus !== 'finished' && d.finished_at === undefined) d.finished_at = today_();
       // columns A..H only — the date added (column I) is kept as it is
-      sh.getRange(row, 1, 1, 8).setValues([[d.title || '', d.summary || '', d.url || '', d.tags || '', d.source || 'meb', cover, d.star || 0, d.status || '']]);
+      plain_(sh.getRange(row, 1, 1, 6), [[d.title, d.summary, d.url, d.tags, d.source || 'meb', cover]]);
+      sh.getRange(row, 7, 1, 2).setValues([[d.star || 0, d.status || '']]);
       metaSet_(sh, row, d);   // progress / note / finished date, only when sent
       return json_({ ok: true, row: row, moved: !!at.moved, cover: cover, meta: true });
     }
@@ -376,7 +382,9 @@ function reminderRouter_(action, d) {
   if (action === 'remind_add') {
     const sh = remindersSheet_();
     const id = 'r' + Date.now() + Math.floor(Math.random() * 1000);
-    sh.appendRow([id, d.title || '', d.url || '', Number(d.remind_at) || 0, 0, new Date().toISOString()]);
+    const row = nextRow_(sh);
+    sh.getRange(row, 1, 1, 6).setValues([[id, '', '', Number(d.remind_at) || 0, 0, new Date().toISOString()]]);
+    plain_(sh.getRange(row, 2, 1, 2), [[d.title, d.url]]);
     return json_({ ok: true, id: id });
   }
 
@@ -414,10 +422,10 @@ function reminderRouter_(action, d) {
     const sh = subsSheet_();
     const vals = sh.getDataRange().getValues();
     for (let i = 1; i < vals.length; i++) if (String(vals[i][0]) === String(d.endpoint)) {
-      sh.getRange(i + 1, 1, 1, 4).setValues([[d.endpoint, d.p256dh, d.auth, new Date().toISOString()]]);
+      plain_(sh.getRange(i + 1, 1, 1, 4), [[d.endpoint, d.p256dh, d.auth, new Date().toISOString()]]);
       return json_({ ok: true, updated: true });
     }
-    sh.appendRow([d.endpoint || '', d.p256dh || '', d.auth || '', new Date().toISOString()]);
+    plain_(sh.getRange(nextRow_(sh), 1, 1, 4), [[d.endpoint, d.p256dh, d.auth, new Date().toISOString()]]);
     return json_({ ok: true, added: true });
   }
 
@@ -446,6 +454,22 @@ function sgSheet_(name, header) {
 function sgText_(v) {
   const s = v == null ? '' : String(v);
   return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+// Text typed in the app or taken from a web page, stored as plain text: never a formula
+// ("=…", "+…", "-…", "@…"), a number ("007") or a date ("1/2"). rows = [[...], ...]
+// Plain-text format keeps it as typed; if a formula slipped through anyway, it is
+// written again with sgText_'s leading ' (which Sheets then reads as "this is text").
+function plain_(range, rows) {
+  rows = rows.map(r => r.map(v => v == null ? '' : String(v)));
+  range.setNumberFormat('@').setValues(rows);
+  if (range.getFormulas().some(r => r.some(Boolean))) range.setValues(rows.map(r => r.map(sgText_)));
+  return range;
+}
+// the first empty row at the bottom (adds one if the tab is full, as appendRow does)
+function nextRow_(sh) {
+  const r = sh.getLastRow() + 1;
+  if (r > sh.getMaxRows()) sh.insertRowsAfter(sh.getMaxRows(), 1);
+  return r;
 }
 
 function sgRead_(name, header) {
@@ -809,7 +833,7 @@ function toolsRouter_(action, d) {
     const sheets = {};
     ss.getSheets().forEach(sh => {
       const name = sh.getName();
-      if (name.indexOf(BK_PREFIX) === 0) return;
+      if (name.indexOf(BK_PREFIX) === 0 || name === PUBLIC_TAB) return;   // public = a live copy of the library
       const vals = sh.getLastRow() ? sh.getDataRange().getValues().map(r => r.map(bkCell_)) : [];
       sheets[name] = { library: sh.getSheetId() === libId, values: vals };
     });
@@ -823,7 +847,7 @@ function toolsRouter_(action, d) {
     const vals = Array.isArray(d.values) ? d.values.filter(r => Array.isArray(r)) : [];
     const name = String(d.name || '').trim();
     if (!vals.length || !name) return json_({ ok: false, error: 'ไฟล์สำรองไม่มีข้อมูลของแท็บนี้' });
-    if (name.indexOf(BK_PREFIX) === 0) return json_({ ok: false, error: 'skip' });
+    if (name.indexOf(BK_PREFIX) === 0 || name === PUBLIC_TAB) return json_({ ok: false, error: 'skip' });
     const ss = SpreadsheetApp.getActive();
     const sh = d.library ? getSheet_() : (ss.getSheetByName(name) || ss.insertSheet(name));
     let copyName = '';
@@ -885,9 +909,9 @@ function toolsRouter_(action, d) {
         if (nt && next.indexOf(nt) < 0) next.push(nt);
       });
       changed++;
-      return [sgText_(next.join('|'))];
+      return [next.join('|')];
     });
-    if (changed) rng.setValues(out);
+    if (changed) plain_(rng, out);
     return json_({ ok: true, changed: changed });
   }
 
@@ -905,7 +929,7 @@ function toolsRouter_(action, d) {
       if (add.length || rem.length) {
         const tags = splitTags_(sh.getRange(row, 4).getValue()).filter(t => rem.indexOf(t) < 0);
         add.forEach(t => { if (tags.indexOf(t) < 0) tags.push(t); });
-        sh.getRange(row, 4).setValue(sgText_(tags.join('|')));
+        plain_(sh.getRange(row, 4), [[tags.join('|')]]);
       }
       if (setStatus) {
         const was = String(sh.getRange(row, 8).getValue() || '').trim().toLowerCase();
@@ -1146,6 +1170,20 @@ function backfillAddedDates() {
     } else unknown++;
   });
   Logger.log('ใส่วันที่จากรูปปกแล้ว ' + filled + ' เรื่อง · มีวันที่อยู่แล้ว ' + kept + ' เรื่อง · ไม่ทราบวันที่ ' + unknown + ' เรื่อง');
+}
+
+// 🔒 Run once. Makes the tab "public": columns A–I of the library (title … date added),
+// always up to date, WITHOUT the 📖 progress and 📝 note columns. Then publish ONLY this
+// tab to the web (File › Share › Publish to web) instead of the library tab.
+function makePublicTab() {
+  const ss = SpreadsheetApp.getActive(), lib = getSheet_();
+  const sh = ss.getSheetByName(PUBLIC_TAB) || ss.insertSheet(PUBLIC_TAB, ss.getNumSheets());
+  sh.clear();
+  const rows = lib.getMaxRows() + 2000;   // room for the library to grow
+  if (sh.getMaxRows() < rows) sh.insertRowsAfter(sh.getMaxRows(), rows - sh.getMaxRows());
+  sh.getRange('I:I').setNumberFormat('yyyy-mm-dd');   // date added, as the app reads it
+  sh.getRange('A1').setFormula("=ARRAYFORMULA('" + lib.getName().replace(/'/g, "''") + "'!A:I)");
+  Logger.log('สร้างแท็บ ' + PUBLIC_TAB + ' แล้ว · gid = ' + sh.getSheetId() + ' (ส่งเลขนี้ให้ Claude)');
 }
 
 // The app and the script disagree about the secret (e.g. it was changed in only one place)?

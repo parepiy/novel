@@ -165,36 +165,98 @@ body.editor .suggest-tab{display:inline-block;}
 
 /* 💡 SUGGESTIONS VIEW */
 .sg-view{padding:16px;max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
-.sg-tabs{display:flex;gap:6px;flex-wrap:wrap;}
-.sg-tb{background:var(--s1);border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:6px 14px;font-family:inherit;font-size:.84rem;cursor:pointer;transition:all .12s;}
-.sg-tb.active{background:var(--rdim);border-color:var(--raw);color:var(--raw2);font-weight:600;}
-.sg-tb .n{font-size:.72rem;opacity:.75;margin-left:4px;}
-.sg-meta{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;font-size:.78rem;color:var(--dim);}
-.sg-meta .stale{color:var(--overdue);font-weight:600;}
-.sg-hide{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
-.sg-hide input{accent-color:var(--raw);}
-.sg-actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
-.sg-btn{background:var(--s1);border:1px solid var(--bd2);color:var(--dim);border-radius:9px;padding:5px 12px;font-family:inherit;font-size:.8rem;cursor:pointer;}
-.sg-btn:hover{color:var(--raw2);border-color:var(--raw);}
-.sg-btn.on{background:var(--rdim);border-color:var(--raw);color:var(--raw2);font-weight:600;}
-.sg-panel{background:var(--s2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;font-size:.86rem;line-height:1.65;display:flex;flex-direction:column;gap:10px;}
-.sg-panel h4{font-size:.92rem;color:var(--raw2);}
-.sg-panel ol{padding-left:20px;display:flex;flex-direction:column;gap:4px;}
-.sg-panel a{color:var(--raw2);text-decoration:underline;}
-.sg-sub{font-size:.8rem;color:var(--dim);}
+.sg-head{display:flex;flex-direction:column;gap:12px;}
+/* the 4 lists: one row of equal buttons, "เหลือ N" = left to sort */
+.sg-lists{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.sg-lists button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;min-height:52px;padding:4px 3px;border-radius:14px;border:1px solid var(--line);background:var(--glass);color:var(--dim);font-family:inherit;font-size:.8rem;line-height:1.25;text-align:center;cursor:pointer;}
+.sg-lists .nm{max-width:100%;font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-size:.78rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+.sg-lists .nm i{display:block;font-style:normal;font-size:.9rem;line-height:1.1;}
+.sg-lists small{font-size:.7rem;opacity:.85;}
+.sg-lists button[aria-pressed="true"]{background:var(--chip-act);color:var(--chip-act-fg);border-color:transparent;box-shadow:var(--grad-glow);font-weight:600;}
+.sg-lists button.done small{color:var(--read);}
+.sg-lists button.done[aria-pressed="true"] small{color:inherit;}
+/* one status line: last update · progress · 🔔 · 🔄 */
+.sg-status{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--glass);}
+.sg-status.stale{border-color:var(--overdue);background:var(--overdue-bg);}
+.sg-status .tx{flex:1;min-width:0;font-size:.84rem;line-height:1.4;color:var(--text);}
+.sg-status .tx b{color:var(--overdue);font-weight:600;}
+.sg-status .btn{flex:none;min-height:40px;}
+.sg-prog{height:6px;border-radius:3px;background:var(--track-bg);margin-top:5px;overflow:hidden;}
+.sg-prog i{display:block;height:100%;border-radius:3px;background:var(--soft-grad);transition:width .3s;}
+.sg-bell{flex:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--line2);background:var(--glass);font-size:1rem;cursor:pointer;}
+.sg-bell[aria-pressed="true"]{border-color:var(--wish-bd);background:var(--wish-bg);}
+.sg-desc{font-size:.8rem;color:var(--dim);line-height:1.5;}
+.sg-desc b{color:var(--text);font-weight:600;}
+.sg-warnbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--overdue-bg);border:1px solid var(--overdue);font-size:.86rem;line-height:1.45;color:var(--text);}
+.sg-warnbar>div{flex:1;min-width:170px;}
+.sg-warnbar b{color:var(--overdue);}
+.sg-warnbar .st-tech{margin-top:2px;}
+.sg-hidebtn{align-self:flex-start;min-height:36px;}
+.sg-grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;}
+@media(min-width:700px){.sg-grid{grid-template-columns:repeat(2,1fr);}}
+.sg-card{position:relative;display:flex;flex-direction:column;min-width:0;padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--card-bg);box-shadow:var(--card-shadow);}
+.sg-top{display:flex;gap:12px;}
+.sg-cover{position:relative;flex:none;width:78px;height:110px;border-radius:10px;overflow:hidden;background:var(--grad);color:var(--on-grad);display:flex;align-items:center;justify-content:center;font-size:1.6rem;box-shadow:var(--sh-shadow);}
+.sg-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.sg-rank{position:absolute;top:5px;left:5px;z-index:1;min-width:22px;height:22px;padding:0 5px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;background:var(--panel-solid);color:var(--text);border:1px solid var(--line2);}
+.sg-syn{margin-top:10px;font-size:.88rem;line-height:1.6;color:var(--summary);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.sg-card.syn-open .sg-syn{display:block;}
+.sg-more{align-self:flex-start;display:inline-flex;align-items:center;min-height:36px;padding:0 2px;border:none;background:none;color:var(--mint);font-family:inherit;font-size:.84rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.sg-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.sg-tags span{font-size:.74rem;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--tag-bg);color:var(--dim);}
+.sg-tags span.hl{background:var(--rdim);border-color:var(--rbd);color:var(--raw2);font-weight:600;}
+.sg-nums{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:.84rem;color:var(--dim);}
+.sg-nums b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
+.sg-nums .sg-more{margin-left:auto;}
+/* 📖 กำลังอ่าน · 🏁 อ่านจบ · 🙅 ไม่สนใจ */
+.sg-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.sg-act{min-height:48px;padding:4px;border-radius:13px;border:1px solid;font-family:inherit;font-size:.9rem;font-weight:600;line-height:1.2;cursor:pointer;}
+.mk-reading.sg-act,.mk-reading.sg-stamp{color:var(--read);border-color:var(--read-bd);background:var(--read-bg);}
+.mk-finished.sg-act,.mk-finished.sg-stamp{color:var(--fin);border-color:var(--fin-bd);background:var(--fin-bg);}
+.mk-not.sg-act,.mk-not.sg-stamp{color:var(--overdue);border-color:var(--overdue);background:var(--overdue-bg);}
+.sg-stamp{position:absolute;left:50%;top:42%;z-index:3;padding:6px 18px;border:3px solid;border-radius:12px;font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-weight:600;font-size:1.7rem;white-space:nowrap;pointer-events:none;
+  transform:translate(-50%,-50%) rotate(-12deg);animation:sgStamp .35s cubic-bezier(.2,1.6,.4,1) both;}
+.sg-stamp.mk-reading,.sg-stamp.mk-finished,.sg-stamp.mk-not{background:var(--panel-solid);border-color:currentColor;}
+@keyframes sgStamp{from{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2.2)}to{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}}
+/* a marked novel: one row + เลิกทำ */
+.sg-card.done{padding:10px 12px;}
+.sg-done{display:flex;align-items:center;gap:10px;}
+.sg-done .sg-cover{width:36px;height:50px;font-size:.9rem;box-shadow:none;}
+.sg-done .tt{flex:1;min-width:0;}
+.sg-done .tt b{display:block;font-weight:600;font-size:.9rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sg-done .tt small{font-size:.76rem;color:var(--dim);}
+.sg-done .btn{flex:none;min-height:40px;margin:0;}
+.sg-why{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;}
+.sg-why>span{font-size:.78rem;color:var(--mute);overflow-wrap:anywhere;}
+.sg-why .fb{min-height:36px;}
+/* 🎉 a list is done */
+.sg-party{position:relative;overflow:hidden;text-align:center;padding:22px 16px;border-radius:18px;border:1px solid var(--read-bd);background:var(--read-bg);}
+.sg-party .big{display:inline-block;font-size:2.4rem;animation:sgPop .5s cubic-bezier(.2,1.6,.4,1) both;}
+.sg-party h3{font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-weight:600;font-size:1.1rem;margin:4px 0;color:var(--text);}
+.sg-party p{font-size:.86rem;color:var(--dim);margin-bottom:10px;}
+.sg-party .btn{min-height:44px;}
+.sg-confetti{position:absolute;inset:0;pointer-events:none;}
+.sg-confetti i{position:absolute;top:-10px;width:7px;height:11px;border-radius:2px;animation:sgFall 1.4s ease-in forwards;}
+@keyframes sgPop{from{transform:scale(0) rotate(-30deg)}to{transform:none}}
+@keyframes sgFall{to{transform:translateY(240px) rotate(540deg);opacity:0}}
+/* 🔄 the update guide (its own popup) */
+.sg-steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px;margin:4px 0 8px;padding:0;}
+.sg-steps li{display:flex;gap:10px;font-size:.9rem;line-height:1.5;color:var(--text);}
+.sg-steps li::before{counter-increment:s;content:counter(s);flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--grad);color:var(--on-grad);font-weight:700;font-size:.84rem;}
+.sg-steps a,.sg-fold a:not(.sg-bm){color:var(--raw2);text-decoration:underline;}
+.sg-switch{display:flex;align-items:center;gap:10px;min-height:48px;font-size:.9rem;}
+.sg-switch span{flex:1;}
+.sg-switch .fb{min-height:36px;}
+.sg-fold{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font-size:.84rem;line-height:1.6;color:var(--dim);}
+.sg-fold summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:.88rem;}
+.sg-fold>div{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:12px;}
+.sg-empty{text-align:center;color:var(--mute);padding:28px 12px;font-size:.9rem;line-height:1.7;}
+@media(prefers-reduced-motion:reduce){.sg-stamp,.sg-party .big,.sg-confetti i,.bm-ribbon.drop{animation:none;}.sg-prog i{transition:none;}}
 .sg-bm{display:inline-block;background:var(--raw);color:#fff !important;text-decoration:none !important;border-radius:10px;padding:8px 14px;font-weight:600;cursor:grab;margin:4px 0;}
 .sg-bm.loading{opacity:.5;pointer-events:none;}
 .sg-link{background:none;border:none;color:var(--raw2);text-decoration:underline;font:inherit;cursor:pointer;padding:0;}
 .sg-file{display:inline-block;cursor:pointer;}
 .sg-warn{font-size:.76rem;color:var(--overdue);}
-.sg-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-@media(min-width:700px){.sg-grid{grid-template-columns:repeat(2,1fr);}}
-.sg-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
-.sg-card.marked .sg-top,.sg-card.marked .sg-syn,.sg-card.marked .sg-tags{opacity:.45;}
-.sg-top{display:flex;gap:12px;padding:12px;}
-.sg-cover{position:relative;flex:none;width:92px;height:92px;border-radius:10px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.8rem;}
-.sg-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.sg-rank{position:absolute;top:4px;left:4px;z-index:1;background:#5e4480;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);font-size:.72rem;font-weight:700;min-width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:0 6px;}
 .sg-info{min-width:0;display:flex;flex-direction:column;gap:1px;}
 .sg-title{font-weight:700;font-size:.95rem;line-height:1.35;overflow-wrap:anywhere;}
 .sg-title a{color:var(--text);}
@@ -208,21 +270,13 @@ body.editor .suggest-tab{display:inline-block;}
 .sg-badge.ongoing{background:var(--s3);color:var(--dim);}
 .sg-badge.lib{background:rgba(74,144,217,.15);color:#356fb0;}
 :root[data-theme="dark"] .sg-badge.lib{color:#8fbdf0;}
-.sg-syn{padding:0 12px 8px;font-size:.82rem;color:var(--summary);line-height:1.6;}
-.sg-tags{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 10px;}
-.sg-tags span{font-size:.7rem;padding:2px 8px;border-radius:10px;background:var(--s2);border:1px solid var(--bd);color:var(--dim);}
-.sg-tags span.hl{background:var(--rdim);border-color:var(--rbd);color:var(--raw2);font-weight:600;}
-.sg-foot{margin-top:auto;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:9px 12px;border-top:1px solid var(--s2);}
-.sg-stats{font-size:.76rem;color:var(--dim);display:flex;gap:10px;}
-.sg-stats b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
-.sg-marks{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;}
-.sg-mk{background:var(--s2);border:1px solid var(--bd2);color:var(--dim);border-radius:999px;padding:3px 10px;font-family:inherit;font-size:.74rem;cursor:pointer;transition:all .12s;}
+.sg-marks{display:flex;gap:5px;flex-wrap:wrap;}
+.sg-mk{background:var(--s2);border:1px solid var(--bd2);color:var(--dim);border-radius:999px;min-height:36px;padding:6px 12px;font-family:inherit;font-size:.74rem;cursor:pointer;transition:all .12s;}
 .sg-mk:hover{border-color:var(--raw);}
 .sg-mk.active.mk-reading{background:var(--mdim);border-color:var(--mint);color:var(--mint2);font-weight:600;}
 .sg-mk.active.mk-finished{background:rgba(74,144,217,.15);border-color:#4a90d9;color:#356fb0;font-weight:600;}
 .sg-mk.active.mk-not{background:rgba(224,137,43,.14);border-color:var(--overdue);color:var(--overdue);font-weight:600;}
 :root[data-theme="dark"] .sg-mk.active.mk-finished{color:#8fbdf0;}
-.sg-empty{text-align:center;color:var(--mute);padding:28px 12px;font-size:.9rem;line-height:1.7;}
 .sg-reason{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px;background:none;border:none;padding:0;font-family:inherit;font-size:.74rem;color:var(--overdue);cursor:pointer;text-align:left;}
 .sg-reason span{background:rgba(224,137,43,.12);border:1px solid rgba(224,137,43,.35);border-radius:999px;padding:1px 8px;}
 .sg-reason.none{color:var(--mute);text-decoration:underline;}
@@ -230,7 +284,6 @@ body.editor .suggest-tab{display:inline-block;}
 .sgs-h{font-weight:700;font-size:.92rem;color:var(--text);margin:8px 0 10px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
 .sgs-h span{font-weight:400;font-size:.76rem;color:var(--dim);}
 .sgs-list{display:grid;grid-template-columns:1fr;gap:10px;}
-@media(min-width:700px){.sgs-list{grid-template-columns:repeat(2,1fr);}}
 .sgs-row{display:flex;gap:12px;padding:10px 12px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;}
 .sgs-cover{position:relative;flex:none;width:58px;height:78px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.3rem;}
 .sgs-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
@@ -260,9 +313,6 @@ body.editor .suggest-tab{display:inline-block;}
 .rs-add input:focus{border-color:var(--overdue);}
 :root[data-theme] .rs-add input{background:var(--input-bg);border-color:var(--line2);}
 .rs-manage{margin-left:auto;font-size:.8rem;}
-.sg-err{color:#b85c5c;}
-.sg-warnbar{background:rgba(224,137,43,.1);border:1px solid var(--overdue);color:var(--overdue);border-radius:12px;padding:9px 14px;font-size:.82rem;}
-.sg-warnbar .sg-sub{margin-top:3px;overflow-wrap:anywhere;}
 
 /* TOAST */
 .toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translate(-50%,16px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:.86rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:600;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2);}
@@ -744,6 +794,8 @@ body.editor .m-edit{display:inline-block;}
 /* a popup's title + ✕ stay at the top while its list scrolls */
 .pop-head{position:sticky;top:-20px;z-index:6;margin:-20px -18px 12px;padding:16px 50px 12px 18px;background:var(--panel-solid,var(--s1));border-bottom:1px solid var(--line);border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0;}
 .f-card .pop-head h3{margin:0;}
+.pop-foot{position:sticky;bottom:-24px;z-index:5;display:flex;flex-wrap:wrap;gap:8px;margin:14px -18px -24px;padding:12px 18px calc(12px + env(safe-area-inset-bottom));background:var(--panel-solid,var(--s1));border-top:1px solid var(--line);}
+.pop-foot .btn{flex:1 1 auto;min-height:44px;margin:0;}
 .day-add-btn{display:block;width:100%;min-height:44px;}
 .pop-head .ov-close{top:50%;right:12px;transform:translateY(-50%);font-size:1.25rem;padding:6px 8px;}
 .ov-close{position:absolute;top:11px;right:13px;background:none;border:none;font-size:1.2rem;color:var(--mute);cursor:pointer;padding:2px;}
@@ -848,61 +900,77 @@ body.editor .m-edit{display:inline-block;}
 .bmk-note{font-size:.82rem;color:var(--dim);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;}
 .bmk-link{font-size:.76rem;color:var(--raw2);}
 .bmk-date{float:right;font-size:.7rem;color:var(--mute);}
-.bmk-date2{font-size:.68rem;color:var(--mute);margin-top:1px;}
-.bmk-act{float:right;display:flex;gap:4px;}
-.bmk-act button{background:none;border:1px solid var(--bd2);border-radius:8px;padding:2px 8px;font-size:.78rem;color:var(--dim);cursor:pointer;}
-.bmk-view{padding:14px 16px 30px;display:flex;flex-direction:column;gap:10px;}
+.bmk-view{padding:14px 16px 30px;display:flex;flex-direction:column;gap:12px;max-width:1040px;margin:0 auto;}
 @media(min-width:700px){.bmk-view{padding:16px 24px 30px;}}
-/* novels side by side on wide screens (no empty sides) */
-#bmk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start;}
-#bmk-list > .sg-empty,#bmk-list > .loading{grid-column:1/-1;}
-/* every card the same height: long text is cut with … (the popup shows it all) */
-#bmk-list .bmk-card{height:124px;display:flex;align-items:center;overflow:hidden;}
-#bmk-list .bmk-head{width:100%;min-width:0;}
-#bmk-list .bmk-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-#bmk-list .bmk-sub,#bmk-list .bmk-hits{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-#bmk-list .bmk-big{width:92px;max-width:92px;height:84px;justify-content:center;overflow:hidden;}
-#bmk-list .bmk-big-t{font-size:.72rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
-@media(max-width:479px){#bmk-list .bmk-big{width:78px;max-width:78px;height:76px;padding:4px 6px;} #bmk-list .bmk-big-n{font-size:1.45rem;} #bmk-list .bmk-big-l{font-size:.56rem;}}
 .bmk-top{display:flex;gap:8px;}
-.bmk-top input{flex:1;min-width:0;border:1px solid var(--bd2);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
+.bmk-top input{flex:1;min-width:0;min-height:44px;border:1px solid var(--bd2);border-radius:12px;padding:9px 12px;font-family:inherit;font-size:16px;background:var(--bg);color:var(--text);outline:none;}
 :root[data-theme] .bmk-top input{background:var(--input-bg);border-color:var(--line2);}
+.bmk-top .btn{flex:none;min-height:44px;}
 .bmk-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;}
-.bmk-card{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:10px 12px;}
-:root[data-theme] .bmk-card{background:var(--glass);border-color:var(--line);}
-.bmk-head{display:flex;align-items:center;gap:10px;cursor:pointer;}
-.bmk-cov{position:relative;flex:none;width:48px;height:68px;border-radius:8px;overflow:hidden;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:width .2s;}
-.bmk-cov[title]{cursor:zoom-in;}
-.bmk-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.bmk-info{flex:1;min-width:0;}
-.bmk-title{font-weight:700;font-size:.92rem;line-height:1.35;overflow-wrap:anywhere;}
-.bmk-sub{font-size:.74rem;color:var(--dim);margin-top:2px;}
-.bmk-out{color:var(--overdue);font-weight:600;}
-.bmk-count{flex:none;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;color:#06101c;background:linear-gradient(90deg,#67e8f9,#a78bfa);}
-.bmk-items{margin-top:4px;}
-.bmk-hits{font-size:.72rem;color:var(--mint2);margin-top:2px;}
-.bmk-topname{font-size:.76rem;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.bmk-big{flex:none;min-width:64px;max-width:96px;text-align:center;padding:6px 8px;border-radius:12px;background:linear-gradient(160deg,rgba(103,232,249,.16),rgba(167,139,250,.18));border:1px solid var(--line,var(--bd));display:flex;flex-direction:column;align-items:center;}
-.bmk-big-l{font-size:.6rem;color:var(--dim);white-space:nowrap;}
-.bmk-big-n{font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-size:1.7rem;font-weight:600;line-height:1.05;background:linear-gradient(90deg,#06b6d4,#8b5cf6);-webkit-background-clip:text;background-clip:text;color:transparent;}
-:root[data-theme="dark"] .bmk-big-n{background:linear-gradient(90deg,#67e8f9,#c4b5fd);-webkit-background-clip:text;background-clip:text;}
-.bmk-big-t{font-size:.78rem;font-weight:700;line-height:1.25;color:var(--text);overflow-wrap:anywhere;}
-.bmg-head{display:flex;align-items:center;gap:12px;padding-right:26px;margin-bottom:6px;}
-.bmg-cov{width:58px;height:82px;}
-.bmg-title{font-weight:700;font-size:1rem;line-height:1.35;overflow-wrap:anywhere;color:var(--text);}
-.bmg-items{max-height:min(56vh,520px);overflow:auto;margin:0 -4px;padding:0 4px;}
-.bmk-item.hit{background:rgba(34,211,238,.1);border-radius:0 8px 8px 0;}
-.bmk-addmore{margin-top:10px;}
-.src-mini{font-size:.62rem;font-weight:700;padding:0 6px;border-radius:999px;border:1px solid var(--bd2);color:var(--mint2);}
-.src-mini.raw{color:var(--raw2);}
+.bmk-chips .fb{min-height:36px;}
+/* 🔖 one card per novel; 2 columns on wide screens */
+.bm-grid{display:grid;grid-template-columns:1fr;gap:12px;align-items:start;}
+@media(min-width:1000px){.bm-grid{grid-template-columns:1fr 1fr;}}
+.bm-grid>.state-box,.bm-grid>.loading{grid-column:1/-1;}
+.bm-card{position:relative;min-width:0;padding:12px;border-radius:18px;border:1px solid var(--line);background:var(--card-bg);box-shadow:var(--card-shadow);}
+.bm-card.latest{border-color:var(--hover-bd);box-shadow:var(--card-shadow),var(--hover-glow);}
+.bm-head{display:flex;gap:12px;width:100%;min-height:76px;padding:0 58px 0 0;border:none;background:none;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;}
+.bm-cov{position:relative;flex:none;width:52px;height:74px;padding:0;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--s3);color:inherit;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.bm-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+button.bm-cov{cursor:pointer;}
+.bm-head .tt,.bm-phead .tt{flex:1;min-width:0;}
+.bm-head b{display:block;font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-weight:500;font-size:.98rem;line-height:1.35;overflow-wrap:anywhere;}
+.bm-meta{display:flex;align-items:center;gap:4px 6px;flex-wrap:wrap;margin-top:4px;font-size:.78rem;color:var(--dim);}
+.bm-meta .nw{white-space:nowrap;}
+.bm-quote{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:5px;padding-left:8px;border-left:3px solid var(--wk-now);font-size:.8rem;font-style:italic;color:var(--summary);overflow-wrap:anywhere;}
+.bm-hits{display:block;font-size:.74rem;color:var(--mint2);margin-top:3px;}
+.pill{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;border:1px solid;font-size:.72rem;font-weight:600;line-height:1.5;white-space:nowrap;}
+.pill.meb{color:var(--meb-fg);border-color:var(--meb-bd);background:var(--meb-bg);}
+.pill.raw{color:var(--rawb-fg);border-color:var(--rawb-bd);background:var(--rawb-bg);}
+.pill.out{color:var(--wish);border-color:var(--wish-bd);background:var(--wish-bg);}
+/* the ribbon = the furthest chapter */
+.bm-ribbon{position:absolute;right:14px;top:-1px;width:50px;padding:5px 0 13px;text-align:center;line-height:1.05;color:var(--on-grad);background:var(--wk-now);clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);pointer-events:none;}
+.bm-ribbon small{display:block;font-size:.62rem;opacity:.9;}
+.bm-ribbon b{font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif;font-size:1.15rem;font-weight:600;}
+.bm-ribbon b.txt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;padding:0 3px;font-size:.66rem;overflow-wrap:anywhere;}
+.bm-ribbon.drop{animation:bmDrop .6s cubic-bezier(.3,1.5,.5,1) both;}
+@keyframes bmDrop{from{transform:translateY(-70px)}to{transform:none}}
+.bm-trail{margin-top:10px;}
+.bm-trail .line{height:6px;border-radius:3px;background:var(--track-bg);overflow:hidden;}
+.bm-trail .line i{display:block;height:100%;border-radius:3px;background:var(--soft-grad);}
+.bm-trail .lab{display:flex;justify-content:space-between;gap:6px;margin-top:4px;font-size:.72rem;color:var(--mute);}
+.bm-trail .lab b{color:var(--wk-now);font-weight:600;}
+.bm-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.bm-acts .btn,.bm-foot .btn{display:flex;align-items:center;justify-content:center;min-width:0;min-height:44px;margin:0;padding:8px 10px;border-radius:12px;font-size:.88rem;text-align:center;text-decoration:none;}
+.btn.btn-quick{background:var(--read-bg);border:1px solid var(--read-bd);color:var(--read);font-weight:600;}
+/* a novel's bookmarks: newest first */
+.bm-phead{display:flex;align-items:center;gap:12px;}
+.bm-phead .bm-cov{width:40px;height:56px;}
+.bm-tl{list-style:none;position:relative;margin:0;padding:0;}
+.bm-tl::before{content:'';position:absolute;left:7px;top:14px;bottom:14px;width:2px;background:var(--line2);}
+.bm-tl li{position:relative;display:flex;gap:10px;align-items:flex-start;padding:10px 0 10px 26px;border-bottom:1px solid var(--line);}
+.bm-tl li:last-child{border-bottom:none;}
+.bm-tl li::before{content:'';position:absolute;left:2px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--panel-solid);border:2px solid var(--raw);}
+.bm-tl li.last::before{background:var(--wk-now);border-color:var(--wk-now);box-shadow:0 0 0 4px var(--wk-now-glow);}
+.bm-tl li.hit{background:var(--mdim);border-radius:10px;}
+.bm-tl .tx{flex:1;min-width:0;font-size:.9rem;color:var(--text);}
+.bm-tl .tx b{font-weight:600;overflow-wrap:anywhere;}
+.bm-tl .nt{margin-top:2px;font-size:.84rem;color:var(--summary);white-space:pre-wrap;overflow-wrap:anywhere;}
+.bm-tl small{display:block;margin-top:2px;font-size:.74rem;color:var(--mute);}
+.bm-tl .acts{display:flex;gap:6px;flex:none;}
+.bm-new{display:inline-block;margin-left:6px;padding:0 7px;border-radius:999px;font-size:.7rem;background:var(--wk-now);color:var(--on-grad);vertical-align:2px;}
+.bm-ib{flex:none;width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;border:1px solid var(--line2);background:var(--glass);color:var(--dim);font-size:1rem;text-decoration:none;cursor:pointer;}
+.bm-foot{display:grid;grid-template-columns:1fr 1fr;}
+/* the add / edit form: − N ＋ */
+.bm-step{display:flex;align-items:center;gap:8px;}
+.bm-step input{flex:1;min-width:0;min-height:48px;text-align:center;font-family:'Kanit','Sarabun','Thonburi','Noto Sans Thai',sans-serif !important;font-size:1.3rem !important;font-weight:600;}
+.bm-step .bm-ib{width:48px;height:48px;font-size:1.3rem;}
 .bmk-novel{font-weight:700;font-size:.92rem;margin:-4px 0 6px;overflow-wrap:anywhere;}
-.bmk-chline{display:flex;gap:6px;}
-.bmk-chline input{flex:1;min-width:0;}
 .bmk-err{font-size:.76rem;color:#e05a5a;font-weight:600;margin-top:3px;}
 .bmk-err:empty{display:none;}
 #bmk-hint:empty{display:none;}
 .bmk-seg{display:flex;gap:6px;}
-.bmk-seg button{flex:1;border:1px solid var(--bd2);background:none;color:var(--dim);border-radius:999px;padding:6px;font-family:inherit;font-size:.86rem;cursor:pointer;}
+.bmk-seg button{flex:1;min-height:40px;border:1px solid var(--bd2);background:none;color:var(--dim);border-radius:999px;padding:6px;font-family:inherit;font-size:.86rem;cursor:pointer;}
 .bmk-seg button.on{background:linear-gradient(90deg,#67e8f9,#a78bfa);color:#06101c;font-weight:700;border-color:transparent;}
 #bmk-card .req{color:var(--overdue);}
 .m-newch b{color:#e11d48;}
@@ -1090,7 +1158,7 @@ body.editor .m-edit{display:inline-block;}
 :root[data-theme] .bar-fill.bought{background:linear-gradient(90deg,#c026d3,#f0abfc);}
 
 /* glass panels: stats, notify, calendar, suggestions */
-:root[data-theme] .stat-tile,:root[data-theme] .stat-sec,:root[data-theme] .nf-item,:root[data-theme] .nf-form,:root[data-theme] .nf-status,:root[data-theme] .cal-wrap,:root[data-theme] .sg-card,:root[data-theme] .sg-panel{
+:root[data-theme] .stat-tile,:root[data-theme] .stat-sec,:root[data-theme] .nf-item,:root[data-theme] .nf-form,:root[data-theme] .nf-status,:root[data-theme] .cal-wrap{
   background:var(--glass-panel);border-color:var(--line);border-radius:16px;}
 :root[data-theme] .nf-item.overdue{border-color:var(--overdue);}
 :root[data-theme] .nf-item.editing{border-color:var(--mint);}
@@ -1119,7 +1187,10 @@ body.editor .m-edit{display:inline-block;}
 .toast{width:max-content;max-width:calc(100vw - 24px);}
 .toast.act span{flex:1;min-width:0;}
 .toast.act{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;}
-.toast-btn{flex-shrink:0;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:var(--grad);color:var(--on-grad);white-space:nowrap;}
+.toast-btn{flex-shrink:0;min-height:36px;border:none;border-radius:9px;padding:7px 12px;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:var(--grad);color:var(--on-grad);white-space:nowrap;}
+.toast-btn+.toast-btn{background:none;color:inherit;box-shadow:inset 0 0 0 1px currentColor;}
+body .toast.top{bottom:auto !important;top:calc(12px + env(safe-area-inset-top));transform:translate(-50%,-16px);}
+body .toast.top.show{transform:translate(-50%,0);}
 .busy-cancel{display:none;margin-top:4px;background:var(--glass);color:var(--text);}
 /* 🚫 excluded tag chip */
 .tag-fb{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
@@ -1559,7 +1630,7 @@ body.editor .m-icons .m-edit{display:flex;}
 
 <!-- 💡 NOT-INTERESTED REASONS -->
 <div class="overlay" id="reason-bg" onclick="if(event.target===this)sgCloseReasons()">
-  <div class="f-card" id="reason-card" role="dialog" aria-modal="true" style="max-width:420px;"></div>
+  <div class="f-card" id="reason-card" role="dialog" aria-modal="true" aria-labelledby="reason-title" style="max-width:420px;"></div>
 </div>
 
 <!-- CALENDAR DAY POPUP -->
@@ -1572,13 +1643,13 @@ body.editor .m-icons .m-edit{display:flex;}
 </div>
 
 <!-- 🔖 A NOVEL'S BOOKMARKS -->
-<div class="overlay" id="bmg-bg" style="z-index:215" onclick="if(event.target===this)closeBmGroup()">
-  <div class="f-card" id="bmg-card" role="dialog" aria-modal="true" style="max-width:520px;"></div>
+<div class="overlay as-sheet" id="bmg-bg" style="z-index:215" onclick="if(event.target===this)closeBmGroup()">
+  <div class="f-card" id="bmg-card" role="dialog" aria-modal="true" aria-labelledby="bmg-title" style="max-width:520px;"></div>
 </div>
 
 <!-- 🔖 ADD / EDIT BOOKMARK -->
-<div class="overlay" id="bmk-bg" style="z-index:225" onclick="if(event.target===this)closeBmSheet()">
-  <div class="f-card" id="bmk-card" role="dialog" aria-modal="true" style="max-width:440px;"></div>
+<div class="overlay as-sheet" id="bmk-bg" style="z-index:225" onclick="if(event.target===this)closeBmSheet()">
+  <div class="f-card" id="bmk-card" role="dialog" aria-modal="true" aria-labelledby="bmk-h" style="max-width:440px;"></div>
 </div>
 
 <!-- 🏷️ TAG MANAGER -->
@@ -1588,7 +1659,7 @@ body.editor .m-icons .m-edit{display:flex;}
 
 <!-- 💾 / ☑️ small sheets (backup ready, restore, bulk status / tags) -->
 <div class="overlay" id="tools-bg" style="z-index:222" onclick="if(event.target===this)closeTools()">
-  <div class="f-card" id="tools-card" role="dialog" aria-modal="true" style="max-width:440px;"></div>
+  <div class="f-card" id="tools-card" role="dialog" aria-modal="true" aria-labelledby="tools-title" style="max-width:440px;"></div>
 </div>
 
 <!-- 🔔 DELETE: this one or the whole novel -->
@@ -1676,6 +1747,8 @@ body.editor .m-icons .m-edit{display:flex;}
 </div>
 
 <script>
+// The published tab: only the "public" tab (columns A–I, no 📖 progress / 📝 notes — Code.gs › makePublicTab).
+// gid = that tab's number.
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
 
 let allBooks = [];
@@ -1769,7 +1842,7 @@ function onResume() {
   if (!ed) return;
   const before = JSON.stringify(reminders);
   loadReminders().then(() => {
-    if ((view === 'notify') && JSON.stringify(reminders) !== before) renderNotify();
+    if ((view === 'notify') && JSON.stringify(reminders) !== before) renderNotify(true);
   });
   if ((view === 'suggest') && (!sgLoaded || sgError)) loadSuggest();
 }
@@ -1785,9 +1858,7 @@ window.addEventListener('pageshow', onResume);
 function parseCSV(text) {
   const records = parseCSVRecords(text);
   const rows = [];
-  // progress / note columns are found by their header name (they sit after your own columns)
-  const head = (records[0] || []).map(h => String(h || '').trim());
-  const meta = (cols, name) => { const i = head.indexOf(name); return i >= 0 ? String(cols[i] || '').trim() : ''; };
+  // columns A–I only: 📖 progress and 📝 notes are private and come from the script (fromGas)
   for (let r = 1; r < records.length; r++) {   // r = 0 is the header row
     const cols = records[r];
     if (cols.length < 5) continue;
@@ -1803,10 +1874,6 @@ function parseCSV(text) {
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
       status:  normStatus(cols[7]),
       added:   normAdded(cols[8]),
-      progress:   meta(cols, 'nv_progress'),       // 📖 chapter read up to
-      progressAt: normAdded(meta(cols, 'nv_progress_at')),   // last read
-      note:       meta(cols, 'nv_note'),           // 📝 your note
-      finishedAt: normAdded(meta(cols, 'nv_finished_at')),   // 🏁 date finished
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1918,14 +1985,6 @@ async function refreshFromGas() {
     const prev = allBooks;
     const before = JSON.stringify(prev);
     allBooks = books.map(fromGas);
-    // an older Code.gs doesn't send the nv_ columns yet: keep what the published sheet had
-    const has = books[0] || {};
-    if (books.length && (!('progress' in has) || !('finished_at' in has))) allBooks.forEach(b => {
-      const o = prev.find(x => x.row === b.row && x.title === b.title);
-      if (!o) return;
-      if (!('progress' in has)) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
-      if (!('finished_at' in has)) b.finishedAt = o.finishedAt;
-    });
     // same as what was already on screen → don't redraw (covers would flicker)
     const cached = libCacheAt > 0, nBefore = prev.length;
     if (JSON.stringify(allBooks) !== before || cached || loadError) libFresh(cached ? nBefore : -1);
@@ -1995,7 +2054,7 @@ function renderActiveFilters() {
   if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
   if (activeNew) chips.push(afChip('🆕 มีตอนใหม่', 'setNewFilter()', ''));
   if (activeStar !== null) chips.push(afChip(STAR_OPTS[activeStar] || activeStar, "setStar('" + activeStar + "')", 'star'));
-  [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + t.replace(/'/g, "\\'") + "')", '')));
+  [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + jsq(t) + "')", '')));
   [...excludedTags].forEach(t => chips.push(afChip('🚫 ' + t, "unExclude('" + jsq(t) + "')", 'excl')));
   const q = searchQ.trim();
   if (q) chips.push(afChip('🔍 ' + q, 'clearSearch()', ''));
@@ -2187,7 +2246,6 @@ function coverFit(img) {
   if (!box) return;
   box.classList.add('cov-wide');
   box.style.setProperty('--cov-bg', 'url("' + img.src.replace(/"/g, '%22') + '")');
-  if (box.classList.contains('bmk-cov')) box.style.width = Math.min(132, Math.round(68 * w / h)) + 'px';
 }
 /* tap a 🔖 cover (novel not in your library) → the picture, big */
 function showCover(src, title) {
@@ -2229,7 +2287,7 @@ function buildCard(b, idx) {
   const picked = selMode && selRows.has(b.row);
   return `<div class="card${picked ? ' picked' : ''}" role="button" tabindex="0" aria-label="${esc(b.title)}"${selMode ? ` data-i="${idx}"` : ''} onclick="${selMode ? `selToggle(${idx})` : `openModal(${idx})`}">
     <div class="cover">${selMode ? '<span class="sel-ck">' + (picked ? '✓' : '') + '</span>' : ''}${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
-    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
+    <span class="src-badge ${esc(b.source)}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
       ${stHtml}
@@ -2273,7 +2331,7 @@ function switchTab(tab) {
   if (notify) {
     nfEditId = null;
     renderNotify();
-    loadReminders().then(() => { if (view === 'notify') renderNotify(); });
+    loadReminders().then(() => { if (view === 'notify') renderNotify(true); });
     return;
   }
   if (stats) {
@@ -2302,7 +2360,7 @@ function switchTab(tab) {
 function currentTab() { return view; }
 function tabOrder() { return isEditor() ? ['all', 'stats', 'notify', 'suggest', 'bookmarks'] : ['all', 'stats']; }
 (function swipeTabs() {
-  const SKIP = 'input,textarea,select,.tag-strip,.active-filters,.shelf-row,.sg-tabs,.bmk-chips,.f-tag-picker,.modal-bg,.overlay,.busy-overlay';
+  const SKIP = 'input,textarea,select,.tag-strip,.active-filters,.shelf-row,.bmk-chips,.f-tag-picker,.modal-bg,.overlay,.busy-overlay';
   let sx = 0, sy = 0, st = 0, on = false;
   document.addEventListener('touchstart', e => {
     on = false;
@@ -2528,15 +2586,15 @@ function renderStats() {
    dropped at the next refresh, unmarked ones stay until marked, and new
    novels fill the free slots up to 20 per list. */
 const SG_TABS = [
-  { key: 't1', label: '① แก้แค้น', desc: '🏷️ แท็ก แก้แค้น' },
-  { key: 't2', label: '② จีนโบราณ + เกิดใหม่', desc: '🏷️ แท็ก จีนโบราณ + เกิดใหม่' },
-  { key: 't3', label: '③ ไทยย้อนยุค', desc: '🏷️ แท็ก พีเรียดไทย / ไทยย้อนยุค (ไม่รวมเกิดใหม่ → ดูที่ ④)' },
-  { key: 't4', label: '④ เกิดใหม่ + ไทยย้อนยุค', desc: '🏷️ แท็ก เกิดใหม่ + พีเรียดไทย / ไทยย้อนยุค' }
+  { key: 't1', n: '①', short: 'แก้แค้น', label: '① แก้แค้น', desc: 'แท็ก <b>แก้แค้น</b>' },
+  { key: 't2', n: '②', short: 'จีนเกิดใหม่', label: '② จีนโบราณ + เกิดใหม่', desc: 'แท็ก <b>จีนโบราณ + เกิดใหม่</b>' },
+  { key: 't3', n: '③', short: 'ไทยย้อนยุค', label: '③ ไทยย้อนยุค', desc: 'แท็ก <b>พีเรียดไทย / ไทยย้อนยุค</b> (ไม่รวมเกิดใหม่ → ดูที่ ④)' },
+  { key: 't4', n: '④', short: 'ไทยเกิดใหม่', label: '④ เกิดใหม่ + ไทยย้อนยุค', desc: 'แท็ก <b>เกิดใหม่ + พีเรียดไทย / ไทยย้อนยุค</b>' }
 ];
 const SG_MARKS = {
-  reading:        { label: 'Reading',        cls: 'mk-reading' },
-  finished:       { label: 'Finished',       cls: 'mk-finished' },
-  not_interested: { label: 'Not interested', cls: 'mk-not' }
+  reading:        { label: '📖 กำลังอ่าน', stamp: 'กำลังอ่าน!', cls: 'mk-reading' },
+  finished:       { label: '🏁 อ่านจบ',    stamp: 'อ่านจบแล้ว', cls: 'mk-finished' },
+  not_interested: { label: '🙅 ไม่สนใจ',   stamp: 'ไม่เอา',     cls: 'mk-not' }
 };
 const SG_MARK_ORDER = ['reading', 'finished', 'not_interested'];
 const SG_DEFAULT_REASONS = ['เกี่ยวกับเด็ก', 'แต่งไม่จบ', 'รีวิวไม่ดี', 'ไม่ชอบพล็อต', 'ไม่ชอบสำนวน'];
@@ -2553,7 +2611,6 @@ let sgMarkMap = {};       // guid / uid / 'n:'+name → mark record
 let sgUpdated = '';
 let sgLoaded = false;
 let sgError = '';
-let sgPanelOpen = false;
 let sgCollectorSrc = null;
 let sgTab = sgPref('sgTab', 't1');
 let sgHideMarked = sgPref('sgHideMarked', '0') === '1';
@@ -2569,10 +2626,13 @@ function toast(msg, ms) {
   if (!el) return;
   el.textContent = msg;
   el.classList.remove('act');
+  el.classList.toggle('top', toastOverPopup());
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2800);
 }
+/* while a popup is open the toast sits at the top, never over the popup's buttons */
+function toastOverPopup() { return !!document.querySelector('.overlay.open,.modal-bg.open'); }
 
 /* title key used for duplicate detection: drop (…)/[…] parts, spaces, punctuation, emoji */
 function sgNormName(s) {
@@ -2721,13 +2781,31 @@ window.addEventListener('focus', sgAutoRefresh);
 async function sgReload() {
   toast('กำลังโหลดรายการ…');
   await loadSuggest();
-  toast(sgError ? 'โหลดไม่ได้: ' + sgError : 'โหลดรายการล่าสุดแล้ว ✓');
+  toast(sgError ? 'โหลดไม่ได้ — ' + sgError : 'โหลดรายการล่าสุดแล้ว ✓');
 }
 
+/* buttons drawn as data-act="name" data-v="…" all go through this one click handler
+   (no titles or ids inside onclick strings, one listener for every list) */
+const ACT = {};
+document.addEventListener('click', e => {
+  const el = e.target.closest ? e.target.closest('[data-act]') : null;
+  if (el && !el.disabled && ACT[el.dataset.act]) ACT[el.dataset.act](el.dataset.v, el);
+});
+const noMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function stateBox(ic, title, text, extra) {
+  return '<div class="state-box"><div class="st-ic">' + ic + '</div><div class="st-t">' + title + '</div>' + (text ? '<div class="st-d">' + text + '</div>' : '') + (extra || '') + '</div>';
+}
+
+/* a list's novels: the ones you marked stay until the next update; the others
+   (not in your library yet) are the 10 most viewed */
+function sgItems(k) {
+  let free = 0;
+  return sgList.filter(x => x.tab === k && !(k === 't3' && sgReborn3(x))).sort((a, b) => b.views - a.views)
+    .filter(x => sgMarkOf(x) || (!sgFindInLibrary(x) && free++ < SG_LIMIT));
+}
 function renderSuggest() {
   const main = document.getElementById('main-content');
-  const hc = document.getElementById('header-count');
-  hc.textContent = '💡 นิยายแนะนำ' + (sgUpdated ? ' · อัปเดต ' + sgThaiDate(sgUpdated) : '');
+  document.getElementById('header-count').textContent = '💡 แนะนำ';
   if (!isEditor()) {
     main.innerHTML = '<div class="sg-view"><div class="sg-empty">ปลดล็อกการแก้ไข (🔑) ก่อนเพื่อใช้แท็บแนะนำ</div></div>';
     return;
@@ -2736,105 +2814,132 @@ function renderSuggest() {
     main.innerHTML = '<div class="loading"><div class="spinner"></div><span>กำลังโหลดนิยายแนะนำ...</span></div>';
     return;
   }
-  // marked novels stay visible until the next update; unmarked ones: the 10 most viewed
-  const inTab = k => {
-    let free = 0;
-    // unmarked novels already in your library are skipped (ones you just marked stay until the next update)
-    return sgList.filter(x => x.tab === k && !(k === 't3' && sgReborn3(x))).sort((a, b) => b.views - a.views)
-      .filter(x => sgMarkOf(x) || (!sgFindInLibrary(x) && free++ < SG_LIMIT));
-  };
-  const tabsHtml = SG_TABS.map(t => {
-    const n = inTab(t.key).filter(x => !sgMarkOf(x)).length;
-    return '<button class="sg-tb' + (sgTab === t.key ? ' active' : '') + '" onclick="sgSetTab(\'' + t.key + '\')">' + t.label + '<span class="n">' + n + '</span></button>';
-  }).join('');
-  const cur = SG_TABS.find(t => t.key === sgTab) || SG_TABS[0];
-  const items = inTab(cur.key);
-  const markedCount = items.filter(x => sgMarkOf(x)).length;
-  const shown = items.map((x, i) => ({ x, rank: i + 1 })).filter(o => !(sgHideMarked && sgMarkOf(o.x)));
-  const ago = sgUpdated ? sgAgo(sgUpdated) : null;
-  const weekly = sgWeeklyReminder();
-  const panelOpen = sgPanelOpen || !sgList.length;
-
-  const meta = '<div class="sg-meta">' +
-      '<span>' + cur.desc + ' · 🚫 ไม่มีดราม่า · 📚 ไม่รวมเรื่องที่มีในคลัง · เรียงตามยอดวิว</span>' +
-      (ago ? '<span' + (ago.stale ? ' class="stale"' : '') + '>' + (ago.stale ? '⚠️ ' : '🕒 ') + ago.text + '</span>' : '') +
-      (markedCount ? '<label class="sg-hide"><input type="checkbox"' + (sgHideMarked ? ' checked' : '') + ' onchange="sgToggleHide(this.checked)"> ซ่อนที่มาร์กแล้ว (' + markedCount + ')</label>' : '') +
-      '<span class="sg-actions">' +
-        '<button class="sg-btn' + (weekly ? ' on' : '') + '" onclick="' + (weekly ? 'sgDisableWeekly()' : 'sgEnableWeekly()') + '">' + (weekly ? '🔔 เตือนทุกศุกร์ 21:00' : '🔕 ตั้งเตือนทุกศุกร์ 21:00') + '</button>' +
-        '<button class="sg-btn' + (sgPanelOpen ? ' on' : '') + '" onclick="sgTogglePanel()">🔄 อัปเดตรายการ</button>' +
-      '</span>' +
-    '</div>';
-
+  const q = searchQ.trim();
   let body;
-  const warn = (sgError && sgList.length)
-    ? '<div class="sg-warnbar">⚠️ โหลดรายการล่าสุดไม่ได้ — แสดงรายการเดิมไว้ก่อน · <button class="sg-link" onclick="sgReload()">ลองใหม่</button><div class="sg-sub">' + esc(sgError) + '</div></div>'
-    : '';
   if (sgError && !sgList.length) {
-    body = '<div class="sg-empty sg-err">โหลดนิยายแนะนำไม่ได้: ' + esc(sgError) +
-      '<br><button class="sg-link" onclick="sgReload()">ลองใหม่</button></div>';
-  } else if (searchQ.trim()) {
-    const hits = sgSearch(searchQ.trim());
-    body = '<div class="sgs-h">🔍 “' + esc(searchQ.trim()) + '” ในนิยายที่เคยแนะนำทั้งหมด <span>' + hits.length + ' เรื่อง · ทุกลิสต์ รวมที่มาร์กแล้ว</span></div>' +
+    body = stateBox('📶', 'โหลดนิยายแนะนำไม่ได้', 'เช็กอินเทอร์เน็ตแล้วลองใหม่ · ที่คัดไว้แล้วไม่หาย',
+      '<button class="btn btn-primary st-btn" data-act="sgReload">ลองใหม่</button><div class="st-tech">' + esc(sgError) + '</div>');
+  } else if (q) {
+    const hits = sgSearch(q);
+    body = '<div class="sgs-h">🔍 “' + esc(q) + '” ในนิยายที่เคยแนะนำทั้งหมด <span>' + hits.length + ' เรื่อง · ทุกลิสต์ รวมที่คัดแล้ว</span></div>' +
       (hits.length ? sgHitsHtml(hits) : '<div class="sg-empty">ไม่พบในนิยายที่เคยแนะนำ</div>');
   } else if (!sgList.length) {
-    body = '<div class="sg-empty">ยังไม่มีรายการแนะนำ — ทำตามขั้นตอนด้านบนเพื่ออัปเดตครั้งแรก</div>';
-  } else if (!shown.length) {
-    body = '<div class="sg-empty">' + (items.length ? 'มาร์กครบทุกเรื่องในลิสต์นี้แล้ว 🎉 — อัปเดตรอบหน้าจะมีเรื่องใหม่มาแทน'
-      : cur.key === 't4' ? 'ลิสต์ใหม่ ④ ยังว่าง — ต้องใช้บุ๊กมาร์กเวอร์ชันใหม่:<br>กด <b>🔄 อัปเดตรายการ</b> แล้วลากปุ่ม <b>💡 อัปเดตนิยายแนะนำ</b> ไปวางที่แถบบุ๊กมาร์กแทนอันเดิม<br>(Safari: <b>คัดลอกลิงก์บุ๊กมาร์ก</b> แล้ววางแทน URL ของบุ๊กมาร์กเดิม) จากนั้นรันบน readawrite.com อีกครั้ง'
-      : 'ลิสต์นี้ยังไม่มีนิยาย') + '</div>';
+    body = stateBox('💡', 'ยังไม่มีรายการแนะนำ', 'ดึงรายการจาก ReadAWrite ครั้งแรก ใช้เวลา 1–3 นาที',
+      '<button class="btn btn-primary st-btn" data-act="sgUpdate">🔄 อัปเดตครั้งแรก</button>');
   } else {
-    body = '<div class="sg-grid">' + shown.map(o => sgCardHtml(o.x, o.rank)).join('') + '</div>';
+    body = '<div class="sg-head" id="sg-head"></div><div class="sg-grid">' +
+      sgItems(sgTab).map((x, j) => sgHideMarked && sgMarkOf(x) ? '' : sgCardHtml(x, j + 1)).join('') + '</div>';
   }
-
-  main.innerHTML = '<div class="sg-view">' +
-    '<div class="sg-tabs">' + tabsHtml + '</div>' + meta +
-    (panelOpen ? sgPanelHtml() : '') + warn + body + '</div>';
-  if (panelOpen) sgPrepareBookmarklet();
+  main.innerHTML = '<div class="sg-view">' + body + '</div>';
+  sgDrawHead();
+}
+/* the top: the 4 lists · one status line · 🎉 when a list is done (redrawn after each mark) */
+let sgParty = false;   // the list was just finished → confetti once
+function sgDrawHead() {
+  const el = document.getElementById('sg-head');
+  if (!el) return;
+  const L = SG_TABS.map(t => { const it = sgItems(t.key); return { t: t, it: it, left: it.filter(x => !sgMarkOf(x)).length }; });
+  const cur = L.find(l => l.t.key === sgTab) || L[0], done = cur.it.length - cur.left, next = L.find(l => l !== cur && l.left);
+  const ago = sgUpdated ? sgAgo(sgUpdated) : null, weekly = !!sgWeeklyReminder();
+  const n = { reading: 0, finished: 0, not_interested: 0 };
+  cur.it.forEach(x => { n[sgMarkOf(x)]++; });
+  document.getElementById('header-count').textContent = '💡 เหลือคัด ' + L.reduce((s, l) => s + l.left, 0) + ' เรื่อง';
+  el.innerHTML =
+    '<div class="sg-lists" role="group" aria-label="ลิสต์แนะนำ">' + L.map(l =>
+      '<button class="' + (l.it.length && !l.left ? 'done' : '') + '" data-act="sgList" data-v="' + l.t.key + '" aria-pressed="' + (l === cur) + '"><span class="nm"><i>' + l.t.n + '</i>' + l.t.short + '</span>' +
+      '<small>' + (l.left ? 'เหลือ ' + l.left : l.it.length ? '✓ ครบ' : 'ว่าง') + '</small></button>').join('') + '</div>' +
+    '<div class="sg-status' + (ago && ago.stale ? ' stale' : '') + '"><div class="tx">' +
+      (ago ? (ago.stale ? '<b>⚠️ ' + ago.text + '</b>' : '🕒 ' + ago.text) + ' (' + shortDate(sgUpdated) + ')' : 'ยังไม่เคยอัปเดต') +
+      '<br>คัดลิสต์นี้แล้ว ' + done + '/' + cur.it.length +
+      '<div class="sg-prog" aria-hidden="true"><i style="width:' + (cur.it.length ? Math.round(done / cur.it.length * 100) : 0) + '%"></i></div></div>' +
+      '<button class="sg-bell" data-act="sgWeekly" aria-pressed="' + weekly + '" aria-label="เตือนให้อัปเดตทุกศุกร์ 21:00">' + (weekly ? '🔔' : '🔕') + '</button>' +
+      '<button class="btn btn-primary btn-sm" data-act="sgUpdate">🔄 อัปเดต</button></div>' +
+    (sgError ? '<div class="sg-warnbar" role="alert"><span aria-hidden="true">⚠️</span><div><b>โหลดรายการล่าสุดไม่ได้</b> — แสดงรายการเดิมไว้ก่อน<div class="st-tech">' + esc(sgError) + '</div></div>' +
+      '<button class="btn btn-ghost btn-sm" data-act="sgReload">ลองใหม่</button></div>' : '') +
+    '<p class="sg-desc">' + cur.t.n + ' ' + cur.t.desc + ' · ไม่มีดราม่า · ไม่รวมเรื่องที่มีในคลัง · เรียงตามยอดวิว<br>' +
+      '📖 กำลังอ่าน / 🏁 อ่านจบ = <b>เพิ่มเข้าคลังให้ด้วย</b> · กดผิดกดเลิกทำได้</p>' +
+    (!cur.it.length ? '<div class="sg-empty">ลิสต์นี้ยังว่าง — กด 🔄 อัปเดต แล้วทำตามขั้นตอน</div>'
+      : cur.left ? '' : '<section class="sg-party"><div class="sg-confetti" id="sg-confetti"></div><div class="big" aria-hidden="true">🎉</div><h3>คัดครบลิสต์นี้แล้ว!</h3>' +
+        '<p>' + SG_MARK_ORDER.filter(k => n[k]).map(k => SG_MARKS[k].label + ' ' + n[k]).join(' · ') + '</p>' +
+        (next ? '<button class="btn btn-primary" data-act="sgList" data-v="' + next.t.key + '">ไปลิสต์ ' + next.t.n + ' ' + next.t.short + ' ›</button>'
+          : '<p>ครบทุกลิสต์แล้ว ✨ อัปเดตรอบหน้าจะมีเรื่องใหม่มาแทน</p>') + '</section>') +
+    (done ? '<button class="fb sg-hidebtn' + (sgHideMarked ? ' active' : '') + '" data-act="sgHide" aria-pressed="' + sgHideMarked + '">' +
+      (sgHideMarked ? '👁 แสดงที่คัดแล้ว (' : '🙈 ซ่อนที่คัดแล้ว (') + done + ')</button>' : '');
+  const c = sgParty && document.getElementById('sg-confetti');
+  sgParty = false;
+  if (c) c.parentNode.scrollIntoView({ block: 'center', behavior: noMotion() ? 'auto' : 'smooth' });   // you were down at the last card
+  if (c && !noMotion()) c.innerHTML = Array.from({ length: 26 }, (_, i) => '<i style="left:' + (4 + i * 3.6) + '%;background:var(--' +
+    ['mint', 'raw', 'wk-now', 'star', 'fin'][i % 5] + ');animation-delay:' + (i % 7) * 60 + 'ms"></i>').join('');
 }
 
 function sgCardHtml(x, rank) {
-  const i = sgList.indexOf(x);
-  const mark = sgMarkOf(x);
-  const lib = sgFindInLibrary(x);
-  const url = esc(sgUrl(x));
+  const i = sgList.indexOf(x), mark = sgMarkOf(x), url = esc(sgUrl(x));
+  const img = x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : '';
+  if (mark) return '<article class="sg-card done" id="sgc-' + i + '"><div class="sg-done"><span class="sg-cover" aria-hidden="true">📖' + img + '</span>' +
+      '<div class="tt"><b>' + esc(x.name) + '</b><small><span class="sgs-pill ' + SG_MARKS[mark].cls + '">' + SG_MARKS[mark].label + '</span>' +
+      (mark !== 'not_interested' && sgFindInLibrary(x) ? ' · อยู่ในคลังแล้ว' : '') + '</small></div>' +
+      '<button class="btn btn-ghost btn-sm" data-act="sgUndo" data-v="' + i + '">เลิกทำ</button></div>' +
+      (mark === 'not_interested' ? sgWhyHtml(x, i) : '') + '</article>';
   const badges =
     (x.is_new ? '<span class="sg-badge new">🆕 ใหม่</span>' : '') +
     (x.end ? '<span class="sg-badge end">✔ จบแล้ว</span>' : '<span class="sg-badge ongoing">⏳ ยังไม่จบ</span>') +
-    (lib ? '<span class="sg-badge lib">📚 มีในคลังแล้ว</span>' : '');
-  const tags = x.hl.map(t => '<span class="hl">' + esc(t) + '</span>').join('') +
-    x.tags.map(t => '<span>' + esc(t) + '</span>').join('');
-  const marks = SG_MARK_ORDER.map(k =>
-    '<button class="sg-mk ' + SG_MARKS[k].cls + (mark === k ? ' active' : '') + '" onclick="sgMark(' + i + ',\'' + k + '\')">' + SG_MARKS[k].label + '</button>'
-  ).join('');
-  const cat = ['Boy Love', x.cat, x.ch ? x.ch + ' ตอน' : ''].filter(Boolean).join(' · ');
-  return '<div class="sg-card' + (mark ? ' marked' : '') + '">' +
-    '<div class="sg-top">' +
-      '<a class="sg-cover" href="' + url + '" target="_blank" rel="noopener"><span class="sg-rank">' + rank + '</span>📖' +
-        (x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '</a>' +
-      '<div class="sg-info">' +
-        '<div class="sg-title"><a href="' + url + '" target="_blank" rel="noopener">' + esc(x.name) + '</a></div>' +
+    (sgFindInLibrary(x) ? '<span class="sg-badge lib">📚 มีในคลังแล้ว</span>' : '');
+  const tags = x.hl.map(t => '<span class="hl">' + esc(t) + '</span>').join('') + x.tags.map(t => '<span>' + esc(t) + '</span>').join('');
+  const cat = [x.cat, x.ch ? x.ch + ' ตอน' : ''].filter(Boolean).join(' · ');
+  return '<article class="sg-card" id="sgc-' + i + '"><div class="sg-top">' +
+      '<a class="sg-cover" href="' + url + '" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true"><span class="sg-rank">' + rank + '</span>📖' + img + '</a>' +
+      '<div class="sg-info"><div class="sg-title"><a href="' + url + '" target="_blank" rel="noopener">' + esc(x.name) + '</a></div>' +
         (x.author ? '<div class="sg-author">โดย ' + esc(x.author) + '</div>' : '') +
-        '<div class="sg-cat">' + esc(cat) + '</div>' +
-        '<div class="sg-badges">' + badges + '</div>' +
-      '</div>' +
-    '</div>' +
-    (x.syn ? '<div class="sg-syn">' + esc(x.syn) + '</div>' : '') +
+        (cat ? '<div class="sg-cat">' + esc(cat) + '</div>' : '') +
+        '<div class="sg-badges">' + badges + '</div></div></div>' +
+    (x.syn ? '<p class="sg-syn">' + esc(x.syn) + '</p>' + (x.syn.length > 110 ? '<button class="sg-more" data-act="sgSyn" aria-expanded="false">อ่านเรื่องย่อต่อ</button>' : '') : '') +
     (tags ? '<div class="sg-tags">' + tags + '</div>' : '') +
-    '<div class="sg-foot">' +
-      '<div class="sg-stats"><span>👁️ <b>' + x.views.toLocaleString('en-US') + '</b></span><span>❤️ <b>' + x.hearts.toLocaleString('en-US') + '</b></span></div>' +
-      '<div class="sg-marks">' + marks + '</div>' +
-      (mark === 'not_interested' ? sgReasonLine(x, 'sgEditReason(' + i + ')') : '') +
-    '</div>' +
-  '</div>';
+    '<div class="sg-nums"><span>👁️ <b>' + x.views.toLocaleString('en-US') + '</b></span><span>❤️ <b>' + x.hearts.toLocaleString('en-US') + '</b></span>' +
+      '<a class="sg-more" href="' + url + '" target="_blank" rel="noopener">🔗 ReadAWrite</a></div>' +
+    '<div class="sg-acts">' + SG_MARK_ORDER.map(k => '<button class="sg-act ' + SG_MARKS[k].cls + '" data-act="sgMark" data-v="' + i + '|' + k + '">' + SG_MARKS[k].label + '</button>').join('') + '</div>' +
+  '</article>';
+}
+/* 🙅 why: the chips are open only on the card you just marked (or ✎ เหตุผล) */
+let sgWhyOpen = '';   // guid
+function sgWhyHtml(x, i) {
+  const rs = sgReasonsOf(x);
+  if (sgWhyOpen !== x.guid) return '<div class="sg-why"><span>' + (rs.length ? 'เพราะ: ' + esc(rs.join(', ')) : 'ยังไม่ใส่เหตุผล') + '</span>' +
+    '<button class="fb" data-act="sgWhyOpen" data-v="' + i + '">✎ เหตุผล</button></div>';
+  return '<div class="sg-why"><span>เพราะ (ไม่ต้องเลือกก็ได้):</span>' + sgReasons.concat(rs.filter(t => sgReasons.indexOf(t) < 0)).map(t => {
+    const on = rs.indexOf(t) >= 0;
+    return '<button class="fb' + (on ? ' active' : '') + '" data-act="sgWhy" data-v="' + i + '" data-r="' + esc(t) + '" aria-pressed="' + on + '">' + esc(t) + '</button>';
+  }).join('') + '<button class="fb" data-act="sgWhyMore" data-v="' + i + '">＋ อื่น ๆ</button></div>';
+}
+function sgOpenWhy(x) {
+  const was = sgList.find(y => y.guid === sgWhyOpen);
+  sgWhyOpen = x ? x.guid : '';
+  if (was && was !== x) sgRefresh(was);
+}
+const sgWhyTimers = {};
+function sgToggleWhy(x, t) {
+  const rs = sgReasonsOf(x), j = rs.indexOf(t);
+  if (j >= 0) rs.splice(j, 1); else rs.push(t);
+  sgApplyLocalMark(x, Object.assign({}, sgMarkRec(x), { reason: rs.join('|') }));
+  sgRefresh(x);
+  clearTimeout(sgWhyTimers[x.guid]);   // several taps → one save
+  sgWhyTimers[x.guid] = setTimeout(() => { delete sgWhyTimers[x.guid]; if (sgMarkOf(x) === 'not_interested') sgSaveMark(x, sgMarkRec(x)); }, 800);
+}
+/* redraw one novel after a mark: its card + the top; anywhere else, the whole view */
+function sgRefresh(x) {
+  if (view !== 'suggest' || searchQ.trim() || !document.getElementById('sg-head')) { sgRerender(); return; }
+  const j = sgItems(sgTab).indexOf(x), card = document.getElementById('sgc-' + sgList.indexOf(x));
+  if (j < 0 || (sgHideMarked && sgMarkOf(x))) { if (card) card.remove(); }
+  else if (card) card.outerHTML = sgCardHtml(x, j + 1);
+  else { renderSuggest(); return; }
+  sgDrawHead();
 }
 
-/* 🚫 the reasons under a "Not interested" novel (tap to change them) */
+/* 🙅 the reasons under a "not interested" novel in 🔍 results (tap to change them) */
 function sgReasonLine(x, onclick) {
   const rs = sgReasonsOf(x);
-  return '<button class="sg-reason' + (rs.length ? '' : ' none') + '" onclick="' + onclick + '" title="แก้ไขเหตุผล">🚫 ' +
+  return '<button class="sg-reason' + (rs.length ? '' : ' none') + '" onclick="' + onclick + '" title="แก้ไขเหตุผล">🙅 ' +
     (rs.length ? rs.map(t => '<span>' + esc(t) + '</span>').join('') : 'ไม่ได้ระบุเหตุผล · ＋ ใส่เหตุผล') + '</button>';
 }
-function sgEditReason(i) { if (sgList[i]) sgOpenReasons(sgList[i]); }
 
 /* ---- 🔍 search every novel ever suggested: the current lists + everything you marked ---- */
 let sgHits = [];   // what the last search shows (buttons refer to it by index)
@@ -2925,29 +3030,47 @@ function sgRerender() {
   else if ((view === 'all' || view === 'suggest') && searchQ.trim() && isEditor()) renderGrid();
 }
 
-function sgPanelHtml() {
-  return '<div class="sg-panel">' +
-    '<h4>🔄 อัปเดตรายการ (สัปดาห์ละครั้ง · ใช้เวลา 1–3 นาที)</h4>' +
-    '<div><b>ตั้งค่าครั้งแรก (บนคอมพิวเตอร์):</b> ลากปุ่มนี้ไปวางที่แถบบุ๊กมาร์ก<br>' +
+/* 🔄 the weekly update guide, in its own popup */
+function sgUpdatePop() {
+  const weekly = !!sgWeeklyReminder();
+  openTools(
+    '<ol class="sg-steps">' +
+      '<li><span>เปิด <a href="https://www.readawrite.com" target="_blank" rel="noopener">readawrite.com</a> (ถ้าขึ้น “ยืนยันตัวตน” ให้กดยืนยันเอง)</span></li>' +
+      '<li><span>อยู่ที่แท็บ readawrite แล้วกดบุ๊กมาร์ก <b>💡 อัปเดตนิยายแนะนำ</b> จากแถบ Favorites (⇧⌘B) รอจนกล่องมุมขวาล่างขึ้น ✅</span></li>' +
+      '<li><span>กลับมาที่นี่ แล้วกด <b>⬇️ โหลดรายการใหม่</b> ด้านล่าง</span></li></ol>' +
+    '<div class="sg-switch"><span>🔔 เตือนให้อัปเดตทุกศุกร์ 21:00</span><button class="fb' + (weekly ? ' active' : '') + '" data-act="sgWeekly" aria-pressed="' + weekly + '">' + (weekly ? 'เปิดอยู่' : 'ปิดอยู่') + '</button></div>' +
+    '<details class="sg-fold"' + (sgList.length ? '' : ' open') + '><summary>ตั้งค่าครั้งแรก (บนคอมพิวเตอร์) ›</summary><div>' +
+      '<span>ลากปุ่มนี้ไปวางที่แถบบุ๊กมาร์ก:</span>' +
       '<a id="sg-bm" class="sg-bm loading" href="#" onclick="event.preventDefault();toast(\'ลากปุ่มนี้ไปวางที่แถบบุ๊กมาร์ก แล้วกดใช้บนหน้า readawrite.com\')">💡 อัปเดตนิยายแนะนำ</a>' +
-      '<div class="sg-sub">ลากไม่ได้ (เช่น Safari)? <button class="sg-link" onclick="sgCopyBookmarklet()">คัดลอกลิงก์บุ๊กมาร์ก</button> → บุ๊กมาร์กหน้าไหนก็ได้ › แก้ไขบุ๊กมาร์ก › วางแทนที่ URL เดิม</div>' +
-      '<div class="sg-warn">⚠️ บุ๊กมาร์กนี้มีรหัสลับของคุณอยู่ข้างใน — อย่าแชร์ให้คนอื่น (ถ้าเปลี่ยนรหัสลับ ให้สร้างบุ๊กมาร์กใหม่)</div>' +
-    '</div>' +
-    '<div><b>ทุกสัปดาห์:</b><ol>' +
-      '<li>เปิด <a href="https://www.readawrite.com" target="_blank" rel="noopener">readawrite.com</a> (ถ้าขึ้น “ยืนยันตัวตน” ให้กดยืนยันเอง)</li>' +
-      '<li>อยู่ที่แท็บ readawrite แล้วกดบุ๊กมาร์ก <b>💡 อัปเดตนิยายแนะนำ</b> จาก<b>แถบ Favorites</b> (⇧⌘B) แล้วรอจนกล่องมุมขวาล่างขึ้น ✅' +
-        '<div class="sg-sub">Safari: อย่ากดจากแถบด้านข้าง/หน้า Start Page หรือเปิดในแท็บใหม่ — ถ้าขึ้น “Safari doesn’t allow JavaScript from the Smart Search field” ให้ไปที่ Settings › Advanced › ติ๊ก “Show features for web developers” แล้วแท็บ Developer › ติ๊ก “Allow JavaScript from Smart Search Field”</div></li>' +
-      '<li>กลับมาที่นี่ แล้วกด <button class="sg-link" onclick="sgReload()">โหลดรายการใหม่</button></li>' +
-    '</ol></div>' +
-    '<div class="sg-sub">ถ้าสคริปต์ดาวน์โหลดไฟล์แทน (ส่งเข้าชีตตรง ๆ ไม่ได้): ' +
-      '<label class="sg-file btn btn-ghost btn-sm">📤 อัปโหลดไฟล์<input type="file" accept=".json,application/json" hidden onchange="sgUploadFile(this)"></label></div>' +
-    '<div class="sg-sub">หรือใช้ Console: <button class="sg-link" onclick="sgCopyScript()">คัดลอกสคริปต์</button> แล้ววางใน DevTools › Console บนหน้า readawrite.com</div>' +
-  '</div>';
+      '<span>ลากไม่ได้ (เช่น Safari)? <button class="sg-link" onclick="sgCopyBookmarklet()">คัดลอกลิงก์บุ๊กมาร์ก</button> → บุ๊กมาร์กหน้าไหนก็ได้ › แก้ไขบุ๊กมาร์ก › วางแทนที่ URL เดิม</span>' +
+      '<span class="sg-warn">⚠️ บุ๊กมาร์กนี้มีรหัสลับของคุณอยู่ข้างใน — อย่าแชร์ให้คนอื่น (ถ้าเปลี่ยนรหัสลับ ให้สร้างบุ๊กมาร์กใหม่)</span></div></details>' +
+    '<details class="sg-fold"><summary>ถ้าใช้ไม่ได้ ›</summary><div>' +
+      '<span>Safari: อย่ากดจากแถบด้านข้าง/หน้า Start Page หรือเปิดในแท็บใหม่ — ถ้าขึ้น “Safari doesn’t allow JavaScript from the Smart Search field” ให้ไปที่ Settings › Advanced › ติ๊ก “Show features for web developers” แล้วแท็บ Developer › ติ๊ก “Allow JavaScript from Smart Search Field”</span>' +
+      '<span>ถ้าสคริปต์ดาวน์โหลดไฟล์แทน (ส่งเข้าชีตตรง ๆ ไม่ได้): <label class="sg-file btn btn-ghost btn-sm">📤 อัปโหลดไฟล์<input type="file" accept=".json,application/json" hidden onchange="sgUploadFile(this)"></label></span>' +
+      '<span>หรือใช้ Console: <button class="sg-link" onclick="sgCopyScript()">คัดลอกสคริปต์</button> แล้ววางใน DevTools › Console บนหน้า readawrite.com</span></div></details>',
+    '🔄 อัปเดตรายการแนะนำ',
+    '<button class="btn btn-ghost" onclick="closeTools()">ปิด</button><button class="btn btn-primary" onclick="closeTools();sgReload()">⬇️ โหลดรายการใหม่</button>');
+  sgPrepareBookmarklet();
 }
-
 function sgSetTab(k) { sgTab = k; sgSetPref('sgTab', k); renderSuggest(); }
 function sgToggleHide(on) { sgHideMarked = !!on; sgSetPref('sgHideMarked', on ? '1' : '0'); renderSuggest(); }
-function sgTogglePanel() { sgPanelOpen = !sgPanelOpen; renderSuggest(); }
+Object.assign(ACT, {
+  sgList: sgSetTab,
+  sgHide: () => sgToggleHide(!sgHideMarked),
+  sgUpdate: sgUpdatePop,
+  sgReload: sgReload,
+  sgWeekly: () => (sgWeeklyReminder() ? sgDisableWeekly() : sgEnableWeekly()),
+  sgSyn: (v, el) => {
+    const open = el.closest('.sg-card').classList.toggle('syn-open');
+    el.textContent = open ? 'ย่อเรื่องย่อ' : 'อ่านเรื่องย่อต่อ';
+    el.setAttribute('aria-expanded', open);
+  },
+  sgMark: v => { const p = v.split('|'); sgMarkCard(sgList[p[0]], p[1]); },
+  sgUndo: v => { if (sgList[v]) sgUnmark(sgList[v]); },
+  sgWhyOpen: v => { const x = sgList[v]; if (x) { sgOpenWhy(x); sgRefresh(x); } },
+  sgWhy: (v, el) => { if (sgList[v]) sgToggleWhy(sgList[v], el.dataset.r); },
+  sgWhyMore: v => sgOpenReasons(sgList[v])
+});
 
 /* ---- bookmarklet (built from rw-collect.js + this device's Sheet URL/secret) ---- */
 async function sgEnsureCollector() {
@@ -3000,7 +3123,7 @@ function sgUploadFile(input) {
       const st = await gasPost({ action: 'sg_state' });
       const res = sgMerge((st.list || []).map(sgFromRow), data.pools, st.marks || []);
       await gasPost({ action: 'sg_save', list: res.list.map(sgToRow), updated_at: data.generated_at || new Date().toISOString() });
-      sgPanelOpen = false;
+      closeTools();
       await loadSuggest();
       toast('อัปเดตแล้ว ✓' + (res.added ? ' · เรื่องใหม่ ' + res.added + ' เรื่อง' : ''));
     } catch (e) { alert('อัปเดตไม่ได้: ' + e.message); }
@@ -3017,38 +3140,88 @@ function sgApplyLocalMark(x, rec) {
   if (rec) sgMarks.push(rec);
   sgMarkMap = sgMakeMarkMap(sgMarks);
 }
-function sgMark(i, k) { return sgMarkItem(sgList[i], k); }
-/* k = the chip tapped. "Not interested" first asks why (reasons = the picked list). */
+function sgRec(x, mark, reasons) {
+  return mark ? { guid: x.guid, uid: x.uid, name: x.name, mark: mark, marked_at: new Date().toISOString(),
+    reason: (reasons || []).join('|'), author: x.author || '', thumb: x.thumb || '', tab: x.tab || '' } : null;
+}
+/* save a mark (null = clear it): on screen at once, put back if the Sheet says no.
+   → the script's answer, or null when it wasn't saved */
+async function sgSaveMark(x, rec) {
+  const prev = sgMarkRec(x);
+  sgApplyLocalMark(x, rec);
+  sgRefresh(x);
+  try {
+    return (await gasPost({
+      action: 'sg_mark', guid: x.guid, uid: x.uid, name: x.name, mark: rec ? rec.mark : '',
+      reason: rec ? rec.reason : '', author: x.author || '', thumb: x.thumb || '', tab: x.tab || ''
+    })) || {};
+  } catch (e) {
+    sgApplyLocalMark(x, prev);
+    sgRefresh(x);
+    alert('บันทึกไม่ได้: ' + e.message);
+    return null;
+  }
+}
+/* 📖 / 🏁 / 🙅 on a card: a stamp, then the card shrinks to one row, then a toast with ↩ เลิกทำ */
+function sgMarkCard(x, k) {
+  if (!x || !isEditor() || sgMarkOf(x)) return;
+  const card = document.getElementById('sgc-' + sgList.indexOf(x));
+  const go = async () => {
+    const it = sgItems(sgTab);
+    sgParty = it.indexOf(x) >= 0 && it.filter(y => !sgMarkOf(y)).length === 1;
+    if (k === 'not_interested') sgOpenWhy(x);   // its reason chips open right on the card
+    const res = await sgSaveMark(x, sgRec(x, k));
+    if (res) sgMarked(x, k, res, []);
+  };
+  if (!card || noMotion()) { go(); return; }
+  card.insertAdjacentHTML('beforeend', '<span class="sg-stamp ' + SG_MARKS[k].cls + '" aria-hidden="true">' + SG_MARKS[k].stamp + '</span>');
+  card.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  setTimeout(go, 520);
+}
+/* chips in 🔍 results and the reasons popup: tap the active one again → no mark */
 async function sgMarkItem(x, k, reasons) {
   if (!x || !isEditor()) return;
-  const prevRec = sgMarkRec(x);
-  const prev = prevRec ? prevRec.mark : '';
-  const next = reasons !== undefined ? k : (prev === k ? '' : k);   // tap the active chip again → back to empty
+  const prev = sgMarkOf(x);
+  const next = reasons !== undefined ? k : (prev === k ? '' : k);
   if (next === 'not_interested' && reasons === undefined) { sgOpenReasons(x); return; }
-  const rs = next === 'not_interested' ? (reasons || []) : [];
-  const rec = next ? {
-    guid: x.guid, uid: x.uid, name: x.name, mark: next, marked_at: new Date().toISOString(),
-    reason: rs.join('|'), author: x.author || '', thumb: x.thumb || '', tab: x.tab || ''
-  } : null;
-  sgApplyLocalMark(x, rec);
-  sgRerender();
-  let res;
-  try {
-    res = await gasPost({
-      action: 'sg_mark', guid: x.guid, uid: x.uid, name: x.name, mark: next,
-      reason: rec ? rec.reason : '', author: x.author || '', thumb: x.thumb || '', tab: x.tab || ''
-    });
-  } catch (e) {
-    sgApplyLocalMark(x, prevRec);
-    sgRerender();
-    alert('บันทึกไม่ได้: ' + e.message);
-    return;
+  if (!next) { sgUnmark(x); return; }
+  const res = await sgSaveMark(x, sgRec(x, next, reasons));
+  if (!res) return;
+  if (prev === next && (res.reason_saved || !(reasons || []).length)) toast('บันทึกเหตุผลแล้ว ✓');   // only the reasons changed
+  else sgMarked(x, next, res, reasons || []);
+}
+/* after a mark is saved: 📖 / 🏁 also go into the library; the toast can undo both */
+const sgLibUndo = {};   // guid → what the mark did to the library this session
+async function sgMarked(x, k, res, reasons) {
+  let msg = SG_MARKS[k].label;
+  if (k === 'not_interested') {
+    if (reasons.length && !res.reason_saved) { alert('มาร์ก 🙅 ไม่สนใจ แล้ว แต่เหตุผลยังไม่ถูกบันทึกลงชีต\nให้อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)'); return; }
+    if (reasons.length) msg += ' (' + reasons.join(', ') + ')';
+  } else {
+    const lib = sgLibUndo[x.guid] = await sgSyncLibrary(x, k);
+    msg += !lib ? '' : lib.add ? ' · เพิ่มเข้าคลังแล้ว' : lib.book ? ' · เปลี่ยนสถานะในคลังแล้ว' : ' · มีในคลังอยู่แล้ว';
   }
-  const oldScript = res && !res.reason_saved;
-  if (next === 'reading' || next === 'finished') await sgSyncLibrary(x, next);
-  else if (next === 'not_interested' && rs.length && oldScript) alert('มาร์ก Not interested แล้ว แต่เหตุผลยังไม่ถูกบันทึกลงชีต\nให้อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)');
-  else if (next === 'not_interested') toast('มาร์ก Not interested' + (rs.length ? ' (' + rs.join(', ') + ')' : '') + ' แล้ว — จะออกจากลิสต์ตอนอัปเดตรอบหน้า');
-  else if (!next && !sgList.some(y => y.guid === x.guid)) toast('ล้างการมาร์กแล้ว — เรื่องนี้อาจกลับมาในลิสต์ตอนอัปเดตรอบหน้า');
+  toastAction(msg, '↩ เลิกทำ', () => sgUnmark(x), 6500);
+}
+/* ↩ เลิกทำ: no mark again, and the library row that mark added (this session) goes too */
+async function sgUnmark(x) {
+  const lib = sgLibUndo[x.guid];
+  delete sgLibUndo[x.guid];
+  if (sgWhyOpen === x.guid) sgWhyOpen = '';
+  if (!await sgSaveMark(x, null)) { if (lib) sgLibUndo[x.guid] = lib; return; }
+  let msg = 'เลิกทำแล้ว';
+  if (lib && lib.add) {
+    const b = allBooks.find(b => String(b.url || '') === lib.add.url && sgNormName(b.title) === sgNormName(lib.add.title));
+    if (b) {
+      setBusy(true, 'กำลังเอาออกจากคลัง');
+      try { await libDelete(b.row, b.title); await refreshFromGas(); msg += ' · เอาออกจากคลังแล้ว'; }
+      catch (e) { alert('เอาออกจากคลังไม่ได้: ' + e.message); }
+      finally { setBusy(false); }
+    }
+  } else if (lib && lib.book) {
+    if (await sgSetLibStatus(lib.book, lib.prev)) msg += ' · คืนสถานะในคลังแล้ว';
+  } else if (sgFindInLibrary(x)) msg += ' · เรื่องนี้ยังอยู่ในคลัง';
+  toast(msg);
 }
 
 /* ---- 🚫 "why not interested?" popup ---- */
@@ -3077,8 +3250,7 @@ function renderReasons() {
     ? '<div class="rs-add"><input type="text" id="rs-new" maxlength="40" placeholder="พิมพ์เหตุผลใหม่…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sgAddReason();}">' +
         '<button class="btn btn-primary btn-sm" onclick="sgAddReason()">เพิ่ม</button><button class="btn btn-ghost btn-sm" onclick="sgRs.adding=false;renderReasons()">ยกเลิก</button></div>'
     : (sgRs.editing ? '' : '<button class="rs-chip rs-new" onclick="sgRs.adding=true;renderReasons();document.getElementById(\'rs-new\').focus()">＋ เพิ่มเหตุผลใหม่</button>');
-  card.innerHTML = '<button class="ov-close" onclick="sgCloseReasons()">✕</button>' +
-    '<h3>🚫 ไม่สนใจเพราะ…</h3>' +
+  card.innerHTML = '<div class="pop-head"><h3 id="reason-title">🙅 ไม่สนใจเพราะ…</h3><button class="ov-close" onclick="sgCloseReasons()" aria-label="ปิด">✕</button></div>' +
     '<div class="rs-novel">' + esc(sgRs.x.name) + '</div>' +
     '<div class="rs-hint">' + (sgRs.editing ? 'แตะเหตุผลที่ต้องการลบออกจากรายการ (เรื่องที่มาร์กไว้แล้วยังเก็บเหตุผลเดิม)' : 'เลือกได้หลายข้อ หรือไม่เลือกก็ได้') + '</div>' +
     '<div class="rs-chips">' + (chips || '<span class="rs-hint">ยังไม่มีเหตุผล — กด ＋ เพิ่มเหตุผลใหม่</span>') + (sgRs.adding ? '' : add) + '</div>' +
@@ -3130,35 +3302,38 @@ function sgSaveReasons() {
   sgMarkItem(x, 'not_interested', picked);
 }
 
-/* Reading / Finished → add to the main library, or alert if it's already there */
+/* 📖 / 🏁 → add to the main library (or change the status of the copy already there).
+   → what to undo: { add: {title, url} } · { book, prev } · {} = nothing changed · null = failed */
 async function sgSyncLibrary(x, status) {
-  const label = STATUS_META[status].label;
   const dup = sgFindInLibrary(x);
   if (dup) {
-    if (dup.status === status) { alert('📚 เรื่องนี้มีในคลังแล้ว: “' + dup.title + '” (' + label + ')\nไม่ได้เพิ่มซ้ำ'); return; }
-    if (!confirm('📚 เรื่องนี้มีในคลังแล้ว: “' + dup.title + '”\nไม่ได้เพิ่มซ้ำ\n\nอัปเดตสถานะในคลังเป็น ' + label + ' ด้วยไหม?')) return;
-    setBusy(true, 'กำลังอัปเดตคลัง');
-    try {
-      await gasPost({
-        action: 'edit', row: dup.row, expect_title: dup.title, title: dup.title, summary: dup.summary, url: dup.url,
-        tags: (dup.tags || []).join('|'), source: dup.source, star: dup.star || 0, status: status, cover: dup.cover || ''
-      });
-      dup.status = status;
-      toast('อัปเดตสถานะในคลังเป็น ' + label + ' แล้ว ✓');
-    } catch (e) { alert('อัปเดตคลังไม่ได้: ' + e.message); }
-    finally { setBusy(false); }
-    return;
+    if (dup.status === status || !confirm('📚 เรื่องนี้มีในคลังแล้ว: “' + dup.title + '”\nไม่ได้เพิ่มซ้ำ\n\nเปลี่ยนสถานะในคลังเป็น ' + SG_MARKS[status].label + ' ด้วยไหม?')) return {};
+    const prev = dup.status || '';
+    return await sgSetLibStatus(dup, status) ? { book: dup, prev: prev } : null;
   }
+  const url = sgUrl(x);
   setBusy(true, 'กำลังเพิ่มเข้าคลัง');
   try {
     await gasWrite({
-      action: 'add', title: x.name, summary: x.syn || '', url: sgUrl(x), tags: '',
+      action: 'add', title: x.name, summary: x.syn || '', url: url, tags: '',
       source: 'raw', star: 0, status: status, cover: x.thumb || ''
-    }, () => bookSaved(x.name, sgUrl(x)));
+    }, () => bookSaved(x.name, url));
     await refreshFromGas();
-    toast('เพิ่ม “' + x.name + '” เข้าคลังแล้ว (' + label + ') ✓');
-  } catch (e) { alert('เพิ่มเข้าคลังไม่ได้: ' + e.message); }
-  finally { setBusy(false); sgRerender(); }
+    return { add: { title: x.name, url: url } };
+  } catch (e) { alert('เพิ่มเข้าคลังไม่ได้: ' + e.message); return null; }
+  finally { setBusy(false); }
+}
+async function sgSetLibStatus(b, status) {
+  setBusy(true, 'กำลังอัปเดตคลัง');
+  try {
+    await gasPost({
+      action: 'edit', row: b.row, expect_title: b.title, title: b.title, summary: b.summary, url: b.url,
+      tags: (b.tags || []).join('|'), source: b.source, star: b.star || 0, status: status, cover: b.cover || ''
+    });
+    b.status = status;
+    return true;
+  } catch (e) { alert('อัปเดตคลังไม่ได้: ' + e.message); return false; }
+  finally { setBusy(false); }
 }
 
 /* ---- weekly Friday 21:00 reminder (re-scheduled each week by the GitHub Action) ---- */
@@ -3183,7 +3358,7 @@ async function sgEnableWeekly() {
     await loadReminders();
     toast('ตั้งเตือนทุกวันศุกร์ 21:00 แล้ว 🔔');
   } catch (e) { alert('ตั้งเตือนไม่ได้: ' + e.message); }
-  finally { setBusy(false); if (view === 'suggest') renderSuggest(); }
+  finally { setBusy(false); sgWeeklyChanged(); }
 }
 async function sgDisableWeekly() {
   const r = sgWeeklyReminder();
@@ -3191,7 +3366,11 @@ async function sgDisableWeekly() {
   setBusy(true, 'กำลังปิดการเตือน');
   try { await gasPost({ action: 'remind_delete', id: r.id }); await loadReminders(); toast('ปิดการเตือนแล้ว'); }
   catch (e) { alert('ปิดไม่ได้: ' + e.message); }
-  finally { setBusy(false); if (view === 'suggest') renderSuggest(); }
+  finally { setBusy(false); sgWeeklyChanged(); }
+}
+function sgWeeklyChanged() {
+  if (view === 'suggest') sgDrawHead();
+  if (document.querySelector('#tools-bg.open .sg-steps')) sgUpdatePop();
 }
 
 /* ---- handoff from rw-collect.js ----
@@ -3306,7 +3485,7 @@ function renderTagPicker() {
   formTags.forEach(t => all.add(t));   // include newly-added (selected) tags
   const sorted = [...all].sort((a, b) => a.localeCompare(b, 'th'));
   const html = sorted.map(t =>
-    `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${t.replace(/'/g, "\\'")}')">${esc(t)}</button>`
+    `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${jsq(t)}')">${esc(t)}</button>`
   ).join('');
   document.getElementById('f-tag-picker').innerHTML = html || '<span class="f-note">ยังไม่มีแท็ก — เพิ่มด้านล่าง</span>';
   if (typeof niRenderTags === 'function') niRenderTags();
@@ -3367,8 +3546,9 @@ function refreshSearchView() {
 function applyScopeUI() {
   const btn = document.getElementById('scope-btn');
   const inp = document.getElementById('search-input');
-  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = (view === 'suggest') ? 'ค้นหาเนื้อเรื่อง/แท็ก นิยายแนะนำ...' : 'ค้นหาเนื้อเรื่อง...'; }
-  else { btn.textContent = '🔍'; inp.placeholder = (view === 'suggest') ? 'ค้นหานิยายแนะนำ...' : 'ค้นหาชื่อ...'; }
+  const sg = view === 'suggest' && (inp.clientWidth < 60 ? 'ค้น' : '');   // 💡 in a phone browser: the box is tiny
+  if (searchScope === 'summary') { btn.textContent = '📖'; inp.placeholder = sg === '' ? 'ค้นเรื่องย่อ/แท็ก…' : sg || 'ค้นหาเนื้อเรื่อง...'; }
+  else { btn.textContent = '🔍'; inp.placeholder = sg === '' ? 'ค้นในที่แนะนำ…' : sg || 'ค้นหาชื่อ...'; }
 }
 
 function toggleScope() {
@@ -3442,17 +3622,17 @@ function openModal(idx) {
 /* ===== 🔖 BOOKMARKS =====
    Saved in the Sheet ("bookmarks" tab): id, title, source (meb/raw), chapter (any
    text), note, url (RAW only), dates. A bookmark belongs to a library novel when
-   its title matches one (loosely); otherwise it shows as "ไม่มีในคลัง". */
+   its title matches one (loosely); otherwise it shows as "นอกคลัง". */
 let bmItems = [], bmLoaded = false, bmError = '', bmLoading = null;
-let bmQ = '', bmFilt = 'all';
-const bmOpenKeys = new Set();
+let bmQ = '', bmFilt = 'all', bmDrop = '';   // bmDrop: the card whose ribbon drops in (just saved)
+const bmGone = new Map();   // id → timer: deleted here, sent to the Sheet once ↩ เลิกทำ has passed
 let bmForm = null;   // the add/edit sheet: { id, edit, title, source, chapter, note, url, other, fixedTitle, autoCh }
 function loadBookmarks() {
   if (!isEditor()) return Promise.resolve();
   if (bmLoading) return bmLoading;
   bmLoading = gasPost({ action: 'bm_list' }).then(d => {
     if (!d || !Array.isArray(d.items)) throw new Error('unknown action');
-    bmItems = d.items.map(bmNorm);
+    bmItems = d.items.map(bmNorm).filter(x => !bmGone.has(x.id));
     bmError = '';
     fetchLinkTitles(bmItems.map(x => x.url).filter(Boolean));   // 🖼️ covers from bookmark links
   }).catch(e => {
@@ -3475,17 +3655,10 @@ function chNum(c) {
   const m = c.match(/^(\d+(?:\.\d+)?)(?!\d)/);
   return m ? parseFloat(m[1]) : progressNum(c);
 }
-/* reading order: numbered chapters 1 → n, then the others (newest first) */
-function bmSortItems(items) {
-  return items.slice().sort((a, b) => {
-    const x = chNum(a.chapter), y = chNum(b.chapter);
-    if (x && y) return x - y || String(b.created_at).localeCompare(String(a.created_at));
-    if (x || y) return x ? -1 : 1;
-    return String(b.created_at).localeCompare(String(a.created_at));
-  });
-}
 function bmKey(title) { const b = bmBook(title); return b ? 'b:' + sgNormName(b.title) : 'n:' + sgNormName(title); }
-function jsq(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }   // for '…' inside onclick
+function jsq(s) { return esc(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")); }   // for '…' inside onclick="…" (JS- then HTML-escaped)
+/* the one "how far" number: your furthest numbered bookmark or 📖 อ่านถึง, whichever is further */
+function bmFar(items, book) { return Math.max(0, ...items.map(x => chNum(x.chapter)), book ? progressNum(book.progress) : 0); }
 function bmGroups() {
   const map = new Map();
   bmItems.forEach(x => {
@@ -3495,24 +3668,25 @@ function bmGroups() {
   });
   const gs = [...map.values()];
   gs.forEach(g => {
-    g.items.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-    g.source = g.book ? (g.book.source === 'raw' ? 'raw' : 'meb') : g.items[0].source;
+    g.items.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));   // newest first
     g.latest = g.items[0];
+    g.source = g.latest.source;   // where you read it (the library copy can be another source)
+    g.far = bmFar(g.items, g.book);
   });
   return gs.sort((a, b) => String(b.latest.created_at).localeCompare(String(a.latest.created_at)));
 }
-function bmFor(b) { const k = 'b:' + sgNormName(b.title); return bmGroups().find(g => g.key === k) || null; }
-/* chapter to suggest: your last numbered bookmark + 1, else 📖 อ่านถึง */
-function bmNextCh(items, book) {
-  const nums = items.map(x => chNum(x.chapter)).filter(n => n > 0);
-  if (nums.length) return String(Math.floor(Math.max(...nums)) + 1);
-  const p = book ? progressNum(book.progress) : 0;
-  return p ? String(p) : '';
+function bmGroupOf(key) { return bmGroups().find(g => g.key === key) || null; }
+function bmFor(b) { return bmGroupOf('b:' + sgNormName(b.title)); }
+/* chapter to suggest: one after the furthest one */
+function bmNextCh(items, book) { const f = bmFar(items, book); return f ? String(Math.floor(f) + 1) : ''; }
+const BM_HINT = 'เติมให้ = ตอนที่อ่านถึงล่าสุด + 1';
+function shortDate(iso) {   // "27 พ.ย." (+ the year if it isn't this year)
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.getDate() + ' ' + TH_MON[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
 }
-function bmHintFor(items, chapter) {
-  if (!chapter) return '';
-  return items.some(x => chNum(x.chapter) > 0) ? 'เติมให้ = ตอนล่าสุดที่บุ๊กมาร์ก + 1' : 'เติมให้จาก 📖 อ่านถึง';
-}
+const bmSrc = s => s === 'raw' ? 'RAW' : 'MEB';
+/* chapters out so far (watched RAW novels only) */
+function bmOut(g) { const c = g.book && cwFor(g.book); return c && String(c.found) === '1' ? parseInt(c.chapters, 10) || 0 : 0; }
 
 /* popup: the novel's latest bookmarks */
 function renderModalBookmarks(b) {
@@ -3521,18 +3695,9 @@ function renderModalBookmarks(b) {
   const g = isEditor() ? bmFor(b) : null;
   if (!g) { el.innerHTML = ''; return; }
   el.innerHTML = '<div class="mb-h"><b>🔖 บุ๊กมาร์ก (' + g.items.length + ')</b><button class="btn btn-ghost btn-sm" onclick="goBookmarks(\'' + jsq(g.key) + '\')">ดูทั้งหมด</button></div>' +
-    g.items.slice(0, 2).map(x => bmItemHtml(x, false)).join('');
-}
-function bmItemHtml(x, withActions) {
-  const id = jsq(x.id);
-  return '<div class="bmk-item ' + x.source + '">' +
-    (withActions ? '<span class="bmk-act"><button onclick="editBookmark(\'' + id + '\')" title="แก้ไข">✎</button><button onclick="deleteBookmark(\'' + id + '\')" title="ลบ">🗑</button></span>'
-      : '<span class="bmk-date">' + (x.created_at ? esc(sgThaiDate(x.created_at)) : '') + '</span>') +
-    '<div class="bmk-ch">' + esc(fmtCh(x.chapter)) + '</div>' +
-    (x.note ? '<div class="bmk-note">' + esc(x.note) + '</div>' : '') +
-    (x.url ? '<a class="bmk-link" href="' + esc(x.url) + '" target="_blank" rel="noopener">🔗 เปิดตอนนี้</a>' : '') +
-    (withActions && x.created_at ? '<div class="bmk-date2">' + esc(sgThaiDate(x.created_at)) + '</div>' : '') +
-  '</div>';
+    g.items.slice(0, 2).map(x => '<div class="bmk-item ' + esc(x.source) + '"><span class="bmk-date">' + esc(sgThaiDate(x.created_at)) + '</span>' +
+      '<div class="bmk-ch">' + esc(fmtCh(x.chapter)) + '</div>' + (x.note ? '<div class="bmk-note">' + esc(x.note) + '</div>' : '') +
+      (x.url ? '<a class="bmk-link" href="' + esc(x.url) + '" target="_blank" rel="noopener">🔗 เปิดตอนนี้</a>' : '') + '</div>').join('');
 }
 function goBookmarks(key) {
   closeModalBtn();
@@ -3549,69 +3714,75 @@ function renderBookmarks() {
     document.getElementById('header-count').textContent = '🔖 บุ๊กมาร์ก';
     return;
   }
-  const gs = bmGroups();
-  const n = { all: gs.length, meb: gs.filter(g => g.source === 'meb').length, raw: gs.filter(g => g.source === 'raw').length, out: gs.filter(g => !g.book).length };
+  const gs = bmGroups(), has = s => g => g.items.some(x => x.source === s);
+  const n = { all: gs.length, meb: gs.filter(has('meb')).length, raw: gs.filter(has('raw')).length, out: gs.filter(g => !g.book).length };
   document.getElementById('header-count').textContent = '🔖 บุ๊กมาร์ก · ' + gs.length + ' เรื่อง · ' + bmItems.length + ' รายการ';
-  const chip = (k, label) => '<button class="fb' + (bmFilt === k ? ' active' : '') + '" onclick="setBmFilt(\'' + k + '\')">' + label + ' ' + n[k] + '</button>';
+  const chip = (k, label) => '<button class="fb' + (bmFilt === k ? ' active' : '') + '" data-act="bmFilt" data-v="' + k + '" aria-pressed="' + (bmFilt === k) + '">' + label + ' ' + n[k] + '</button>';
   main.innerHTML = '<div class="bmk-view">' +
-    '<div class="bmk-top"><input type="text" id="bmk-q" placeholder="🔍 ค้นหาชื่อ / ตอน / โน้ต…" value="' + esc(bmQ) + '" oninput="bmQ=this.value;renderBmList()">' +
+    '<div class="bmk-top"><input type="text" id="bmk-q" placeholder="🔍 ชื่อ / ตอน / โน้ต…" aria-label="ค้นหาบุ๊กมาร์ก" value="' + esc(bmQ) + '" oninput="bmQ=this.value;renderBmList()">' +
       '<button class="btn btn-primary btn-sm" onclick="openBookmarkOther()">＋ เรื่องอื่น</button></div>' +
-    '<div class="bmk-chips">' + chip('all', 'ทั้งหมด') + chip('meb', 'MEB') + chip('raw', 'RAW') + chip('out', 'นอกคลัง') + '</div>' +
-    '<div id="bmk-list"></div></div>';
+    '<div class="bmk-chips" role="group" aria-label="ตัวกรอง">' + chip('all', 'ทั้งหมด') + chip('meb', 'MEB') + chip('raw', 'RAW') + chip('out', 'นอกคลัง') + '</div>' +
+    '<div id="bmk-list" class="bm-grid"></div></div>';
   renderBmList();
 }
-function setBmFilt(k) { bmFilt = k; renderBookmarks(); }
-function toggleBmGroup(key) { if (bmOpenKeys.has(key)) bmOpenKeys.delete(key); else bmOpenKeys.add(key); renderBmList(); }
 function bmMatch(g, x, q) { return g.title.toLowerCase().includes(q) || (fmtCh(x.chapter) + ' ' + x.chapter + ' ' + x.note).toLowerCase().includes(q); }
 function renderBmList() {
   const el = document.getElementById('bmk-list');
   if (!el) return;
   if (!bmLoaded) { el.innerHTML = '<div class="loading"><div class="spinner"></div><span>กำลังโหลดบุ๊กมาร์ก...</span></div>'; return; }
-  if (bmError && !bmItems.length) { el.innerHTML = '<div class="sg-empty sg-err">' + esc(bmError) + '</div>'; return; }
-  const q = bmQ.trim().toLowerCase();
-  let gs = bmGroups().filter(g => bmFilt === 'all' || (bmFilt === 'out' ? !g.book : g.source === bmFilt));
-  if (q) gs = gs.filter(g => g.items.some(x => bmMatch(g, x, q)));
-  if (!gs.length) {
-    el.innerHTML = '<div class="sg-empty">' + (bmItems.length ? 'ไม่พบบุ๊กมาร์กที่ตรงกัน' : 'ยังไม่มีบุ๊กมาร์ก — เปิดนิยายแล้วกด 🔖 บุ๊กมาร์ก หรือกด ＋ เรื่องอื่น') + '</div>';
+  if (bmError && !bmItems.length) {
+    el.innerHTML = stateBox('📶', 'โหลดบุ๊กมาร์กไม่ได้', 'เช็กอินเทอร์เน็ตแล้วลองใหม่ · บุ๊กมาร์กที่บันทึกไว้ไม่หาย',
+      '<button class="btn btn-primary st-btn" data-act="bmReload">ลองใหม่</button><div class="st-tech">' + esc(bmError) + '</div>');
     return;
   }
-  // compact cards; tap one → its bookmarks in a popup
-  el.innerHTML = gs.map(g => {
-    const cov = shelfCover({ b: g.book, title: g.title, rem: null });
-    const hits = q ? g.items.filter(x => bmMatch(g, x, q)).length : 0;
-    // the furthest chapter, big: the highest numbered bookmark (else the newest one)
-    const top = bmSortItems(g.items).filter(x => chNum(x.chapter) > 0).pop() || g.latest;
-    const tn = chNum(top.chapter);
-    const big = '<div class="bmk-big" title="' + esc(fmtCh(top.chapter)) + '"><span class="bmk-big-l">' + (tn ? 'ล่าสุด · ตอนที่' : 'ล่าสุด') + '</span>' +
-      (tn ? '<span class="bmk-big-n">' + esc(String(tn)) + '</span>' : '<span class="bmk-big-t">' + esc(top.chapter) + '</span>') + '</div>';
-    return '<div class="bmk-card" data-k="' + esc(g.key) + '">' +
-      '<div class="bmk-head" onclick="openBmGroup(\'' + jsq(g.key) + '\')" title="ดูบุ๊กมาร์กของเรื่องนี้">' +
-        bmCoverHtml(g, cov, 'bmk-cov') +
-        '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
-          '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
-          (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ' +
-          (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div>' +
-          (top.chapter !== String(tn) && tn ? '<div class="bmk-topname">' + esc(fmtCh(top.chapter)) + '</div>' : '') +
-          (q ? '<div class="bmk-hits">🔍 ตรงกับคำค้น ' + hits + ' รายการ</div>' : '') + '</div>' +
-        big +
-      '</div></div>';
-  }).join('');
+  const q = bmQ.trim().toLowerCase();
+  let gs = bmGroups().filter(g => bmFilt === 'all' || (bmFilt === 'out' ? !g.book : g.items.some(x => x.source === bmFilt)));
+  if (q) gs = gs.filter(g => g.items.some(x => bmMatch(g, x, q)));
+  el.innerHTML = gs.length ? gs.map((g, i) => bmCardHtml(g, i === 0, q)).join('')
+    : bmItems.length ? stateBox('🔎', q ? 'ไม่พบ “' + esc(bmQ.trim()) + '”' : 'ไม่มีบุ๊กมาร์กในตัวกรองนี้', '', '<button class="btn btn-ghost st-btn" data-act="bmClear">ล้างการค้นหา / ตัวกรอง</button>')
+    : stateBox('🔖', 'ยังไม่มีบุ๊กมาร์ก', 'อ่านจบตอนไหน กด ＋ บุ๊กมาร์กไว้ ครั้งหน้าจะรู้ทันทีว่าถึงไหนแล้ว', '<button class="btn btn-primary st-btn" onclick="openBookmarkOther()">＋ บุ๊กมาร์กเรื่องแรก</button>');
 }
-/* the cover: tap → the novel's popup (library) or the picture, big */
-function bmCoverHtml(g, cov, cls) {
-  const idx = g.book ? allBooks.indexOf(g.book) : -1;
-  const tap = idx >= 0 ? ' onclick="event.stopPropagation();closeBmGroup();openModal(' + idx + ')" title="เปิดนิยาย"'
-    : cov ? ' onclick="event.stopPropagation();showCover(\'' + jsq(cov) + '\', \'' + jsq(g.title) + '\')" title="ดูรูปใหญ่"' : '';
-  return '<div class="' + cls + '"' + tap + '><span>🔖</span>' +
-    (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">' : '') + '</div>';
+/* the cover: in a popup, tap → the novel's popup (library) or the picture, big */
+function bmCoverHtml(g, tap) {
+  const cov = shelfCover({ b: g.book, title: g.title, rem: null });
+  const inner = '🔖' + (cov ? '<img src="' + esc(cov) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="coverFit(this)" onerror="this.remove()">' : '');
+  return tap && (g.book || cov)
+    ? '<button class="bm-cov" data-act="' + (g.book ? 'bmNovel' : 'bmBig') + '" data-v="' + esc(g.key) + '" aria-label="' + (g.book ? 'เปิดนิยาย' : 'ดูรูปใหญ่') + '">' + inner + '</button>'
+    : '<span class="bm-cov" aria-hidden="true">' + inner + '</span>';
+}
+function bmCardHtml(g, latest, q) {
+  const far = g.far, out = bmOut(g), key = esc(g.key), l = g.latest, lk = g.items.find(x => x.url);   // the newest bookmark with a chapter link
+  const hits = q ? g.items.filter(x => bmMatch(g, x, q)).length : 0;
+  return '<article class="bm-card' + (latest ? ' latest' : '') + '">' +
+    '<span class="bm-ribbon' + (bmDrop === g.key ? ' drop' : '') + '" role="img" aria-label="อ่านถึง ' + esc(far ? 'ตอนที่ ' + far : fmtCh(l.chapter)) + '">' + (far ? '<small>ตอน</small><b>' + far + '</b>' : '<b class="txt">' + esc(l.chapter) + '</b>') + '</span>' +
+    '<button class="bm-head" data-act="bmGroup" data-v="' + key + '">' + bmCoverHtml(g) +
+      '<span class="tt"><b>' + esc(g.title) + '</b><span class="bm-meta"><span class="pill ' + g.source + '">' + bmSrc(g.source) + '</span>' +
+        (g.book && (g.book.source === 'raw' ? 'raw' : 'meb') !== g.source ? '<span>(คลัง: ' + bmSrc(g.book.source) + ')</span>' : '') +
+        (g.book ? '' : '<span class="pill out">นอกคลัง</span>') +
+        '<span class="nw">🔖 ' + g.items.length + ' · ' + (latest ? '📍 ล่าสุด · ' : '') + esc(shortDate(l.created_at)) + '</span></span>' +
+        (l.note ? '<span class="bm-quote">“' + esc(l.note) + '”</span>' : '') +
+        (q ? '<span class="bm-hits">🔍 ตรงกับคำค้น ' + hits + ' รายการ</span>' : '') + '</span></button>' +
+    (out && far ? '<div class="bm-trail" role="img" aria-label="อ่านถึงตอน ' + far + ' จาก ' + out + ' ตอนที่ออกแล้ว"><div class="line"><i style="width:' + Math.min(100, far / out * 100) + '%"></i></div>' +
+      '<div class="lab"><span>ตอน 1</span><b>' + (out > far ? 'ค้างอ่าน ' + Math.ceil(out - far) + ' ตอน' : 'ตามทันแล้ว ✨') + '</b><span>ออกแล้ว ' + out + '</span></div></div>' : '') +
+    '<div class="bm-acts">' + bmQuickBtn(g) +
+      (lk ? '<a class="btn btn-ghost" href="' + esc(lk.url) + '" target="_blank" rel="noopener">🔗 เปิด' + esc(chNum(lk.chapter) ? 'ตอน ' + chNum(lk.chapter) : lk.chapter) + '</a>'
+        : g.book ? '<button class="btn btn-ghost" data-act="bmNovel" data-v="' + key + '">📖 เปิดนิยาย</button>'
+        : '<button class="btn btn-ghost" data-act="bmToLib" data-v="' + key + '">＋ เพิ่มเข้าคลัง</button>') + '</div>' +
+  '</article>';
+}
+function bmQuickBtn(g) {
+  return g.far ? '<button class="btn btn-quick" data-act="bmQuick" data-v="' + esc(g.key) + '">＋ ตอนที่ ' + (Math.floor(g.far) + 1) + '</button>'
+    : '<button class="btn btn-quick" data-act="bmAdd" data-v="' + esc(g.key) + '">＋ บุ๊กมาร์ก</button>';
 }
 
-/* ---- a novel's bookmarks, in a popup ---- */
+/* ---- a novel's bookmarks, in a popup (newest first) ---- */
 let bmGroupKey = null;
 function openBmGroup(key) {
   bmGroupKey = key;
   renderBmGroup();
-  if (bmGroupKey) document.getElementById('bmg-bg').classList.add('open');
+  if (!bmGroupKey) return;
+  document.getElementById('bmg-bg').classList.add('open');
+  document.getElementById('bmg-card').scrollTop = 0;
 }
 function closeBmGroup() {
   bmGroupKey = null;
@@ -3620,28 +3791,29 @@ function closeBmGroup() {
 }
 function renderBmGroup() {
   if (!bmGroupKey) return;
-  const g = bmGroups().find(g => g.key === bmGroupKey);
+  const g = bmGroupOf(bmGroupKey);
   if (!g) { closeBmGroup(); return; }   // its last bookmark was deleted
-  const cov = shelfCover({ b: g.book, title: g.title, rem: null });
-  const q = bmQ.trim().toLowerCase();
-  const idx = g.book ? allBooks.indexOf(g.book) : -1;
-  document.getElementById('bmg-card').innerHTML =
-    '<button class="ov-close" onclick="closeBmGroup()">✕</button>' +
-    '<div class="bmg-head">' + bmCoverHtml(g, cov, 'bmk-cov bmg-cov') +
-      '<div class="bmk-info"><div class="bmg-title">' + esc(g.title) + '</div>' +
-        '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
-        (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ</div>' +
-        (g.book && g.book.progress ? '<div class="bmk-sub">📖 อ่านถึง ' + esc(g.book.progress) + '</div>' : '') +
-      '</div></div>' +
-    '<div class="bmg-items">' + bmSortItems(g.items).map(x => {
-      const h = bmItemHtml(x, true);
-      return q && bmMatch(g, x, q) ? h.replace('class="bmk-item ', 'class="bmk-item hit ') : h;
-    }).join('') + '</div>' +
-    '<div class="f-actions">' +
-      '<button class="btn btn-primary" onclick="openBookmarkFor(\'' + jsq(g.key) + '\')">＋ บุ๊กมาร์กตอนใหม่</button>' +
-      '<button class="btn btn-ghost" onclick="remindNext(\'' + jsq(g.title) + '\')" title="ตั้งเตือนให้อ่านตอนถัดไป">🔔 เตือนตอนถัดไป</button>' +
-      (idx >= 0 ? '<button class="btn btn-ghost" onclick="closeBmGroup();openModal(' + idx + ')">📖 เปิดนิยาย</button>' : '') +
-    '</div>';
+  const card = document.getElementById('bmg-card'), top = card.scrollTop, out = bmOut(g), q = bmQ.trim().toLowerCase();
+  card.innerHTML =
+    '<div class="pop-head bm-phead">' + bmCoverHtml(g, true) +
+      '<div class="tt"><h3 id="bmg-title">' + esc(g.title) + '</h3><div class="bm-meta"><span class="pill ' + g.source + '">' + bmSrc(g.source) + '</span>' +
+        (g.book ? '' : '<span class="pill out">นอกคลัง</span>') +
+        '<span>📖 อ่านถึง ' + esc(g.far ? 'ตอนที่ ' + g.far : fmtCh(g.latest.chapter)) + (out ? ' จาก ' + out : '') + ' · 🔖 ' + g.items.length + '</span></div></div>' +
+      '<button class="ov-close" onclick="closeBmGroup()" aria-label="ปิด">✕</button></div>' +
+    '<ol class="bm-tl">' + g.items.map((x, i) => {
+      const ch = esc(fmtCh(x.chapter)), id = esc(x.id);
+      return '<li class="' + (i ? '' : 'last') + (q && bmMatch(g, x, q) ? ' hit' : '') + '"><div class="tx"><b>' + ch + '</b>' + (i ? '' : '<span class="bm-new">ล่าสุด</span>') +
+        (x.note ? '<div class="nt">“' + esc(x.note) + '”</div>' : '') +
+        '<small>' + esc(shortDate(x.created_at)) + (x.source !== g.source ? ' · ' + bmSrc(x.source) : '') + '</small></div><div class="acts">' +
+        (x.url ? '<a class="bm-ib" href="' + esc(x.url) + '" target="_blank" rel="noopener" aria-label="เปิด' + ch + '">🔗</a>' : '') +
+        '<button class="bm-ib" data-act="bmEdit" data-v="' + id + '" aria-label="แก้ไข' + ch + '">✎</button>' +
+        '<button class="bm-ib" data-act="bmDel" data-v="' + id + '" aria-label="ลบ' + ch + '">🗑</button></div></li>';
+    }).join('') + '</ol>' +
+    '<div class="pop-foot bm-foot">' + bmQuickBtn(g) +
+      '<button class="btn btn-ghost" data-act="bmAdd" data-v="' + esc(g.key) + '">✎ ตอนอื่น</button>' +
+      '<button class="btn btn-ghost" data-act="bmRemind" data-v="' + esc(g.key) + '">🔔 เตือนตอนถัดไป</button>' +
+      (g.book ? '<button class="btn btn-ghost" data-act="bmNovel" data-v="' + esc(g.key) + '">📖 เปิดนิยาย</button>' : '') + '</div>';
+  card.scrollTop = top;
 }
 
 /* ---- add / edit sheet ---- */
@@ -3651,14 +3823,14 @@ function openBookmark(idx) {
   if (!b || !isEditor()) return;
   const g = bmFor(b);
   const ch = bmNextCh(g ? g.items : [], b);
-  bmForm = { id: bmNewId(), edit: false, title: b.title, source: b.source === 'raw' ? 'raw' : 'meb', chapter: ch, hint: bmHintFor(g ? g.items : [], ch), note: '', url: '', other: false, fixedTitle: true, autoCh: true };
+  bmForm = { id: bmNewId(), edit: false, title: b.title, source: g ? g.source : b.source === 'raw' ? 'raw' : 'meb', chapter: ch, hint: ch ? BM_HINT : '', note: '', url: '', other: false, fixedTitle: true, autoCh: true };
   showBmSheet();
 }
 function openBookmarkFor(key) {
-  const g = bmGroups().find(g => g.key === key);
+  const g = bmGroupOf(key);
   if (!g) return;
   const ch = bmNextCh(g.items, g.book);
-  bmForm = { id: bmNewId(), edit: false, title: g.title, source: g.source, chapter: ch, hint: bmHintFor(g.items, ch), note: '', url: '', other: !g.book, fixedTitle: true, autoCh: true };
+  bmForm = { id: bmNewId(), edit: false, title: g.title, source: g.source, chapter: ch, hint: ch ? BM_HINT : '', note: '', url: '', other: !g.book, fixedTitle: true, autoCh: true };
   showBmSheet();
 }
 function openBookmarkOther() {
@@ -3667,40 +3839,41 @@ function openBookmarkOther() {
   showBmSheet();
   setTimeout(() => { const t = document.getElementById('bmk-title'); if (t) t.focus(); }, 50);
 }
-function editBookmark(id) {
+function editBookmark(id, focusNote) {
   const x = bmItems.find(x => x.id === id);
   if (!x) return;
   const b = bmBook(x.title);
-  bmForm = { id: x.id, edit: true, title: b ? b.title : x.title, source: b ? (b.source === 'raw' ? 'raw' : 'meb') : x.source,
+  bmForm = { id: x.id, edit: true, title: b ? b.title : x.title, source: x.source,
     chapter: x.chapter, note: x.note, url: x.url, other: !b, fixedTitle: !!b, autoCh: false };
   showBmSheet();
+  if (focusNote) setTimeout(() => { const n = document.getElementById('bmk-note'); if (n) n.focus(); }, 50);
 }
-function showBmSheet() { renderBmSheet(); document.getElementById('bmk-bg').classList.add('open'); }
+function showBmSheet() { renderBmSheet(); document.getElementById('bmk-bg').classList.add('open'); document.getElementById('bmk-card').scrollTop = 0; }
 function closeBmSheet() { bmForm = null; const bg = document.getElementById('bmk-bg'); if (bg) bg.classList.remove('open'); }
 function renderBmSheet() {
   const f = bmForm;
   if (!f) return;
   const titleInput = !f.fixedTitle;   // a novel that isn't in your library: name + MEB/RAW can be typed
   const head = !f.edit && f.other && !f.fixedTitle ? '🔖 บุ๊กมาร์กเรื่องอื่น' : (f.edit ? '🔖 แก้ไขบุ๊กมาร์ก' : '🔖 บุ๊กมาร์ก');
-  const src = f.source === 'raw' ? 'RAW' : 'MEB';
   document.getElementById('bmk-card').innerHTML =
-    '<button class="ov-close" onclick="closeBmSheet()">✕</button><h3>' + head + '</h3>' +
+    '<div class="pop-head"><h3 id="bmk-h">' + head + '</h3><button class="ov-close" onclick="closeBmSheet()" aria-label="ปิด">✕</button></div>' +
     (titleInput
-      ? '<div class="f-row"><label>ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmForm.autoTitle=\'\';bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
+      ? '<div class="f-row"><label for="bmk-title">ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmForm.autoTitle=\'\';bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
         '<div class="f-row"><label>ที่อ่าน</label><div class="bmk-seg"><button class="' + (f.source === 'meb' ? 'on' : '') + '" onclick="bmSetSource(\'meb\')">MEB</button><button class="' + (f.source === 'raw' ? 'on' : '') + '" onclick="bmSetSource(\'raw\')">RAW</button></div></div>'
-      : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="src-mini ' + f.source + '">' + src + '</span>' + (f.other ? ' · <span class="bmk-out">ไม่มีในคลัง</span>' : '') + '</div>') +
-    '<div class="f-row"><label>ตอนที่ <b class="req">*</b></label><div class="bmk-chline">' +
-      '<input type="text" id="bmk-ch" value="' + esc(f.chapter) + '" placeholder="เช่น 26 หรือ ตอนพิเศษ 2" oninput="bmForm.chapter=this.value;bmForm.autoCh=false;bmForm.hint=\'\';document.getElementById(\'bmk-err\').textContent=\'\';document.getElementById(\'bmk-hint\').textContent=\'\'">' +
-      '<button class="btn btn-ghost btn-sm" onclick="bmStep(-1)">−</button><button class="btn btn-ghost btn-sm" onclick="bmStep(1)">＋</button></div>' +
+      : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="pill ' + f.source + '">' + bmSrc(f.source) + '</span>' + (f.other ? ' <span class="pill out">นอกคลัง</span>' : '') + '</div>') +
+    '<div class="f-row"><label for="bmk-ch">ตอนที่ <b class="req">*</b></label><div class="bm-step">' +
+      '<button type="button" class="bm-ib" data-act="bmStep" data-v="-1" aria-label="ลดตอน">−</button>' +
+      '<input type="text" id="bmk-ch" value="' + esc(f.chapter) + '" placeholder="26 / ตอนพิเศษ 2" oninput="bmForm.chapter=this.value;bmForm.autoCh=false;bmForm.hint=\'\';document.getElementById(\'bmk-err\').textContent=\'\';document.getElementById(\'bmk-hint\').textContent=\'\'">' +
+      '<button type="button" class="bm-ib" data-act="bmStep" data-v="1" aria-label="เพิ่มตอน">＋</button></div>' +
       '<div class="bmk-err" id="bmk-err"></div>' +
       '<div class="f-note" id="bmk-hint">' + esc(f.hint || '') + '</div></div>' +
-    (f.source === 'raw' ? '<div class="f-row"><label>ลิงก์ตอน (ไม่บังคับ)</label><div class="f-url-line">' +
+    (f.source === 'raw' ? '<div class="f-row"><label for="bmk-url">ลิงก์ตอน (ไม่บังคับ)</label><div class="f-url-line">' +
       '<input type="text" id="bmk-url" value="' + esc(f.url) + '" placeholder="https://www.readawrite.com/c/…" oninput="bmForm.url=this.value;bmUrlChanged()">' +
       '<button type="button" class="btn btn-ghost btn-sm" onclick="bmPasteUrl()">📋 วาง</button></div>' +
       '<div class="f-note" id="bmk-urlnote">วางลิงก์แล้วแอปเติมเลขตอนให้ (ถ้าอ่านได้)</div></div>' : '') +
-    '<div class="f-row"><label>โน้ต (ไม่บังคับ)</label><textarea id="bmk-note" placeholder="เช่น ฉากที่ชอบ / หยุดอ่านตรงนี้…" oninput="bmForm.note=this.value">' + esc(f.note) + '</textarea></div>' +
-    '<div class="f-actions"><button class="btn btn-primary" onclick="saveBookmark()">💾 บันทึก</button><button class="btn btn-ghost" onclick="closeBmSheet()">ยกเลิก</button>' +
-      (f.edit ? '<button class="btn btn-danger" onclick="deleteBookmark(\'' + jsq(f.id) + '\')">ลบ</button>' : '') + '</div>';
+    '<div class="f-row"><label for="bmk-note">โน้ต (ไม่บังคับ)</label><textarea id="bmk-note" placeholder="เช่น ฉากที่ชอบ / หยุดอ่านตรงนี้…" oninput="bmForm.note=this.value">' + esc(f.note) + '</textarea></div>' +
+    '<div class="pop-foot">' + (f.edit ? '<button class="btn btn-danger" data-act="bmDel" data-v="' + esc(f.id) + '">🗑 ลบ</button>' : '') +
+      '<button class="btn btn-ghost" onclick="closeBmSheet()">ยกเลิก</button><button class="btn btn-primary" onclick="saveBookmark()">💾 บันทึก</button></div>';
   bmTitleHint();
 }
 function bmSetSource(src) { bmForm.source = src; renderBmSheet(); }
@@ -3776,27 +3949,51 @@ async function saveBookmark() {
   const old = bmItems.find(x => x.id === f.id);
   const item = bmNorm({ id: f.id, title: title, source: source, chapter: ch, note: (document.getElementById('bmk-note').value || '').trim(),
     url: source === 'raw' ? (f.url || '').trim() : '', created_at: (old && old.created_at) || new Date().toISOString() });
-  const prevList = bmItems.slice();
-  bmItems = bmItems.filter(x => x.id !== item.id).concat([item]);   // optimistic
   const wasEdit = f.edit;
   closeBmSheet();
-  bmOpenKeys.add(bmKey(item.title));
+  if (!await bmPut(item)) return;
+  if (wasEdit) { toast('🔖 บันทึก ' + fmtCh(item.chapter) + ' แล้ว'); return; }
+  toastAction('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว', '🔔 เตือนตอนถัดไป', () => remindNext(item.title), 6500);
+  bmAfterNew(item);
+}
+/* save one bookmark: on screen at once (its ribbon drops in), put back if the Sheet says no */
+async function bmPut(item) {
+  const prevList = bmItems.slice();
+  bmItems = bmItems.filter(x => x.id !== item.id).concat([item]);
+  bmDrop = bmKey(item.title);
   bmRerender();
+  bmDrop = '';
   try {
     const r = await gasPost(Object.assign({ action: 'bm_save' }, item));
     if (r && r.item) { const i = bmItems.findIndex(x => x.id === item.id); if (i >= 0) bmItems[i] = bmNorm(r.item); }
     if (item.url) fetchLinkTitles([item.url]);   // its cover (usually already read when the link was pasted)
-    if (wasEdit) toast('🔖 บันทึก ' + fmtCh(item.chapter) + ' แล้ว');
-    else {
-      logRead({ title: item.title, chapter: item.chapter, url: item.url, via: 'bookmark' });
-      toastAction('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว', '🔔 เตือนตอนถัดไป', () => remindNext(item.title), 6500);
-    }
+    return true;
   } catch (e) {
     bmItems = prevList; bmRerender();
     alert('บันทึกบุ๊กมาร์กไม่ได้: ' + (/unknown action/i.test(e.message || '') ? 'อัปเดต Code.gs ก่อน (🔑 › คัดลอก Code.gs › วางทับ › Deploy เวอร์ชันใหม่)' : e.message));
-    return;
+    return false;
   }
-  if (!wasEdit) bmProgress(item);
+}
+function bmAfterNew(item) {
+  logRead({ title: item.title, chapter: item.chapter, url: item.url, via: 'bookmark' });
+  bmProgress(item);
+}
+/* ＋ ตอนที่ N: one tap. ↩ เลิกทำ deletes it again; 📖 อ่านถึง + the reading log wait until the toast is gone */
+async function bmQuickSave(key) {
+  const g = bmGroupOf(key);
+  if (!g) return;
+  if (!g.far) { openBookmarkFor(key); return; }
+  const item = bmNorm({ id: bmNewId(), title: g.title, source: g.source, chapter: String(Math.floor(g.far) + 1), created_at: new Date().toISOString() });
+  let undone = false, later = 0;
+  const saved = bmPut(item);
+  toastAction('🔖 บุ๊กมาร์ก ' + fmtCh(item.chapter) + ' แล้ว', '↩ เลิกทำ', async () => {
+    undone = true; clearTimeout(later);
+    if (!await saved) return;
+    bmItems = bmItems.filter(x => x.id !== item.id); bmRerender();
+    try { await gasPost({ action: 'bm_delete', id: item.id }); toast('เลิกทำแล้ว'); }
+    catch (e) { alert('เลิกทำไม่ได้: ' + e.message); loadBookmarks(); }
+  }, 6500, ['＋ โน้ต', () => editBookmark(item.id, true)]);
+  if (await saved && !undone) later = setTimeout(() => bmAfterNew(item), 6500);
 }
 /* a new bookmark also moves 📖 อ่านถึง forward (never backwards) */
 async function bmProgress(item) {
@@ -3813,21 +4010,49 @@ async function bmProgress(item) {
     if (view === 'all') renderGrid();
   } catch (e) { Object.assign(b, prev); }
 }
-async function deleteBookmark(id) {
+/* 🗑 at once with ↩ เลิกทำ; the Sheet hears about it once the toast is gone */
+function deleteBookmark(id) {
   const x = bmItems.find(x => x.id === id);
-  if (!x || !confirm('ลบบุ๊กมาร์ก ' + fmtCh(x.chapter) + ' ของ “' + x.title + '”?')) return;
+  if (!x) return;
   closeBmSheet();
-  const prevList = bmItems.slice();
   bmItems = bmItems.filter(y => y.id !== id);
   bmRerender();
-  try { await gasPost({ action: 'bm_delete', id: id }); }
-  catch (e) { bmItems = prevList; bmRerender(); alert('ลบไม่ได้: ' + e.message); }
+  bmGone.set(id, setTimeout(async () => {
+    bmGone.delete(id);
+    try { await gasPost({ action: 'bm_delete', id: id }); }
+    catch (e) { bmItems.push(x); bmRerender(); alert('ลบไม่ได้: ' + e.message); }
+  }, 6500));
+  toastAction('🗑 ลบ ' + fmtCh(x.chapter) + ' แล้ว', '↩ เลิกทำ', () => {
+    clearTimeout(bmGone.get(id)); bmGone.delete(id);
+    bmItems.push(x); bmRerender();
+  }, 6500);
 }
 function bmRerender() {
   if (view === 'bookmarks') renderBookmarks();
   if (bmGroupKey) renderBmGroup();
   if (document.getElementById('modal-bg').classList.contains('open') && allBooks[window._mIdx]) renderModalBookmarks(allBooks[window._mIdx]);
 }
+Object.assign(ACT, {
+  bmFilt: k => { bmFilt = k; renderBookmarks(); },
+  bmClear: () => { bmQ = ''; bmFilt = 'all'; renderBookmarks(); },
+  bmReload: () => { bmLoaded = false; renderBmList(); loadBookmarks(); },
+  bmGroup: openBmGroup,
+  bmQuick: bmQuickSave,
+  bmAdd: openBookmarkFor,
+  bmEdit: id => editBookmark(id),
+  bmDel: deleteBookmark,
+  bmStep: v => bmStep(+v),
+  bmRemind: key => { const g = bmGroupOf(key); if (g) remindNext(g.title); },
+  bmNovel: key => { const g = bmGroupOf(key); if (g && g.book) { closeBmGroup(); openModal(allBooks.indexOf(g.book)); } },
+  bmBig: key => { const g = bmGroupOf(key); if (g) showCover(shelfCover({ b: g.book, title: g.title, rem: null }), g.title); },
+  bmToLib: key => {
+    const g = bmGroupOf(key);
+    if (!g) return;
+    openAdd();
+    document.getElementById('f-title').value = g.title;
+    document.getElementById('f-source').value = g.source;
+  }
+});
 
 /* ===== 🆕 NEW-CHAPTER ALERTS =====
    The weekly 💡 bookmarklet looks up your Reading novels on ReadAWrite and the
@@ -3843,6 +4068,7 @@ function loadChapterWatch() {
       cwItems = d.items;
       if (cwOpenNew && allBooks.length) { cwOpenNew = false; if (allBooks.some(b => cwNew(b) > 0)) activeNew = true; }
       if (view === 'all') { renderFilterStrip(); renderGrid(); }
+      else if (view === 'bookmarks') renderBmList();   // 🔖 ค้างอ่าน N ตอน
     }
   }).catch(() => {}).finally(() => { cwLoading = null; });
   return cwLoading;
@@ -3924,9 +4150,9 @@ async function cwAck(idx) {
   if (!b || !c) return;
   const prev = c.seen;
   c.seen = String(c.chapters);   // optimistic
-  renderNewChapters(b, idx); renderFilterStrip(); renderGrid();
+  renderNewChapters(b, idx); renderAll();
   try { await gasPost({ action: 'cw_ack', aid: c.aid || '', title: c.title, seen: parseInt(c.chapters, 10) || 0 }); }
-  catch (e) { c.seen = prev; renderNewChapters(b, idx); renderFilterStrip(); renderGrid(); alert('บันทึกไม่ได้: ' + e.message); }
+  catch (e) { c.seen = prev; renderNewChapters(b, idx); renderAll(); alert('บันทึกไม่ได้: ' + e.message); }
 }
 
 /* 🛒 the novel on MEB: its own link when it's an MEB link, otherwise a search */
@@ -3976,7 +4202,7 @@ async function quickSave(field, value) {
       tags: (b.tags || []).join('|'), source: b.source,
       star: b.star || 0, status: b.status || '', cover: b.cover || ''
     });
-    renderGrid();                       // reflect the change on the card behind
+    renderAll();                        // reflect the change in the tab behind (only that tab)
     msg.textContent = 'บันทึกแล้ว ✓';
     setTimeout(() => { msg.style.opacity = '0'; }, 1500);
     if (field === 'status') { const mb = document.getElementById('m-meb'); if (mb) { mb.style.display = (value === 'wishlist' || value === 'bought') ? 'inline-block' : 'none'; mb.href = mebSearchUrl(b); } }
@@ -4574,6 +4800,12 @@ async function recordProgress(r) {
   }
 }
 
+/* deleting shifts the rows below, so never re-send blindly: count that title first */
+async function libDelete(row, title) {
+  const had = allBooks.filter(b => b.title.trim() === title.trim()).length;
+  await gasWrite({ action: 'delete', row: row, expect_title: title }, async () =>
+    (await gasGetBooks()).filter(x => String(x.title || '').trim() === title.trim()).length < had);
+}
 async function deleteBook() {
   if (formMode !== 'edit' || !formRow) return;
   if (!confirm('ลบนิยายเรื่องนี้ออกจากชีตถาวร?')) return;
@@ -4582,10 +4814,7 @@ async function deleteBook() {
   const cur = allBooks.find(b => b.row === row);
   const title = cur ? cur.title : fval('f-title').trim();
   try {
-    // deleting shifts the rows below, so never re-send blindly: count that title first
-    const had = allBooks.filter(b => b.title.trim() === title.trim()).length;
-    await gasWrite({ action: 'delete', row: row, expect_title: title }, async () =>
-      (await gasGetBooks()).filter(x => String(x.title || '').trim() === title.trim()).length < had);
+    await libDelete(row, title);
     setSaving(true, 'กำลังอัปเดต', '✨');
     await refreshFromGas();
     closeForm();
@@ -5225,7 +5454,7 @@ function listBodyHtml() {
     const weekly = String(r.url || '').indexOf(SG_REMIND_MARK) >= 0;
     const label = (overdue ? ('⏰ เลยกำหนด' + (notified ? ' · แจ้งแล้ว' : '')) : '🕒 ตั้งเวลาไว้') + (weekly ? ' · 🔁 ทุกศุกร์' : '');
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
-    const idAttr = String(r.id).replace(/'/g, "\\'");
+    const idAttr = jsq(r.id);
     return '<div class="nf-item' + cls + '">' +
         '<div class="nf-item-main">' +
           (weekly ? '<div class="nf-item-title">' + esc(r.title) + '</div>'
@@ -5478,7 +5707,9 @@ function monthHtml() {
       '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>';
 }
 
-function renderNotify() {
+function renderNotify(keep) {   // keep: a background reload — what's typed in the list's form stays
+  const typed = keep && ['title', 'url', 'when'].map(k => { const e = document.getElementById('nf-' + k); return e && e.value; });
+  const focusId = keep && document.activeElement && document.activeElement.id;
   // the filtered novel has no reminders left → back to ทุกเรื่อง
   if (nfFilter && !reminderGroups().some(g => nameMatch(g.title, nfFilter))) nfFilter = '';
   const toggle = '<div class="nf-viewtoggle">' +
@@ -5498,7 +5729,8 @@ function renderNotify() {
     const t = document.getElementById('nf-title');
     const u = document.getElementById('nf-url');
     const w = document.getElementById('nf-when');
-    if (editing) {
+    if (typed && typed[0] != null && t) { t.value = typed[0]; u.value = typed[1]; w.value = typed[2]; }
+    else if (editing) {
       if (t) t.value = editing.title || '';
       if (u) u.value = editing.url || '';
       if (w) w.value = msToWhenValue(editing.remind_at);
@@ -5514,6 +5746,8 @@ function renderNotify() {
     nfSplitWhen();
     nfAutoReset('nf');
     nfFormChanged('nf');
+    const f = focusId && document.getElementById(focusId);
+    if (f) f.focus({ preventScroll: true });
   }
   fillChapEls();
   renderNotifyStatus();
@@ -5652,7 +5886,7 @@ function renderDayPopup() {
     const overdue = Number(r.remind_at) <= now;
     const timeStr = new Date(Number(r.remind_at)).toLocaleTimeString(TH_LOCALE, { hour: '2-digit', minute: '2-digit' });
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
-    const idAttr = String(r.id).replace(/'/g, "\\'");
+    const idAttr = jsq(r.id);
     return '<div class="nf-item' + (overdue ? ' overdue' : '') + (String(r.id) === String(dayEditId) ? ' editing' : '') + '">' +
         '<div class="nf-item-main">' +
           '<div class="nf-item-title">' + esc(r.title) + '</div>' +
@@ -5758,11 +5992,13 @@ function closeDayForm() {
 }
 
 /* ===== 💬 TOAST WITH A BUTTON ===== */
-function toastAction(msg, label, fn, ms) {
+function toastAction(msg, label, fn, ms, more) {   // more = [label, fn]: a second button
   const el = document.getElementById('toast');
   if (!el) return;
-  el.innerHTML = '<span>' + esc(msg) + '</span><button class="toast-btn">' + esc(label) + '</button>';
-  el.querySelector('.toast-btn').onclick = () => { el.classList.remove('show', 'act'); clearTimeout(toastTimer); fn(); };
+  const btns = more ? [[label, fn], more] : [[label, fn]];
+  el.innerHTML = '<span>' + esc(msg) + '</span>' + btns.map(b => '<button class="toast-btn">' + esc(b[0]) + '</button>').join('');
+  el.querySelectorAll('.toast-btn').forEach((b, i) => { b.onclick = () => { el.classList.remove('show', 'act'); clearTimeout(toastTimer); btns[i][1](); }; });
+  el.classList.toggle('top', toastOverPopup());
   el.classList.add('show', 'act');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show', 'act'), ms || 6000);
@@ -5993,8 +6229,10 @@ function renderSelBar() {
       '<button class="btn btn-danger btn-sm" onclick="selDelete()"' + (n ? '' : ' disabled') + '>🗑 ลบ</button>' +
     '</div>';
 }
-function openTools(html) {
-  document.getElementById('tools-card').innerHTML = '<button class="ov-close" onclick="closeTools()">✕</button>' + html;
+function openTools(html, title, foot) {
+  document.getElementById('tools-card').innerHTML = title
+    ? '<div class="pop-head"><h3 id="tools-title">' + title + '</h3><button class="ov-close" onclick="closeTools()" aria-label="ปิด">✕</button></div>' + html + (foot ? '<div class="pop-foot">' + foot + '</div>' : '')
+    : '<button class="ov-close" onclick="closeTools()">✕</button>' + html;
   document.getElementById('tools-bg').classList.add('open');
 }
 function closeTools() { document.getElementById('tools-bg').classList.remove('open'); }
@@ -6140,9 +6378,9 @@ async function bookmarkFromReminder(r) {
   const b = remBook(r);
   const title = b ? b.title : String(r.title || '').trim();
   const source = b ? (b.source === 'raw' ? 'raw' : 'meb') : (r.url ? 'raw' : 'meb');   // read from a link → RAW
-  const g = bmGroups().find(g => g.key === bmKey(title));
+  const g = bmGroupOf(bmKey(title));
   const ch = remChapter(r) || bmNextCh(g ? g.items : [], b);
-  bmForm = { id: bmNewId(), edit: false, title: title, source: source, chapter: ch, hint: remChapter(r) ? 'เติมให้จากตอนที่เพิ่งอ่าน (✓ เสร็จ)' : bmHintFor(g ? g.items : [], ch),
+  bmForm = { id: bmNewId(), edit: false, title: title, source: source, chapter: ch, hint: remChapter(r) ? 'เติมให้จากตอนที่เพิ่งอ่าน (✓ เสร็จ)' : ch ? BM_HINT : '',
     note: '', url: source === 'raw' ? String(r.url || '') : '', other: !b, fixedTitle: true, autoCh: !remChapter(r) };
   showBmSheet();
   setTimeout(() => { const n = document.getElementById('bmk-note'); if (n) n.focus(); }, 80);
