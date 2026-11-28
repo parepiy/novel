@@ -1676,6 +1676,8 @@ body.editor .m-icons .m-edit{display:flex;}
 </div>
 
 <script>
+// The published tab: only the "public" tab (columns A–I, no 📖 progress / 📝 notes — Code.gs › makePublicTab).
+// gid = that tab's number.
 const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZ7ehvseyk0sGxEcJ9uxC3F5Oo8Vm-98mZmEfJ-kr7Ph-n4mgr-qzx-1--nD0TVh9eWafrEpfJWU0k/pub?gid=1147646991&single=true&output=csv';
 
 let allBooks = [];
@@ -1769,7 +1771,7 @@ function onResume() {
   if (!ed) return;
   const before = JSON.stringify(reminders);
   loadReminders().then(() => {
-    if ((view === 'notify') && JSON.stringify(reminders) !== before) renderNotify();
+    if ((view === 'notify') && JSON.stringify(reminders) !== before) renderNotify(true);
   });
   if ((view === 'suggest') && (!sgLoaded || sgError)) loadSuggest();
 }
@@ -1785,9 +1787,7 @@ window.addEventListener('pageshow', onResume);
 function parseCSV(text) {
   const records = parseCSVRecords(text);
   const rows = [];
-  // progress / note columns are found by their header name (they sit after your own columns)
-  const head = (records[0] || []).map(h => String(h || '').trim());
-  const meta = (cols, name) => { const i = head.indexOf(name); return i >= 0 ? String(cols[i] || '').trim() : ''; };
+  // columns A–I only: 📖 progress and 📝 notes are private and come from the script (fromGas)
   for (let r = 1; r < records.length; r++) {   // r = 0 is the header row
     const cols = records[r];
     if (cols.length < 5) continue;
@@ -1803,10 +1803,6 @@ function parseCSV(text) {
       star:    parseInt((cols[6] || '').trim(), 10) || 0,
       status:  normStatus(cols[7]),
       added:   normAdded(cols[8]),
-      progress:   meta(cols, 'nv_progress'),       // 📖 chapter read up to
-      progressAt: normAdded(meta(cols, 'nv_progress_at')),   // last read
-      note:       meta(cols, 'nv_note'),           // 📝 your note
-      finishedAt: normAdded(meta(cols, 'nv_finished_at')),   // 🏁 date finished
       row:     r + 1,          // record index → 1-based sheet row
     });
   }
@@ -1918,14 +1914,6 @@ async function refreshFromGas() {
     const prev = allBooks;
     const before = JSON.stringify(prev);
     allBooks = books.map(fromGas);
-    // an older Code.gs doesn't send the nv_ columns yet: keep what the published sheet had
-    const has = books[0] || {};
-    if (books.length && (!('progress' in has) || !('finished_at' in has))) allBooks.forEach(b => {
-      const o = prev.find(x => x.row === b.row && x.title === b.title);
-      if (!o) return;
-      if (!('progress' in has)) { b.progress = o.progress; b.progressAt = o.progressAt; b.note = o.note; }
-      if (!('finished_at' in has)) b.finishedAt = o.finishedAt;
-    });
     // same as what was already on screen → don't redraw (covers would flicker)
     const cached = libCacheAt > 0, nBefore = prev.length;
     if (JSON.stringify(allBooks) !== before || cached || loadError) libFresh(cached ? nBefore : -1);
@@ -1995,7 +1983,7 @@ function renderActiveFilters() {
   if (activeStatus && STATUS_META[activeStatus]) chips.push(afChip(STATUS_META[activeStatus].label, "setStatus('" + activeStatus + "')", activeStatus));
   if (activeNew) chips.push(afChip('🆕 มีตอนใหม่', 'setNewFilter()', ''));
   if (activeStar !== null) chips.push(afChip(STAR_OPTS[activeStar] || activeStar, "setStar('" + activeStar + "')", 'star'));
-  [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + t.replace(/'/g, "\\'") + "')", '')));
+  [...activeTags].forEach(t => chips.push(afChip(t, "setTag('" + jsq(t) + "')", '')));
   [...excludedTags].forEach(t => chips.push(afChip('🚫 ' + t, "unExclude('" + jsq(t) + "')", 'excl')));
   const q = searchQ.trim();
   if (q) chips.push(afChip('🔍 ' + q, 'clearSearch()', ''));
@@ -2229,7 +2217,7 @@ function buildCard(b, idx) {
   const picked = selMode && selRows.has(b.row);
   return `<div class="card${picked ? ' picked' : ''}" role="button" tabindex="0" aria-label="${esc(b.title)}"${selMode ? ` data-i="${idx}"` : ''} onclick="${selMode ? `selToggle(${idx})` : `openModal(${idx})`}">
     <div class="cover">${selMode ? '<span class="sel-ck">' + (picked ? '✓' : '') + '</span>' : ''}${coverHtml}<div class="nc" style="${ncStyle}">📖</div><button class="edit-btn" onclick="openEdit(${idx});event.stopPropagation();" title="แก้ไข">✎</button></div>
-    <span class="src-badge ${b.source}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
+    <span class="src-badge ${esc(b.source)}">${b.source === 'meb' ? 'MEB' : 'RAW'}</span>${starHtml}
     <div class="card-body">
       <div class="title">${esc(b.title)}</div>
       ${stHtml}
@@ -2273,7 +2261,7 @@ function switchTab(tab) {
   if (notify) {
     nfEditId = null;
     renderNotify();
-    loadReminders().then(() => { if (view === 'notify') renderNotify(); });
+    loadReminders().then(() => { if (view === 'notify') renderNotify(true); });
     return;
   }
   if (stats) {
@@ -3306,7 +3294,7 @@ function renderTagPicker() {
   formTags.forEach(t => all.add(t));   // include newly-added (selected) tags
   const sorted = [...all].sort((a, b) => a.localeCompare(b, 'th'));
   const html = sorted.map(t =>
-    `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${t.replace(/'/g, "\\'")}')">${esc(t)}</button>`
+    `<button type="button" class="tagpick${formTags.has(t) ? ' active' : ''}" onclick="toggleFormTag('${jsq(t)}')">${esc(t)}</button>`
   ).join('');
   document.getElementById('f-tag-picker').innerHTML = html || '<span class="f-note">ยังไม่มีแท็ก — เพิ่มด้านล่าง</span>';
   if (typeof niRenderTags === 'function') niRenderTags();
@@ -3485,7 +3473,7 @@ function bmSortItems(items) {
   });
 }
 function bmKey(title) { const b = bmBook(title); return b ? 'b:' + sgNormName(b.title) : 'n:' + sgNormName(title); }
-function jsq(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }   // for '…' inside onclick
+function jsq(s) { return esc(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")); }   // for '…' inside onclick="…" (JS- then HTML-escaped)
 function bmGroups() {
   const map = new Map();
   bmItems.forEach(x => {
@@ -3525,7 +3513,7 @@ function renderModalBookmarks(b) {
 }
 function bmItemHtml(x, withActions) {
   const id = jsq(x.id);
-  return '<div class="bmk-item ' + x.source + '">' +
+  return '<div class="bmk-item ' + esc(x.source) + '">' +
     (withActions ? '<span class="bmk-act"><button onclick="editBookmark(\'' + id + '\')" title="แก้ไข">✎</button><button onclick="deleteBookmark(\'' + id + '\')" title="ลบ">🗑</button></span>'
       : '<span class="bmk-date">' + (x.created_at ? esc(sgThaiDate(x.created_at)) : '') + '</span>') +
     '<div class="bmk-ch">' + esc(fmtCh(x.chapter)) + '</div>' +
@@ -3588,7 +3576,7 @@ function renderBmList() {
       '<div class="bmk-head" onclick="openBmGroup(\'' + jsq(g.key) + '\')" title="ดูบุ๊กมาร์กของเรื่องนี้">' +
         bmCoverHtml(g, cov, 'bmk-cov') +
         '<div class="bmk-info"><div class="bmk-title">' + esc(g.title) + '</div>' +
-          '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
+          '<div class="bmk-sub"><span class="src-mini ' + esc(g.source) + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
           (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ' +
           (g.latest.created_at ? ' · ' + esc(sgThaiDate(g.latest.created_at)) : '') + '</div>' +
           (top.chapter !== String(tn) && tn ? '<div class="bmk-topname">' + esc(fmtCh(top.chapter)) + '</div>' : '') +
@@ -3629,7 +3617,7 @@ function renderBmGroup() {
     '<button class="ov-close" onclick="closeBmGroup()">✕</button>' +
     '<div class="bmg-head">' + bmCoverHtml(g, cov, 'bmk-cov bmg-cov') +
       '<div class="bmk-info"><div class="bmg-title">' + esc(g.title) + '</div>' +
-        '<div class="bmk-sub"><span class="src-mini ' + g.source + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
+        '<div class="bmk-sub"><span class="src-mini ' + esc(g.source) + '">' + (g.source === 'raw' ? 'RAW' : 'MEB') + '</span>' +
         (g.book ? '' : ' · <span class="bmk-out">ไม่มีในคลัง</span>') + ' · 🔖 ' + g.items.length + ' รายการ</div>' +
         (g.book && g.book.progress ? '<div class="bmk-sub">📖 อ่านถึง ' + esc(g.book.progress) + '</div>' : '') +
       '</div></div>' +
@@ -3688,7 +3676,7 @@ function renderBmSheet() {
     (titleInput
       ? '<div class="f-row"><label>ชื่อเรื่อง <b class="req">*</b></label><input type="text" id="bmk-title" value="' + esc(f.title) + '" oninput="bmForm.title=this.value;bmForm.autoTitle=\'\';bmTitleHint()"><div class="f-dup" id="bmk-dup"></div></div>' +
         '<div class="f-row"><label>ที่อ่าน</label><div class="bmk-seg"><button class="' + (f.source === 'meb' ? 'on' : '') + '" onclick="bmSetSource(\'meb\')">MEB</button><button class="' + (f.source === 'raw' ? 'on' : '') + '" onclick="bmSetSource(\'raw\')">RAW</button></div></div>'
-      : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="src-mini ' + f.source + '">' + src + '</span>' + (f.other ? ' · <span class="bmk-out">ไม่มีในคลัง</span>' : '') + '</div>') +
+      : '<div class="bmk-novel">' + esc(f.title) + ' · <span class="src-mini ' + esc(f.source) + '">' + src + '</span>' + (f.other ? ' · <span class="bmk-out">ไม่มีในคลัง</span>' : '') + '</div>') +
     '<div class="f-row"><label>ตอนที่ <b class="req">*</b></label><div class="bmk-chline">' +
       '<input type="text" id="bmk-ch" value="' + esc(f.chapter) + '" placeholder="เช่น 26 หรือ ตอนพิเศษ 2" oninput="bmForm.chapter=this.value;bmForm.autoCh=false;bmForm.hint=\'\';document.getElementById(\'bmk-err\').textContent=\'\';document.getElementById(\'bmk-hint\').textContent=\'\'">' +
       '<button class="btn btn-ghost btn-sm" onclick="bmStep(-1)">−</button><button class="btn btn-ghost btn-sm" onclick="bmStep(1)">＋</button></div>' +
@@ -3924,9 +3912,9 @@ async function cwAck(idx) {
   if (!b || !c) return;
   const prev = c.seen;
   c.seen = String(c.chapters);   // optimistic
-  renderNewChapters(b, idx); renderFilterStrip(); renderGrid();
+  renderNewChapters(b, idx); renderAll();
   try { await gasPost({ action: 'cw_ack', aid: c.aid || '', title: c.title, seen: parseInt(c.chapters, 10) || 0 }); }
-  catch (e) { c.seen = prev; renderNewChapters(b, idx); renderFilterStrip(); renderGrid(); alert('บันทึกไม่ได้: ' + e.message); }
+  catch (e) { c.seen = prev; renderNewChapters(b, idx); renderAll(); alert('บันทึกไม่ได้: ' + e.message); }
 }
 
 /* 🛒 the novel on MEB: its own link when it's an MEB link, otherwise a search */
@@ -3976,7 +3964,7 @@ async function quickSave(field, value) {
       tags: (b.tags || []).join('|'), source: b.source,
       star: b.star || 0, status: b.status || '', cover: b.cover || ''
     });
-    renderGrid();                       // reflect the change on the card behind
+    renderAll();                        // reflect the change in the tab behind (only that tab)
     msg.textContent = 'บันทึกแล้ว ✓';
     setTimeout(() => { msg.style.opacity = '0'; }, 1500);
     if (field === 'status') { const mb = document.getElementById('m-meb'); if (mb) { mb.style.display = (value === 'wishlist' || value === 'bought') ? 'inline-block' : 'none'; mb.href = mebSearchUrl(b); } }
@@ -5225,7 +5213,7 @@ function listBodyHtml() {
     const weekly = String(r.url || '').indexOf(SG_REMIND_MARK) >= 0;
     const label = (overdue ? ('⏰ เลยกำหนด' + (notified ? ' · แจ้งแล้ว' : '')) : '🕒 ตั้งเวลาไว้') + (weekly ? ' · 🔁 ทุกศุกร์' : '');
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
-    const idAttr = String(r.id).replace(/'/g, "\\'");
+    const idAttr = jsq(r.id);
     return '<div class="nf-item' + cls + '">' +
         '<div class="nf-item-main">' +
           (weekly ? '<div class="nf-item-title">' + esc(r.title) + '</div>'
@@ -5478,7 +5466,9 @@ function monthHtml() {
       '<div class="cal-hint">แตะวันที่เพื่อดู/เพิ่มการแจ้งเตือน</div>';
 }
 
-function renderNotify() {
+function renderNotify(keep) {   // keep: a background reload — what's typed in the list's form stays
+  const typed = keep && ['title', 'url', 'when'].map(k => { const e = document.getElementById('nf-' + k); return e && e.value; });
+  const focusId = keep && document.activeElement && document.activeElement.id;
   // the filtered novel has no reminders left → back to ทุกเรื่อง
   if (nfFilter && !reminderGroups().some(g => nameMatch(g.title, nfFilter))) nfFilter = '';
   const toggle = '<div class="nf-viewtoggle">' +
@@ -5498,7 +5488,8 @@ function renderNotify() {
     const t = document.getElementById('nf-title');
     const u = document.getElementById('nf-url');
     const w = document.getElementById('nf-when');
-    if (editing) {
+    if (typed && typed[0] != null && t) { t.value = typed[0]; u.value = typed[1]; w.value = typed[2]; }
+    else if (editing) {
       if (t) t.value = editing.title || '';
       if (u) u.value = editing.url || '';
       if (w) w.value = msToWhenValue(editing.remind_at);
@@ -5514,6 +5505,8 @@ function renderNotify() {
     nfSplitWhen();
     nfAutoReset('nf');
     nfFormChanged('nf');
+    const f = focusId && document.getElementById(focusId);
+    if (f) f.focus({ preventScroll: true });
   }
   fillChapEls();
   renderNotifyStatus();
@@ -5652,7 +5645,7 @@ function renderDayPopup() {
     const overdue = Number(r.remind_at) <= now;
     const timeStr = new Date(Number(r.remind_at)).toLocaleTimeString(TH_LOCALE, { hour: '2-digit', minute: '2-digit' });
     const urlHtml = r.url ? '<a class="nf-item-url" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.url) + '</a>' : '';
-    const idAttr = String(r.id).replace(/'/g, "\\'");
+    const idAttr = jsq(r.id);
     return '<div class="nf-item' + (overdue ? ' overdue' : '') + (String(r.id) === String(dayEditId) ? ' editing' : '') + '">' +
         '<div class="nf-item-main">' +
           '<div class="nf-item-title">' + esc(r.title) + '</div>' +

@@ -21,21 +21,21 @@ if (!GAS_URL || !SECRET || !process.env.VAPID_PUBLIC || !process.env.VAPID_PRIVA
 
 webpush.setVapidDetails(SUBJECT, process.env.VAPID_PUBLIC, process.env.VAPID_PRIVATE);
 
+// Throws unless Apps Script answers 200 with ok:true (e.g. "busy" when its lock is taken), and gives up after 60 s.
 async function gas(body) {
   const res = await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(60000)
   });
-  return res.json();
+  const data = res.ok ? await res.json().catch(() => null) : null;
+  if (!data || !data.ok) throw new Error(`${body.action} failed: ${(data && data.error) || 'HTTP ' + res.status}`);   // never dump the reply: it holds your reminders
+  return data;
 }
 
 (async () => {
   const data = await gas({ action: 'push_pull', token: SECRET });
-  if (!data || !data.ok) {
-    console.error('push_pull failed:', (data && data.error) || 'no data');   // never dump the reply: it holds your reminders
-    process.exit(1);
-  }
 
   const now = Date.now();
   const all = data.reminders || [];
@@ -66,35 +66,44 @@ async function gas(body) {
     return delivered;
   }
 
+  // Each item on its own: one failed call doesn't stop the rest. A failure is retried on the next run.
+  const fail = (id, e) => { process.exitCode = 1; console.error('failed, will retry:', id, '-', e.message); };
+
   for (const n of notices) {
-    const ok = await sendAll(JSON.stringify({
-      title: n.title || '🆕 มีตอนใหม่', body: n.body || '', url: n.url || DEFAULT_URL + '#newch', tag: 'notice-' + n.id
-    }));
-    if (ok) { await gas({ action: 'notice_done', token: SECRET, ids: [n.id] }); console.log('sent notice:', n.id); }   // ids only: this repo's Actions logs are public
-    else console.log('notice not delivered, will retry:', n.id);
+    try {
+      const ok = await sendAll(JSON.stringify({
+        title: n.title || '🆕 มีตอนใหม่', body: n.body || '', url: n.url || DEFAULT_URL + '#newch', tag: 'notice-' + n.id
+      }));
+      if (ok) { await gas({ action: 'notice_done', token: SECRET, ids: [n.id] }); console.log('sent notice:', n.id); }   // ids only: this repo's Actions logs are public
+      else console.log('notice not delivered, will retry:', n.id);
+    } catch (e) { fail(n.id, e); }
   }
 
   for (const rem of due) {
-    const weekly = String(rem.url || '').includes(WEEKLY_MARK);
-    const payload = JSON.stringify({
-      title: weekly ? '💡 นิยายแนะนำ' : '📖 ถึงเวลาอ่านนิยาย',
-      body: rem.title || '',
-      url: rem.url || DEFAULT_URL,
-      tag: 'reminder-' + rem.id
-    });
-    const delivered = await sendAll(payload);
-    if (delivered && weekly) {
-      // Keep the same weekday/time: step forward whole weeks past "now".
-      let next = Number(rem.remind_at) + WEEK;
-      while (next <= now) next += WEEK;
-      await gas({ action: 'remind_add', token: SECRET, title: rem.title, url: rem.url, remind_at: next });
-      await gas({ action: 'remind_delete', token: SECRET, id: rem.id });
-      console.log('sent weekly:', rem.id, '- next at', new Date(next).toISOString());
-    } else if (delivered) {
-      await gas({ action: 'remind_mark', token: SECRET, id: rem.id });
-      console.log('sent + marked:', rem.id);   // no titles in the public log
-    } else {
-      console.log('not delivered, leaving unmarked:', rem.id);
-    }
+    try {
+      const weekly = String(rem.url || '').includes(WEEKLY_MARK);
+      const payload = JSON.stringify({
+        title: weekly ? '💡 นิยายแนะนำ' : '📖 ถึงเวลาอ่านนิยาย',
+        body: rem.title || '',
+        url: rem.url || DEFAULT_URL,
+        tag: 'reminder-' + rem.id
+      });
+      const delivered = await sendAll(payload);
+      if (delivered && weekly) {
+        // Keep the same weekday/time: step forward whole weeks past "now".
+        let next = Number(rem.remind_at) + WEEK;
+        while (next <= now) next += WEEK;
+        // Delete this week's only once next week's exists (an earlier run may already have added it).
+        if (!all.some(r => r.url === rem.url && Number(r.remind_at) === next))
+          await gas({ action: 'remind_add', token: SECRET, title: rem.title, url: rem.url, remind_at: next });
+        await gas({ action: 'remind_delete', token: SECRET, id: rem.id });
+        console.log('sent weekly:', rem.id, '- next at', new Date(next).toISOString());
+      } else if (delivered) {
+        await gas({ action: 'remind_mark', token: SECRET, id: rem.id });
+        console.log('sent + marked:', rem.id);   // no titles in the public log
+      } else {
+        console.log('not delivered, leaving unmarked:', rem.id);
+      }
+    } catch (e) { fail(rem.id, e); }
   }
-})().catch(e => { console.error(e); process.exit(1); });
+})().catch(e => { console.error(e.message); process.exit(1); });
